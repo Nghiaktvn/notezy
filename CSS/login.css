@@ -1,0 +1,197 @@
+/* Reset và nền */
+body {
+  background-color: #ffffff;
+  color: #000000;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tiêu đề & label */
+h1, h2, h3, label {
+  color: #000;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 0 #eee;
+}
+
+/* Form chính */
+form {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px;
+  background-color: #fefefe;
+  border: 2px dashed #000;
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 #000;
+  transition: transform 0.2s ease;
+}
+
+form:hover {
+  transform: scale(1.01);
+}
+
+/* Input các loại */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+button {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 10px 0 22px;
+  display: inline-block;
+  border: 2px solid #000;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #000;
+  font-size: 15px;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+input::placeholder {
+  color: #333;
+  font-style: italic;
+}
+
+/* Nút bấm */
+button {
+  background-color: #000;
+  color: #fff;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-color: #333;
+  transform: scale(1.05);
+}
+
+
+a:hover {
+  color: #555;
+}
+
+/* Dropdown */
+
+
+.dropdown-menu {
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  min-width: 10rem;
+}
+
+.dropdown-item {
+  color: #000;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  width: 70%;
+  border-radius: 10px;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus,
+.dropdown-item:active {
+  background-color: black;
+  color: white !important;
+  transform: scale(1.08);
+  font-weight: bold;
+  width: 70%;
+  border-radius: 10px;
+}
+
+
+
+/* Placeholder glow */
+.form-control::placeholder {
+  color: #999;
+  opacity: 0.8;
+}
+
+.form-control:focus {
+  box-shadow: 0 0 8px #000;
+}
+
+
+#mytext{
+  background-color: #fff;
+}
+
+/* Header trắng, chữ đen */
+.navbar {
+  background-color: #ffffff !important; /* Nền trắng */
+  border-bottom: 1px solid #ddd;
+}
+
+.navbar .navbar-brand,
+.navbar .nav-link,
+#mytext {
+  color: #000000 !important; /* Chữ đen */
+  font-weight: bold;
+}
+
+.navbar .nav-link:hover {
+  color: #555 !important;
+}
+
+
+#login{
+  background-color: black;
+  color: white;
+  border: 1px solid goldenrod;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+
+#login:hover {
+  background-color: white;
+  color: black;
+}
+
+#register,
+#reset {
+  background-color: black;
+  color: white;
+  border: 1px solid goldenrod;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+#register:hover,
+#reset:hover {
+  background-color: white;
+  color: black;
+}
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  main.container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  #login, #register, #reset {
+    width: 100%;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  input#user, input#pass {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  #login, #register, #reset {
+    font-size: 0.9rem;
+  }
+  .form-check-label {
+    font-size: 0.85rem;
+  }
+}

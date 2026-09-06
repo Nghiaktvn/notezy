@@ -1,0 +1,25 @@
+/* Dropdown */
+.dropdown-menu {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+    backdrop-filter: blur(8px);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    min-width: 240px;
+    padding: 0.8rem 0;
+}
+
+.dropdown-item {
+    color: #101828;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease, padding-left 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(90deg, #f0f9ff, #e0f2fe);
+    color: #5b21b6;
+    padding-left: 25px;
+}
+
+

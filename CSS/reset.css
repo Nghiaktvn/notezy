@@ -1,0 +1,33 @@
+/* Buttons */
+#change{
+  background-color: black;
+  color: white;
+  border: 1px solid goldenrod;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+#change:hover,
+#change:hover {
+  background-color: white;
+  color: black;
+}
+
+/* Input đen - chữ trắng */
+  
+  /* Placeholder trắng */
+  .form-control::placeholder {
+    color: white;
+    opacity: 0.8;
+  }
+
+
+  /* Khi focus vào input */
+.form-control:focus {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    border-color: gold;
+}
+  
+

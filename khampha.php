@@ -1,0 +1,206 @@
+<?php
+require_once __DIR__ . '/includes/session.php';
+require_once('db.php');
+notezy_session_start();
+
+if (!isset($_SESSION['id'])) {
+    header('Location: index.php');
+    exit();
+}
+
+$user_id = (int) $_SESSION['id'];  // 🛠️ Thêm dòng này để gán giá trị user_id
+
+$sql1 = "SELECT avatar FROM users WHERE id = ?";
+$stm1 = $conn->prepare($sql1);
+
+if (!$stm1) {
+    die("Prepare failed: " . $conn->error);
+}
+
+$stm1->bind_param('i', $user_id);
+
+if (!$stm1->execute()) {
+    die("Execute failed: " . $stm1->error);
+}
+
+$result1 = $stm1->get_result();
+
+if (!$result1) {
+    die("Get result failed: " . $stm1->error);
+}
+
+$kq = $result1->fetch_assoc();
+$avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallback nếu không có avatar
+?>
+<!-- File: explore.html -->
+<!DOCTYPE html>\n<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notezy - Explore Features</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="CSS/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card-body {
+      padding: 30px;
+    }
+    .card-title {
+      font-weight: bold;
+      color: #0d6efd;
+    }
+  </style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <img src="logo.png" alt="Notezy" width="50" height="50" class="me-2" />
+            <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
+                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+
+  <main class="py-5" style="margin-top: 80px;">
+    <div class="container">
+      <h1 class="text-center mb-5">Explore Notezy Features</h1>
+      <div class="row g-4">
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">List & Grid View</h5>
+              <p class="card-text">Notezy allows users to switch between list and grid view modes, providing a flexible interface that adapts to your workflow. Whether you prefer a linear overview or a visual mosaic layout, you can quickly toggle between views to better manage your notes, projects, and reminders. This feature ensures that your notes are not just stored but presented in a way that makes sense to you, reducing visual clutter and improving focus.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Create & Edit Notes</h5>
+              <p class="card-text">With Notezy's seamless note creation and editing tools, users can jot down thoughts, plans, or inspirations anytime. The interface is optimized for both quick entries and detailed documentation. Rich text editing, bullet lists, and intuitive formatting tools make it ideal for students, professionals, and creatives alike. Your notes auto-save in real time, so you never lose progress—even if you close the app unexpectedly.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Delete Notes with Confirmation</h5>
+              <p class="card-text">To prevent accidental loss of important information, Notezy incorporates a confirmation step before deletion. This extra layer of verification ensures that users have time to reconsider before removing a note. The app also offers a temporary recycle bin, where deleted notes can be restored within a grace period. Peace of mind is just one of the many user-centered safeguards we’ve built in.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Attach Images</h5>
+              <p class="card-text">Images speak louder than words, and with Notezy, adding them to your notes is effortless. Whether you're inserting diagrams, screenshots, or inspirational photos, image attachments enhance your notes visually. Each image is displayed inline and stored securely, supporting drag-and-drop functionality and gallery previews for a richer user experience.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Pin Important Notes</h5>
+              <p class="card-text">No more hunting for key information. The pin feature ensures your most essential notes stay at the top of your list. Whether it’s a shopping list, project deadline, or inspirational quote, pinned notes remain visible and prioritized until unpinned, helping you focus on what truly matters each day.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Live Search</h5>
+              <p class="card-text">Notezy’s live search function makes finding specific notes incredibly fast. As you type, results are filtered in real time across both titles and body content. This dynamic searching experience helps you retrieve information instantly, making your workflow smoother and more efficient, even with hundreds of notes.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Label Management</h5>
+              <p class="card-text">Organize your notes effortlessly with customizable labels. Create, rename, and delete labels to sort notes by categories like work, personal, ideas, or deadlines. Label colors and filters allow for fast visual scanning, giving you complete control over how your digital workspace is arranged.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Filter by Labels</h5>
+              <p class="card-text">Quickly narrow down your notes by filtering based on one or more labels. Whether you’re looking for all notes tagged 'Meeting' or 'Personal Goals', Notezy’s filtering system helps you focus your view, eliminating noise and highlighting what’s relevant at the moment.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Password-Protected Notes</h5>
+              <p class="card-text">Security is paramount. Notezy allows you to protect sensitive notes with passwords. Each protected note requires authentication to open, adding a vital layer of privacy to your most confidential information. This is perfect for storing personal thoughts, private work documents, or any data you want to keep strictly to yourself.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-white-50 bg-dark pt-5 pb-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4">
+          <h5 class="text-white">Notezy</h5>
+          <p>Your smart note-taking partner.</p>
+        </div>
+        <div class="col-md-4">
+          <h5 class="text-white">Links</h5>
+          <ul class="list-unstyled">
+                    <li><a href="index_notezy.php" class="text-white-50">Home</a></li>
+                    <li><a href="introduce.php" class="text-white-50">About Us</a></li>
+                    <li><a href="khampha.php" class="text-white-50">Explore Features</a></li>
+                    <li><a href="privacy.php" class="text-white-50">Privacy Policy</a></li>
+                    <li><a href="contact.php" class="text-white-50">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5 class="text-white">Contact</h5>
+          <p><i class="fas fa-envelope"></i> support@notezy.com</p>
+          <p><i class="fas fa-phone"></i> +84 123 456 789</p>
+        </div>
+      </div>
+      <div class="text-center border-top pt-3 mt-3">
+        <small>&copy; 2025 Notezy. All rights reserved.</small>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

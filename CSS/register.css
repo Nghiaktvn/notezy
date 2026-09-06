@@ -1,0 +1,91 @@
+main {
+  margin-top: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Form control focus effect */
+.form-control:focus {
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  outline: none;
+}
+
+/* Placeholder styling */
+#firstname::placeholder,
+#lastname::placeholder,
+#email::placeholder,
+#user::placeholder,
+#pass::placeholder,
+#pass2::placeholder {
+  color: white;
+  opacity: 0.7;
+}
+
+/* Input fields */
+input#firstname,
+input#lastname,
+input#email,
+input#user,
+input#pass,
+input#pass2 {
+  background-color: black;
+  border: 1px solid goldenrod;
+  color: white;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+/* Buttons */
+#register,
+#reset {
+  background-color: black;
+  color: white;
+  border: 1px solid goldenrod;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+#register:hover,
+#reset:hover {
+  background-color: white;
+  color: black;
+}
+
+
+
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  main {
+    margin-top: 90px;
+    padding: 12px;
+  }
+  #register, #reset {
+    width: 100%;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    margin-top: 80px;
+    padding: 8px;
+  }
+  input#firstname,
+  input#lastname,
+  input#email,
+  input#user,
+  input#pass,
+  input#pass2 {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  #register, #reset {
+    font-size: 0.9rem;
+  }
+}

@@ -1,0 +1,27 @@
+.dropdown-menu {
+    background-color: #000; /* nền menu màu đen */
+    border-radius: 6px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    min-width: 10rem;
+  }
+  
+  .dropdown-item {
+    color: #fff; /* mặc định chữ trắng */
+    font-weight: 500;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    border-radius: 10px;
+    padding: 10px 15px;
+  }
+  
+  /* Hover + Focus + Active đều đồng nhất màu đen */
+  .dropdown-item:hover,
+  .dropdown-item:focus,
+  .dropdown-item:active,
+  .dropdown-item:visited,
+  .dropdown-item.show {
+    background-color: #111 !important; /* nền đậm hơn */
+    color: #fff !important;
+    transform: scale(1.05);
+    font-weight: 600;
+  }
+  

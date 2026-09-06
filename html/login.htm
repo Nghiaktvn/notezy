@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="../CSS/login.css">
+  <link rel="stylesheet" href="..//CSS/main.css">
+  <style>
+    @media (max-width: 768px) {
+      main.container { padding-left: 12px; padding-right: 12px; }
+      h2 { font-size: 1.4rem; }
+      .form-control { font-size: 0.9rem; }
+    }
+    @media (max-width: 480px) {
+      #mytext { font-size: 0.85rem; }
+      main.container { padding-top: 1rem !important; }
+      h2 { font-size: 1.2rem; }
+      .btn.px-5 { width: 100%; padding-left: 1rem !important; padding-right: 1rem !important; }
+      .form-group.d-flex { align-items: stretch !important; }
+      .form-check { margin-left: 0 !important; margin-top: 10px; }
+      footer .col-md-4 { margin-bottom: 1.2rem; }
+    }
+  </style>
+</head>
+
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <img src="../../img/logo.png" alt="Notezy" width="50" height="50" class="me-2" />
+        <span id="mytext">Website ghi chú trực tuyến</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+  
+      <!-- Menu thu gọn -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-dark fw-bold" href="#" role="button" data-bs-toggle="dropdown" style="background-color: white;">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Login/Register
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+              <li><a class="dropdown-item text-dark fw-bold" href="/register.html">Register</a></li>
+              <li><a class="dropdown-item text-dark fw-bold" href="/login.html">Login</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>      
+    </div>
+  </nav>
+
+<!-- Main Content -->
+<main class="container my-5 pt-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6">
+          <h2 class="text-center mb-4">Login</h2>
+          <form method="post" action="/create_account">
+            <input type="hidden" name="action" value="login" />
+            <div class="mb-3">
+              <label for="user">Username</label>
+              <input type="email" id="user" class="form-control bg-dark text-warning" name="username" placeholder="Nhập UserName" required>
+            </div>
+            <div class="mb-3">
+              <label for="user">Password</label>
+              <input type="password" id="pass" class="form-control bg-dark text-warning" name="password" placeholder="Nhập mật khẩu" required>
+            </div>
+            <div class="mb-3 text-center">
+              <div class="cf-turnstile" data-sitekey="0x4AAAAAAAx8GDQ0hbAIH79I" data-appearance="interaction-only"></div>
+            </div>
+            <div class="form-group d-flex flex-column flex-md-row align-items-center justify-content-between mb-3">
+              <button type="submit" class="btn btn-success px-5 mt-3 mr-2" id="register">Login</button>
+              <div class="form-check" style="margin-left: 20px;">
+                <input name="remember" type="checkbox" class="form-check-input" id="remember">
+                <label class="form-check-label" for="remember">Remember login</label>
+              </div>
+            </div>
+            <div class="text-center">
+              <p>Don't have an account yet? <a href="register.php" class="fw-bold text-dark">Register now</a>.</p>
+              <p>Forgot your password? <a href="reset_password.php" class="fw-bold text-dark">Reset your password</a>.</p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+
+<!-- Footer -->
+<footer id="contact" class="text-white-50 bg-dark pt-5 pb-3">
+  <div class="container">
+    <div class="row text-center text-md-start">
+      <div class="col-md-4 mb-4">
+        <div class="footer-logo text-white fw-bold mb-2">Notezy</div>
+        <p>Take notes online – simple and free.</p>
+        <div class="social-links d-flex justify-content-center justify-content-md-start gap-3">
+          <a href="#" class="text-white-50"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="text-white-50"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="text-white-50"><i class="fab fa-youtube"></i></a>
+          <a href="#" class="text-white-50"><i class="fab fa-twitter"></i></a>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <h5 class="text-white">Links</h5>
+        <ul class="list-unstyled">
+          <li><a href="#" class="text-white-50">Home</a></li>
+          <li><a href="#" class="text-white-50">About us</a></li>
+          <li><a href="#" class="text-white-50">Explore Features</a></li>
+          <li><a href="#" class="text-white-50">Privacy Policy</a></li>
+          <li><a href="#" class="text-white-50">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="col-md-4 mb-4">
+        <h5 class="text-white">Contact</h5>
+        <p><i class="fas fa-map-marker-alt me-2"></i>123 Main Street, Vietnam</p>
+        <p><i class="fas fa-phone me-2"></i>+84 123 456 789</p>
+        <p><i class="fas fa-envelope me-2"></i>support@notezy.com</p>
+        <p><i class="fas fa-clock me-2"></i>Mon - Fri: 9:00 - 18:00</p>
+      </div>
+    </div>
+    <div class="text-center border-top pt-3 mt-4">
+      &copy; 2025 Notezy.com
+    </div>
+  </div>
+</footer>
+
+
+</body>
+</html>

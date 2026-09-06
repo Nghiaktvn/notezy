@@ -1,0 +1,31 @@
+# ── Secrets — never commit ────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── PHP / vendor ─────────────────────────────────────────────────────────
+vendor/
+composer.lock
+
+# ── Frontend build artifacts ────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+node_modules/
+
+# ── User-uploaded content (not source, and may contain private data) ─────
+uploads/*
+!uploads/.htaccess
+
+# ── Logs / OS / editor cruft ──────────────────────────────────────────────
+*.log
+storage/sessions/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── AI agent local state ──────────────────────────────────────────────────
+ai_agent/__pycache__/
+ai_agent/*.pyc
+ai_agent/.pytest_cache/

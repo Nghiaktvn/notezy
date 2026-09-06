@@ -1,0 +1,37 @@
+# Notezy .htaccess
+# Protects sensitive files from direct web access
+
+# ── Block Python AI agent source ──────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^ai_agent/ - [F,L]
+</IfModule>
+<FilesMatch "\.(py|pyc|pyo)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── Block .env file ───────────────────────────────────────────────────────
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# ── Block config directory ────────────────────────────────────────────────
+<FilesMatch "^(database\.php|\.gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── Block PHP execution in uploads/ ──────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^uploads/.*\.(php|php3|php4|php5|phtml|pl|py|cgi|sh)$ - [F,L]
+</IfModule>
+
+# ── PHP settings ──────────────────────────────────────────────────────────
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_value session.cookie_httponly 1
+    php_value session.cookie_samesite Lax
+</IfModule>

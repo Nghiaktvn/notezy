@@ -1,0 +1,11 @@
+{
+  "name": "notezy",
+  "version": "1.0.0",
+  "description": "Notezy - Modern Cloud Note Application",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm run build || (npm install && npm run build)",
+    "dev": "cd frontend && npm run dev",
+    "test": "php test_system_flow.php"
+  }
+}

@@ -1,0 +1,623 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    background-color: black;
+    color: #333;
+    line-height: 1.6;
+}
+
+picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+picture img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: inherit;
+}
+
+/* Header */
+header .navbar {
+    background-color: rgba(255, 255, 255, 0.98);
+    border-bottom: 1px solid #eee;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.nav-link {
+    color: #333 !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #888 !important;
+}
+
+/* Hero Section */
+.hero {
+    height: 100vh;
+    position: relative;
+    color: white;
+    padding-top: 80px;
+    overflow: hidden;
+}
+
+.hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)); /* Lớp phủ gradient */
+    z-index: 2;
+}
+
+.hero .container {
+    position: relative;
+    z-index: 3;
+}
+
+.hero h1 {
+    font-size: 4.5rem;
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+    letter-spacing: 2px;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    max-width: 700px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+/* Info Section */
+.info {
+    padding: 6rem 0;
+    background-color: rgb(226, 226, 226);
+}
+
+.info-text h2 {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+}
+
+.info-text p {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    color: #666;
+    line-height: 1.8;
+}
+
+.info-image video {
+    max-height: 500px;
+    object-fit: contain;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Exhibition Section */
+.exhibition {
+    padding: 6rem 0;
+    background-color: #747474;
+}
+
+.section-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 3rem;
+    letter-spacing: 1px;
+}
+
+.exhibition-item {
+    background-color: white;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    border: 2px solid #ddd;
+}
+
+.exhibition-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    background-color: #57535356;
+}
+
+.exhibition-img {
+    height: 250px;
+    margin: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+}
+
+.exhibition-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.5s ease;
+}
+
+.exhibition-item:hover .exhibition-img img {
+    transform: scale(1.05);
+}
+
+.exhibition-details {
+    padding: 1.5rem;
+    flex: 1;
+}
+
+.exhibition-title {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+
+.exhibition-artist {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.exhibition-link {
+    display: inline-block;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.exhibition-link::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: #333;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s ease;
+}
+
+.exhibition-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+/* Artists Section */
+.artists {
+    padding: 6rem 0;
+    background-color: white;
+}
+
+.artist-card {
+    padding: 1.5rem;
+    background: rgb(189, 186, 186);
+    border: 1px #ffffff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+    height: auto;
+    text-align: center;
+    border: 2px solid #ddd;
+}
+
+.artist-card:hover {
+    transform: translateY(-5px);
+}
+
+.artist-img {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 1rem;
+    overflow: hidden;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+}
+
+.artist-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.artist-name {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+
+.artist-country {
+    font-size: 1.1rem;
+    color: #000000;
+    margin-bottom: 1rem;
+}
+
+/* Artist Detail Section */
+.artist-detail {
+    padding: 6rem 0;
+    background-color: white;
+}
+
+.artist-video-container {
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.artist-description h3 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+}
+
+.artist-description p {
+    font-size: 1.1rem;
+    color: #666;
+    line-height: 1.8;
+}
+
+/* Newsletter Section */
+.newsletter {
+    padding: 6rem 0;
+    background-color: #333;
+    color: white;
+}
+
+.newsletter h2 {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+}
+
+.newsletter p {
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    color: #ccc;
+    line-height: 1.8;
+}
+
+/* Footer */
+footer {
+    padding: 4rem 0;
+    background-color: #222;
+}
+
+.footer-logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+}
+
+.footer-about p {
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+}
+
+.social-links a {
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+.social-links a:hover {
+    color: white !important;
+}
+
+.footer-links h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.5px;
+}
+
+.footer-links a {
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: white !important;
+}
+
+.footer-contact p {
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+}
+
+.footer-contact i {
+    margin-right: 10px;
+    color: #666;
+}
+
+.copyright {
+    border-color: #444 !important;
+    color: #777;
+    font-size: 0.9rem;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: white;
+    color: #333;
+    text-align: center;
+  }
+
+  header {
+    padding: 40px 20px 10px;
+  }
+
+  header h1 {
+    font-size: 48px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  nav a {
+    margin: 0 15px;
+    text-decoration: none;
+    font-size: 12px;
+    color: #999;
+    transition: color 0.3s;
+  }
+
+  nav a:hover, nav a.active {
+    color: #333;
+    font-weight: bold;
+  }
+
+  .post {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  .post img {
+    width: 100%;
+    border-radius: 4px;
+    transition: opacity 1s ease;
+    opacity: 0;
+    transform: scale(1.02);
+  }
+
+  .post img.loaded {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .post h2 {
+    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .post .meta {
+    font-size: 10px;
+    color: #999;
+    margin: 5px 0 15px;
+  }
+
+  .post .content {
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: justify;
+  }
+
+  .read-more {
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 10px;
+    text-decoration: none;
+    color: #999;
+  }
+
+  .read-more:hover {
+    color: #333;
+  }
+
+    body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: white;
+    color: #333;
+    text-align: center;
+    }
+
+   header {
+    padding: 40px 20px 10px;
+    }
+
+   header h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    }
+
+    nav a {
+    margin: 0 10px;
+    text-decoration: none;
+    font-size: 12px;
+    color: #999;
+    transition: color 0.3s;
+    }
+
+   nav a:hover {
+    color: #555;
+    }
+
+    /* === Post Section === */
+   .post {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+    }
+
+    .post img {
+    width: 100%;
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: all 1s ease;
+    border-radius: 4px;
+    }
+
+    .post img.slide-in {
+    opacity: 1;
+    transform: translateX(0);
+    }
+
+    .post h2 {
+    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: uppercase;
+    }
+
+    .post .meta {
+    font-size: 10px;
+    color: #999;
+    margin: 5px 0 15px;
+    }
+
+    .post .content {
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: justify;
+    }
+
+    .read-more {
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 10px;
+    text-decoration: none;
+    color: #999;
+    transition: color 0.3s;
+    }
+
+    .read-more:hover {
+    color: #333;
+    }
+    nav a {
+    color: #999;
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: normal;
+    }
+
+    nav a.active {
+    font-weight: bold;
+    color: #333;
+    }
+
+    /* Ẩn trước, trượt từ dưới lên */
+    .lazy-fade {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 1s ease;
+    }
+
+    /* Khi vào tầm nhìn */
+    .lazy-fade.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+    }
+    header h1 {
+        font-size: 48px;
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        }
+
+
+.post h2 {
+  margin-top: 20px;
+  font-size: 24px;        /* tăng kích thước */
+  font-weight: 700;       /* đậm */
+  text-transform: none;
+  color: #2f2e41;         /* màu đậm dễ đọc */
+}
+
+.post .meta {
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+  margin: 5px 0 15px;
+}
+
+.post .content {
+  font-size: 16px;        /* lớn hơn */
+  line-height: 1.8;
+  font-weight: 500;
+  text-align: justify;
+  color: #333;
+}
+
+.read-more {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Reminder toast fallback (js/reminders.js) — shown when Notification API
+   is unavailable/blocked. Purely additive, does not affect existing rules. */
+.notezy-reminder-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #222;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    max-width: 280px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    cursor: pointer;
+    z-index: 9999;
+}

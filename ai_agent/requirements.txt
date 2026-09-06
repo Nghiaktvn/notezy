@@ -1,0 +1,2 @@
+# Stdlib only. Optional: pin nothing.
+# Python 3.10+ required.
