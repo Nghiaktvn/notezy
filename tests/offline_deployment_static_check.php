@@ -1,4 +1,9 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('This script can only be run from the command line.');
+}
+
 $root = dirname(__DIR__);
 $checks = [
     'offline store exported globally' => ['js/offline-store.js', 'window.NotezyOffline'],

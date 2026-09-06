@@ -11,6 +11,12 @@
     Deny from all
 </FilesMatch>
 
+# ── Block dev/test scripts (seed accounts, DB probes) from web access ─────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(tests/|test_[^/]*\.php$) - [F,L]
+</IfModule>
+
 # ── Block .env file ───────────────────────────────────────────────────────
 <Files ".env">
     Order allow,deny

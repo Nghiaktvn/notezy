@@ -9,6 +9,13 @@
 require_once __DIR__ . '/../env.php';
 require_once __DIR__ . '/diagnostic.php';
 
+// PHP >= 8.1 makes mysqli throw mysqli_sql_exception on connect/query failure by
+// default. This codebase checks $conn->connect_error instead, so keep reporting off
+// — otherwise an unreachable DB becomes an uncaught fatal instead of a 503.
+if (function_exists('mysqli_report')) {
+    mysqli_report(MYSQLI_REPORT_OFF);
+}
+
 if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: '127.0.0.1');
 if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: '3306');
 if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: getenv('MYSQLUSER') ?: 'root');
@@ -32,10 +39,15 @@ if (!defined('PASS')) define('PASS', DB_PASS);
 function create_connect($fatal = false) {
     static $conn = null;
 
-    if ($conn !== null) {
-        if (is_object($conn) && method_exists($conn, 'ping') && @$conn->ping()) {
-            return $conn;
+    if ($conn instanceof mysqli) {
+        try {
+            if (@$conn->ping()) {
+                return $conn;
+            }
+        } catch (Throwable $e) {
+            // Handle went stale (MySQL restarted mid-process): drop it and reconnect.
         }
+        $conn = null;
     }
 
     // 1. Kiểm tra PHP extension mysqli
@@ -53,10 +65,10 @@ function create_connect($fatal = false) {
 
     // 2. Thử kết nối cơ sở dữ liệu
     $primary_port = (int)DB_PORT;
-    $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, $primary_port);
+    $attempt = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, $primary_port);
 
     // Tự động dò cổng thay thế (3307, 3306, 3308) và mật khẩu ('root_password', '') để tương thích cả Docker lẫn XAMPP
-    if ($conn->connect_error && (DB_HOST === '127.0.0.1' || DB_HOST === 'localhost')) {
+    if ($attempt->connect_error && (DB_HOST === '127.0.0.1' || DB_HOST === 'localhost')) {
         $candidate_ports = array_unique([$primary_port, 3307, 3306, 3308]);
         $candidate_passes = array_unique([DB_PASS, 'root_password', '', 'root']);
         foreach ($candidate_ports as $alt_port) {
@@ -64,15 +76,15 @@ function create_connect($fatal = false) {
                 if ($alt_port === $primary_port && $alt_pass === DB_PASS) continue;
                 $alt_conn = @new mysqli(DB_HOST, DB_USER, $alt_pass, DB_NAME, $alt_port);
                 if (!$alt_conn->connect_error) {
-                    $conn = $alt_conn;
+                    $attempt = $alt_conn;
                     break 2;
                 }
             }
         }
     }
 
-    if ($conn->connect_error) {
-        $error_msg = $conn->connect_error;
+    if ($attempt->connect_error) {
+        $error_msg = $attempt->connect_error;
         error_log('Notezy DB Connect Error: ' . $error_msg);
 
         if ($fatal || (defined('NOTEZY_REQUIRE_DB') && NOTEZY_REQUIRE_DB)) {
@@ -95,6 +107,7 @@ function create_connect($fatal = false) {
         return null;
     }
 
+    $conn = $attempt;
     $conn->set_charset('utf8mb4');
 
     // Auto-init schema if deploying to a fresh cloud DB

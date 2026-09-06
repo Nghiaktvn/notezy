@@ -8,6 +8,11 @@
  * 4. Dual-Engine: Supports Live MySQL AND Sandbox In-Memory Verification
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('This script can only be run from the command line.');
+}
+
 echo "=== STARTING COMPREHENSIVE SYSTEM VERIFICATION ===\n\n";
 
 $has_mysql = false;

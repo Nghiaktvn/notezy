@@ -1,0 +1,37 @@
+# ── VCS / editor ──────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Secrets: never bake into the image ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Dependencies & build artifacts ────────────────────────────────────────
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/.vite
+vendor/
+composer.lock
+
+# ── User content (runtime-created, may be a mounted volume) ──────────────
+uploads/*
+!uploads/.htaccess
+storage/sessions/
+*.log
+
+# ── Dev-only scripts: must not be reachable on a deployed host ────────────
+tests/
+test_db.php
+test_system_flow.php
+
+# ── Python agent caches (deployed as its own service) ─────────────────────
+ai_agent/__pycache__/
+ai_agent/*.pyc
+ai_agent/.pytest_cache/

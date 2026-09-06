@@ -6,6 +6,7 @@
   },
   "deploy": {
     "startCommand": "/var/www/html/entrypoint.sh",
+    "healthcheckPath": "/health.php",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5
   }

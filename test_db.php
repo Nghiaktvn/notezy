@@ -1,4 +1,9 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('This script can only be run from the command line.');
+}
+
 // test_db.php: Diagnostic script to check MySQL and phpMyAdmin database state
 require_once __DIR__ . '/env.php';
 
