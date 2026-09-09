@@ -246,3 +246,128 @@ CREATE TABLE IF NOT EXISTS `timetable` (
   CONSTRAINT `fk_timetable_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- =============================================================
+-- Hosting: GitHub integrations, Render deployments, custom domains
+-- =============================================================
+
+-- ── hosting_github_connections ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `hosting_github_connections` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL,
+  `github_user_id` BIGINT UNSIGNED NOT NULL,
+  `github_login` VARCHAR(255) NOT NULL,
+  `github_avatar_url` VARCHAR(512) DEFAULT NULL,
+  `access_token` VARCHAR(255) NOT NULL,
+  `refresh_token` VARCHAR(255) DEFAULT NULL,
+  `token_expires_at` DATETIME DEFAULT NULL,
+  `scopes` VARCHAR(512) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_github_user_id` (`github_user_id`),
+  UNIQUE KEY `uq_user_github` (`user_id`),
+  CONSTRAINT `fk_hg_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── hosting_render_connections ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `hosting_render_connections` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL,
+  `render_api_key` VARCHAR(255) NOT NULL,
+  `render_owner_id` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_hr_user` (`user_id`),
+  CONSTRAINT `fk_hr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── hosting_deployments ────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `hosting_deployments` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL,
+  `github_repo_full_name` VARCHAR(255) NOT NULL,
+  `github_repo_id` BIGINT UNSIGNED DEFAULT NULL,
+  `github_branch` VARCHAR(255) NOT NULL DEFAULT 'main',
+  `render_service_id` VARCHAR(255) DEFAULT NULL,
+  `render_service_name` VARCHAR(255) DEFAULT NULL,
+  `render_service_type` VARCHAR(50) DEFAULT 'web_service',
+  `render_env` VARCHAR(50) DEFAULT 'docker',
+  `render_plan` VARCHAR(50) DEFAULT 'free',
+  `render_region` VARCHAR(50) DEFAULT 'singapore',
+  `status` ENUM('pending','building','live','failed','deleted') NOT NULL DEFAULT 'pending',
+  `live_url` VARCHAR(512) DEFAULT NULL,
+  `last_deploy_id` VARCHAR(255) DEFAULT NULL,
+  `last_deploy_status` VARCHAR(100) DEFAULT NULL,
+  `build_log` MEDIUMTEXT DEFAULT NULL,
+  `error_message` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hd_user` (`user_id`),
+  KEY `idx_hd_render_service` (`render_service_id`),
+  CONSTRAINT `fk_hd_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── hosting_custom_domains ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `hosting_custom_domains` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `deployment_id` INT(11) NOT NULL,
+  `user_id` INT(11) NOT NULL,
+  `domain_name` VARCHAR(255) NOT NULL,
+  `render_custom_domain_id` VARCHAR(255) DEFAULT NULL,
+  `verification_status` ENUM('pending','verified','failed','dns_required') NOT NULL DEFAULT 'pending',
+  `verification_token` VARCHAR(255) DEFAULT NULL,
+  `dns_records` JSON DEFAULT NULL,
+  `verified_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_hcd_domain` (`domain_name`),
+  KEY `idx_hcd_deployment` (`deployment_id`),
+  KEY `idx_hcd_user` (`user_id`),
+  CONSTRAINT `fk_hcd_deployment` FOREIGN KEY (`deployment_id`) REFERENCES `hosting_deployments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hcd_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =============================================================
+-- AI COPILOT v2 Migrations (added 2026-09-09)
+-- =============================================================
+
+-- notes.category column for AI auto-categorization
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'notes' AND COLUMN_NAME = 'category');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE notes ADD COLUMN category ENUM(''Study'',''Work'',''Idea'',''Personal'',''Finance'',''Task'',''Urgent'') NULL DEFAULT NULL AFTER note_type', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- flashcards table: AI-generated Q&A pairs from notes
+CREATE TABLE IF NOT EXISTS `flashcards` (
+  `id`              INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id`         INT(11) NOT NULL,
+  `note_id`         INT(11) NULL DEFAULT NULL,
+  `question`        TEXT NOT NULL,
+  `answer`          TEXT NOT NULL,
+  `difficulty`      ENUM('easy','medium','hard') NOT NULL DEFAULT 'medium',
+  `review_count`    INT(11) NOT NULL DEFAULT 0,
+  `last_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at`      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_fc_user` (`user_id`),
+  KEY `idx_fc_note` (`note_id`),
+  CONSTRAINT `fk_fc_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_fc_note` FOREIGN KEY (`note_id`) REFERENCES `notes`(`note_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- quiz_results table: store generated quiz sessions
+CREATE TABLE IF NOT EXISTS `quiz_results` (
+  `id`          INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id`     INT(11) NOT NULL,
+  `note_id`     INT(11) NULL DEFAULT NULL,
+  `questions`   JSON NOT NULL,
+  `score`       INT(11) NULL DEFAULT NULL,
+  `completed_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at`  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_qr_user` (`user_id`),
+  CONSTRAINT `fk_qr_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

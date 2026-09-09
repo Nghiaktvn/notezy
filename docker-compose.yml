@@ -6,7 +6,8 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
-      - uploads_data:/var/www/html/uploads # separate volume so DB rebuild doesn't wipe images
+      - uploads_data:/var/www/html/uploads
+      - storage_data:/var/www/html/storage
     environment:
       DB_HOST: db
       DB_PORT: "3306"
@@ -21,6 +22,8 @@ services:
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Notezy}
       AI_AGENT_URL: http://ai_agent:8765
       AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:-change_me_to_a_long_random_string}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       APP_ENV: ${APP_ENV:-local}
       APP_URL: ${APP_URL:-http://localhost:8080}
     depends_on:
@@ -60,8 +63,9 @@ services:
     image: python:3.12-slim
     working_dir: /app
     volumes:
-      - ./ai_agent:/app
-    command: python server.py
+      - .:/app
+      - storage_data:/app/storage
+    command: python ai_agent/server.py
     environment:
       AI_AGENT_HOST: 0.0.0.0
       AI_AGENT_PORT: "8765"
@@ -97,3 +101,4 @@ services:
 volumes:
   db_data:
   uploads_data:
+  storage_data:

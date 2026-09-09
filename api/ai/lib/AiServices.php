@@ -2,22 +2,41 @@
 
 function ai_risk_for(string $tool): string {
     static $map = [
-        'search_notes' => 'read',
-        'get_note' => 'read',
-        'get_recent_notes' => 'read',
-        'get_labels' => 'read',
-        'create_note' => 'write',
-        'update_note' => 'write',
-        'create_label' => 'write',
-        'delete_note' => 'destructive',
+        // ── Read tools ───────────────────────────────────────────────────────
+        'search_notes'       => 'read',
+        'semantic_search'    => 'read',
+        'get_note'           => 'read',
+        'get_recent_notes'   => 'read',
+        'get_labels'         => 'read',
+        'find_related_notes' => 'read',
+        'get_deadlines'      => 'read',
+        'get_note_statistics'=> 'read',
+        // ── Write/AI-generate tools (no DB mutation, pass content to AI) ────
+        'create_note'        => 'write',
+        'update_note'        => 'write',
+        'create_label'       => 'write',
+        'suggest_labels'     => 'write',
+        'extract_tasks'      => 'write',
+        'summarize_note'     => 'write',
+        'generate_flashcards'=> 'write',
+        'generate_quiz'      => 'write',
+        // ── Destructive ──────────────────────────────────────────────────────
+        'delete_note'        => 'destructive',
     ];
     return $map[$tool] ?? 'unknown';
 }
 
 function ai_allowed_tools(): array {
     return [
-        'search_notes', 'get_note', 'get_recent_notes', 'get_labels',
-        'create_note', 'update_note', 'create_label', 'delete_note',
+        // Read
+        'search_notes', 'semantic_search', 'get_note', 'get_recent_notes',
+        'get_labels', 'find_related_notes', 'get_deadlines', 'get_note_statistics',
+        // Write / AI-generate
+        'create_note', 'update_note', 'create_label',
+        'suggest_labels', 'extract_tasks', 'summarize_note',
+        'generate_flashcards', 'generate_quiz',
+        // Destructive
+        'delete_note',
     ];
 }
 
@@ -47,14 +66,31 @@ class AiNoteTools {
 
     public function execute(string $name, array $args): array {
         switch ($name) {
+            // ── Read tools ────────────────────────────────────────────────────
             case 'search_notes':
                 return $this->searchNotes($args);
+            case 'semantic_search':
+                return $this->semanticSearch($args);
             case 'get_note':
                 return $this->getNote($args);
             case 'get_recent_notes':
                 return $this->getRecentNotes($args);
             case 'get_labels':
                 return $this->getLabels();
+            case 'find_related_notes':
+                return $this->findRelatedNotes($args);
+            case 'get_deadlines':
+                return $this->getDeadlines($args);
+            case 'get_note_statistics':
+                return $this->getNoteStatistics();
+            // ── AI-content tools (fetch note → return to Python for processing) ─
+            case 'summarize_note':
+            case 'extract_tasks':
+            case 'suggest_labels':
+            case 'generate_flashcards':
+            case 'generate_quiz':
+                return $this->getNoteForAi($args, $name);
+            // ── Write / CRUD ──────────────────────────────────────────────────
             case 'create_note':
                 return $this->createNote($args);
             case 'update_note':
@@ -68,9 +104,11 @@ class AiNoteTools {
         }
     }
 
+    // ── Keyword search ────────────────────────────────────────────────────────
+
     private function searchNotes(array $args): array {
         $query = trim((string) ($args['query'] ?? ''));
-        $limit = min(10, max(1, (int) ($args['limit'] ?? 8)));
+        $limit = min(20, max(1, (int) ($args['limit'] ?? 8)));
         if ($query === '' || mb_strlen($query, 'UTF-8') > 200) {
             return ['ok' => false, 'error' => 'Invalid search query'];
         }
@@ -95,6 +133,194 @@ class AiNoteTools {
             $notes[] = $this->publicNote($row, true);
         }
         return ['ok' => true, 'notes' => $notes];
+    }
+
+    // ── Semantic search — results pre-computed by Python RAG engine ───────────
+
+    private function semanticSearch(array $args): array {
+        // Python already ran cosine similarity and provided note_ids in 'semantic_results'.
+        // We hydrate them from DB to ensure freshness and access control.
+        $precomputed = $args['semantic_results'] ?? [];
+        if (!empty($precomputed) && is_array($precomputed)) {
+            return $this->hydrateSemanticResults($precomputed);
+        }
+        // Fallback: keyword search if RAG didn't return results
+        return $this->searchNotes([
+            'query' => $args['query'] ?? '',
+            'limit' => $args['top_k'] ?? 5,
+        ]);
+    }
+
+    private function hydrateSemanticResults(array $results): array {
+        $notes = [];
+        foreach ($results as $r) {
+            $note_id = (int) ($r['note_id'] ?? 0);
+            if ($note_id <= 0) continue;
+            $got = $this->getNote(['note_id' => $note_id]);
+            if ($got['ok']) {
+                $note = $got['note'];
+                $note['similarity_score'] = round((float) ($r['score'] ?? 0), 3);
+                $notes[] = $note;
+            }
+        }
+        return ['ok' => true, 'notes' => $notes, 'mode' => 'semantic'];
+    }
+
+    // ── Find related notes using precomputed semantic results ─────────────────
+
+    private function findRelatedNotes(array $args): array {
+        // Python's retriever provides 'related_results' via the retrieval hints,
+        // or we fall back to same-label notes.
+        $related = $args['related_results'] ?? [];
+        if (!empty($related) && is_array($related)) {
+            return $this->hydrateSemanticResults($related);
+        }
+        // Fallback: find notes sharing the same labels
+        $note_id = (int) ($args['note_id'] ?? 0);
+        if ($note_id <= 0) return ['ok' => false, 'error' => 'Invalid note_id'];
+        $limit = min(10, max(1, (int) ($args['limit'] ?? 5)));
+        $sql = "SELECT DISTINCT n.note_id, n.title, n.content, n.updated_at,
+                       n.password_hash, GROUP_CONCAT(l2.name) AS labels
+                FROM note_labels nl1
+                JOIN note_labels nl2 ON nl1.label_id = nl2.label_id AND nl2.note_id != ?
+                JOIN notes n ON nl2.note_id = n.note_id
+                LEFT JOIN note_labels nl3 ON n.note_id = nl3.note_id
+                LEFT JOIN labels l2 ON nl3.label_id = l2.label_id
+                WHERE nl1.note_id = ? AND n.user_id = ? AND n.archived = 0
+                GROUP BY n.note_id
+                ORDER BY n.updated_at DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('iiii', $note_id, $note_id, $this->user_id, $limit);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $notes = [];
+        while ($row = $res->fetch_assoc()) {
+            $notes[] = $this->publicNote($row, true);
+        }
+        return ['ok' => true, 'notes' => $notes, 'mode' => 'related_by_label'];
+    }
+
+    // ── Get note content for AI processing (summarize/quiz/flashcard/etc.) ────
+
+    private function getNoteForAi(array $args, string $tool): array {
+        $note_id = (int) ($args['note_id'] ?? 0);
+        if ($note_id <= 0) {
+            return ['ok' => false, 'error' => 'Invalid note_id'];
+        }
+        $got = $this->getNote(['note_id' => $note_id]);
+        if (!$got['ok']) return $got;
+        $note = $got['note'];
+        // Return note content so Python/Gemini can process it
+        return [
+            'ok'      => true,
+            'tool'    => $tool,
+            'note_id' => $note_id,
+            'title'   => $note['title'],
+            'content' => $note['content'],   // Full content (up to 8000 chars, from publicNote)
+            'labels'  => $note['labels'],
+            'style'   => $args['style'] ?? 'short',   // for summarize_note
+            'count'   => (int) ($args['count'] ?? 5), // for quiz/flashcard
+        ];
+    }
+
+    // ── Note statistics ───────────────────────────────────────────────────────
+
+    private function getNoteStatistics(): array {
+        // Total notes
+        $stmt = $this->conn->prepare(
+            'SELECT COUNT(*) AS total FROM notes WHERE user_id = ? AND archived = 0'
+        );
+        $stmt->bind_param('i', $this->user_id);
+        $stmt->execute();
+        $total = (int) $stmt->get_result()->fetch_assoc()['total'];
+
+        // Task notes
+        $stmt2 = $this->conn->prepare(
+            "SELECT COUNT(*) AS tasks FROM notes WHERE user_id = ? AND note_type = 'task' AND archived = 0"
+        );
+        $stmt2->bind_param('i', $this->user_id);
+        $stmt2->execute();
+        $tasks = (int) $stmt2->get_result()->fetch_assoc()['tasks'];
+
+        // Notes this week
+        $stmt3 = $this->conn->prepare(
+            'SELECT COUNT(*) AS week FROM notes WHERE user_id = ? AND archived = 0 AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)'
+        );
+        $stmt3->bind_param('i', $this->user_id);
+        $stmt3->execute();
+        $this_week = (int) ($stmt3->get_result()->fetch_assoc()['week'] ?? 0);
+
+        // Top labels
+        $stmt4 = $this->conn->prepare(
+            'SELECT l.name, COUNT(nl.note_id) AS cnt
+             FROM labels l
+             JOIN note_labels nl ON l.label_id = nl.label_id
+             JOIN notes n ON nl.note_id = n.note_id
+             WHERE n.user_id = ? AND n.archived = 0
+             GROUP BY l.label_id ORDER BY cnt DESC LIMIT 10'
+        );
+        $stmt4->bind_param('i', $this->user_id);
+        $stmt4->execute();
+        $res4 = $stmt4->get_result();
+        $top_labels = [];
+        while ($row = $res4->fetch_assoc()) {
+            $top_labels[] = ['label' => $row['name'], 'count' => (int) $row['cnt']];
+        }
+
+        return [
+            'ok'            => true,
+            'total_notes'   => $total,
+            'task_notes'    => $tasks,
+            'notes_this_week' => $this_week,
+            'top_topics'    => $top_labels,
+        ];
+    }
+
+    // ── Deadlines (task notes with dates in content or title) ─────────────────
+
+    private function getDeadlines(array $args): array {
+        $range = $args['range'] ?? 'this_week';
+        $interval_map = [
+            'today'      => 'INTERVAL 1 DAY',
+            'this_week'  => 'INTERVAL 7 DAY',
+            'this_month' => 'INTERVAL 30 DAY',
+            'all'        => 'INTERVAL 3650 DAY',
+        ];
+        $interval = $interval_map[$range] ?? 'INTERVAL 7 DAY';
+
+        // Get recent task-type notes as potential deadline holders
+        $sql = "SELECT n.note_id, n.title, n.content, n.created_at, n.updated_at,
+                       n.password_hash, GROUP_CONCAT(l.name) AS labels
+                FROM notes n
+                LEFT JOIN note_labels nl ON n.note_id = nl.note_id
+                LEFT JOIN labels l ON nl.label_id = l.label_id
+                WHERE n.user_id = ?
+                  AND n.archived = 0
+                  AND (n.note_type = 'task'
+                       OR n.title LIKE '%deadline%'
+                       OR n.title LIKE '%hạn%'
+                       OR n.content LIKE '%deadline%'
+                       OR n.content LIKE '%hạn chót%'
+                       OR n.content LIKE '%cần hoàn thành%')
+                  AND n.updated_at >= DATE_SUB(NOW(), {$interval})
+                GROUP BY n.note_id
+                ORDER BY n.updated_at DESC
+                LIMIT 20";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $this->user_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $notes = [];
+        while ($row = $res->fetch_assoc()) {
+            $notes[] = $this->publicNote($row, false); // full content for AI analysis
+        }
+        return [
+            'ok'    => true,
+            'range' => $range,
+            'notes' => $notes,
+            'hint'  => 'Analyze each note content to identify specific tasks and deadlines. Present them in priority order.',
+        ];
     }
 
     private function getNote(array $args): array {
@@ -187,16 +413,54 @@ class AiNoteTools {
         }
         $note_id = (int) $this->conn->insert_id;
         $this->attachLabels($note_id, $labels);
+
+        // Async: trigger RAG indexing for the new note
+        $this->indexNoteForRag($note_id, $title, $content, $labels);
+
         return [
-            'ok' => true,
-            'note_id' => $note_id,
-            'title' => $title,
-            'content' => $content,
-            'labels' => $labels,
-            'note_type' => $note_type,
+            'ok'               => true,
+            'note_id'          => $note_id,
+            'title'            => $title,
+            'content'          => $content,
+            'labels'           => $labels,
+            'note_type'        => $note_type,
             'background_color' => $background_color,
-            'text_color' => $text_color,
+            'text_color'       => $text_color,
         ];
+    }
+
+    // ── RAG Indexing helper ───────────────────────────────────────────────────
+
+    /**
+     * Call Python /v1/index to embed and store the note for semantic search.
+     * Non-blocking: uses cURL with a short timeout; failure is silent.
+     */
+    private function indexNoteForRag(int $note_id, string $title, string $content, array $labels): void {
+        $url = rtrim((string)(getenv('AI_AGENT_URL') ?: 'http://127.0.0.1:8765'), '/') . '/v1/index';
+        $secret = (string) getenv('AI_AGENT_SHARED_SECRET');
+        $payload = json_encode([
+            'note_id' => $note_id,
+            'user_id' => $this->user_id,
+            'title'   => $title,
+            'content' => $content,
+            'labels'  => $labels,
+        ], JSON_UNESCAPED_UNICODE);
+
+        if (!function_exists('curl_init')) return;
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'X-Notezy-Agent-Secret: ' . $secret,
+            ],
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_TIMEOUT        => 3,   // Non-blocking: fail fast
+            CURLOPT_CONNECTTIMEOUT => 1,
+        ]);
+        @curl_exec($ch);
+        curl_close($ch);
     }
 
     private function normalizeNoteType($raw): string {
@@ -328,11 +592,12 @@ class AiNoteTools {
         $locked = !ai_note_unlocked((int) $row['note_id'], $row['password_hash'] ?? null);
         $content = $locked ? '[Password protected note]' : (string) $row['content'];
         return [
-            'note_id' => (int) $row['note_id'],
-            'title' => $row['title'],
-            'content' => $preview ? ai_truncate($content, 400) : ai_truncate($content, 8000),
-            'labels' => $row['labels'] ? explode(',', $row['labels']) : [],
-            'updated_at' => $row['updated_at'],
+            'note_id'            => (int) $row['note_id'],
+            'title'              => $row['title'],
+            'content'            => $preview ? ai_truncate($content, 400) : ai_truncate($content, 8000),
+            'labels'             => $row['labels'] ? explode(',', $row['labels']) : [],
+            'updated_at'         => $row['updated_at'] ?? null,
+            'created_at'         => $row['created_at'] ?? null,
             'password_protected' => $locked,
         ];
     }

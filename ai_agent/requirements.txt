@@ -1,2 +1,10 @@
-# Stdlib only. Optional: pin nothing.
-# Python 3.10+ required.
+# Notezy AI Copilot v2 — Python dependencies
+# Python 3.10+ required
+#
+# Core: stdlib only — no pip install required for basic operation.
+# All HTTP calls use urllib.request (stdlib).
+# Vector store uses JSON file persistence (stdlib).
+# Gemini Embedding API uses urllib (stdlib).
+#
+# Optional: uncomment chromadb for production-scale vector search (5000+ notes)
+# chromadb>=0.5.0
