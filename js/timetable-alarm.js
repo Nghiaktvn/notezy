@@ -86,7 +86,7 @@
 
             const now = new Date();
             // Trong JS: 0 là Chủ Nhật, 1 là Thứ 2, ..., 6 là Thứ 7
-            let currentDay = now.getDay(); 
+            let currentDay = now.getDay();
             // Chuẩn hóa: Thứ 2 = 1, Thứ 7 = 6, Chủ nhật = 7
             let dayOfWeek = currentDay === 0 ? 7 : currentDay;
 
@@ -96,9 +96,12 @@
 
             const dateStr = now.toISOString().split('T')[0];
 
+            // Đồng bộ checkedAlarms với localStorage để tránh mất khi tab reload
+            this._syncCheckedAlarmsFromStorage(dateStr);
+
             this.items.forEach(item => {
                 // Kiểm tra điều kiện ngày (theo thứ hàng tuần hoặc theo ngày cụ thể)
-                const matchDay = (item.specific_date && item.specific_date === dateStr) || 
+                const matchDay = (item.specific_date && item.specific_date === dateStr) ||
                                  (!item.specific_date && item.day_of_week === dayOfWeek);
 
                 if (!matchDay) return;
@@ -111,13 +114,46 @@
                 // Khóa nhận diện duy nhất cho lần báo trong ngày
                 const alarmKey = `${dateStr}_${item.id}_${alarmTargetMinutes}`;
 
-                if (currentTotalMinutes === alarmTargetMinutes && !this.checkedAlarms.has(alarmKey)) {
+                // FIX: Dùng cửa sổ ±2 phút thay vì khớp chính xác 1 phút
+                // Tránh bỏ lỡ báo thức khi setInterval nhảy qua đúng phút đó
+                const diff = currentTotalMinutes - alarmTargetMinutes;
+                const withinWindow = diff >= 0 && diff <= 2;
+
+                if (withinWindow && !this.checkedAlarms.has(alarmKey)) {
                     this.checkedAlarms.add(alarmKey);
+                    // Lưu vào localStorage để tránh báo lại khi reload tab
+                    this._saveAlarmKeyToStorage(dateStr, alarmKey);
                     this.triggerNotification(item, remindBefore);
                 }
             });
 
             this.updateUpcomingWidget();
+        },
+
+        // Đồng bộ các alarmKey đã báo từ localStorage vào bộ nhớ trong
+        _syncCheckedAlarmsFromStorage: function(dateStr) {
+            try {
+                const stored = JSON.parse(localStorage.getItem('notezy_alarms_' + dateStr) || '[]');
+                stored.forEach(key => this.checkedAlarms.add(key));
+                // Xóa các entry của ngày hôm qua trở về trước
+                Object.keys(localStorage).forEach(k => {
+                    if (k.startsWith('notezy_alarms_') && !k.includes(dateStr)) {
+                        localStorage.removeItem(k);
+                    }
+                });
+            } catch (e) {}
+        },
+
+        // Lưu alarmKey đã báo vào localStorage
+        _saveAlarmKeyToStorage: function(dateStr, alarmKey) {
+            try {
+                const storageKey = 'notezy_alarms_' + dateStr;
+                const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                if (!stored.includes(alarmKey)) {
+                    stored.push(alarmKey);
+                    localStorage.setItem(storageKey, JSON.stringify(stored));
+                }
+            } catch (e) {}
         },
 
         // Kích hoạt thông báo và chuông
