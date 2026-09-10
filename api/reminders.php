@@ -28,6 +28,38 @@ $user_id = (int) $_SESSION['id'];
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
+
+    // ?upcoming=1 → trả về danh sách reminder chưa đến hạn (trong 24h tới) cho dropdown bell
+    if (isset($_GET['upcoming'])) {
+        $stmt = $conn->prepare(
+            "SELECT note_id, title, reminder_at
+             FROM notes
+             WHERE user_id = ? AND reminder_at IS NOT NULL
+               AND reminder_at > NOW()
+               AND reminder_at <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
+               AND reminder_sent = 0
+             ORDER BY reminder_at ASC
+             LIMIT 20"
+        );
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $upcoming = [];
+        while ($row = $res->fetch_assoc()) {
+            // Format thời gian thân thiện
+            $dt = new DateTime($row['reminder_at']);
+            $row['reminder_at'] = $dt->format('H:i d/m/Y');
+            $upcoming[] = [
+                'note_id'     => (int) $row['note_id'],
+                'title'       => $row['title'],
+                'reminder_at' => $row['reminder_at'],
+            ];
+        }
+        echo json_encode(["status" => "success", "upcoming" => $upcoming]);
+        exit();
+    }
+
+    // Poll reminder đến hạn (reminder_at <= NOW())
     $stmt = $conn->prepare(
         "SELECT note_id, title, reminder_at
          FROM notes
@@ -42,10 +74,11 @@ if ($method === 'GET') {
     $due = [];
     $ids = [];
     while ($row = $res->fetch_assoc()) {
+        $dt = new DateTime($row['reminder_at']);
         $due[] = [
-            'note_id' => (int) $row['note_id'],
-            'title' => $row['title'],
-            'reminder_at' => $row['reminder_at'],
+            'note_id'     => (int) $row['note_id'],
+            'title'       => $row['title'],
+            'reminder_at' => $dt->format('H:i d/m/Y'),
         ];
         $ids[] = (int) $row['note_id'];
     }
@@ -61,6 +94,7 @@ if ($method === 'GET') {
     echo json_encode(["status" => "success", "due" => $due]);
     exit();
 }
+
 
 if ($method === 'POST') {
     // Set or clear a reminder for one note: { note_id, reminder_at }

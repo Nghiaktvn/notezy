@@ -1014,6 +1014,24 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                             Tìm kiếm
                         </a>
                     </li>
+                    <!-- 🔔 NOTIFICATION BELL -->
+                    <li class="nav-item dropdown ms-2 d-flex align-items-center" id="notifBellItem">
+                        <a class="nav-link position-relative p-2" href="#" id="notifBellBtn"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           title="Nhắc nhở ghi chú">
+                            <i class="fas fa-bell fs-5" style="color:#f59e0b"></i>
+                            <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" id="notifDropdown"
+                            style="min-width:320px;max-height:380px;overflow-y:auto;">
+                            <li class="px-3 py-2 border-bottom">
+                                <strong><i class="fas fa-bell text-warning me-1"></i> Nhắc nhở ghi chú</strong>
+                            </li>
+                            <li id="notifEmpty" class="px-3 py-3 text-center text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i>Không có nhắc nhở nào
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-item ms-2 d-flex align-items-center">
                         <button type="button" id="btnThemeToggleInside" class="btn-inside-theme-toggle" onclick="toggleInsideTheme()" title="Chuyển chế độ: Sáng (Trắng & Xanh) | Tối (Đen & Đỏ)">
                             <i class="fas fa-sun" id="themeToggleIcon"></i>
