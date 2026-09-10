@@ -460,14 +460,17 @@ if (!$user) {
 
 <div class="container">
     <h1>Thông tin cá nhân</h1>
-    <!-- Avatar Section -->
+    <div class="chat-button" style="margin-top:20px;">
+        <a href="chat.php?user_id=<?php echo $user_id; ?>" class="btn btn-primary">Chat with Others</a>
+    </div>
     <div class="avatar-section">
-        <img src="<?= isset($user['avatar']) && $user['avatar'] ? 'Uploads/' . htmlspecialchars($user['avatar']) : 'https://via.placeholder.com/120' ?>" alt="Avatar" class="avatar-img" />
+        <img src="<?php echo htmlspecialchars($user['avatar'] ?? 'default.png'); ?>" alt="Avatar" class="avatar-img" id="avatarImage">
         <div class="avatar-upload">
-            <label for="avatarInput">Thay đổi avatar</label>
-            <input type="file" id="avatarInput" accept="image/*" />
+            <form id="avatarForm" method="post" action="account.php" enctype="multipart/form-data">
+                <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
+                <label for="avatarInput">Upload Avatar</label>
+            </form>
         </div>
-        <div id="avatarMessage" class="avatar-message"></div>
     </div>
     <div class="row">
         <div class="col-left">

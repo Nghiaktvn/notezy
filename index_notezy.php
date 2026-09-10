@@ -1003,8 +1003,8 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy</a></li>
                     <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact</a></li>
                     <li class="nav-item"><a class="nav-link" href="labels.php"><i class="fas fa-tags me-1"></i>Nhãn</a></li>
-                        <li class="nav-item"><a class="nav-link" href="collab_demo.php" target="_blank"><i class="fas fa-users-cog me-1 text-info"></i>Cộng tác Realtime</a></li>
-                        <li class="nav-item"><a class="nav-link" href="admin_users.php"><i class="fas fa-user-shield me-1 text-warning"></i>Admin</a></li>
+                        
+                        
                     <li class="nav-item"><a class="nav-link text-primary fw-bold" href="thoikhoabieu.php"><i class="fas fa-calendar-alt me-1"></i>Thời khóa biểu</a></li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal" title="Tìm kiếm">
