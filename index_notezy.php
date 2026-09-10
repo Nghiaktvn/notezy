@@ -3460,6 +3460,7 @@ document.getElementById('formAddToTimetable')?.addEventListener('submit', async 
 });
 </script>
     <script src="js/timetable-alarm.js" defer></script>
+    <script src="js/reminders.js" defer></script>
     <script src="js/offline-store.js"></script>
     <script>
         // ── Lưu snapshot ghi chú vào IndexedDB để xem khi ngoại tuyến (Offline) ──
