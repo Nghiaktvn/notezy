@@ -109,6 +109,8 @@ function create_connect($fatal = false) {
 
     $conn = $attempt;
     $conn->set_charset('utf8mb4');
+    // Fix múi giờ: đặt về +07:00 (giờ Việt Nam) để NOW() khớp với giờ người dùng nhập
+    $conn->query("SET time_zone = '+07:00'");
 
     // Auto-init schema if deploying to a fresh cloud DB
     static $tables_checked = false;

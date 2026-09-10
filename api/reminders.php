@@ -19,6 +19,10 @@ require_once 'db.php';
 notezy_session_start();
 header('Content-Type: application/json');
 
+// Fix múi giờ: đặt session timezone về +07:00 (giờ Việt Nam)
+// để NOW() trong MySQL khớp với giờ người dùng nhập vào
+$conn->query("SET time_zone = '+07:00'");
+
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
     echo json_encode(["status" => "error", "message" => "Unauthorized — please login"]);
