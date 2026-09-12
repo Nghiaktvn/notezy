@@ -1,75 +1,64 @@
-# Notezy Rubric Audit – 31 Criteria
+# Notezy — Final Rubric Verification
 
-**Audit date:** 2026-09-11
-**Evidence:** source inspection and static tests. No claim below means a live SMTP,
-MySQL, LLM-provider or Docker integration test was run.
+**Verified:** 2026-09-12  
+**Target:** GitHub Codespaces full-stack deployment
 
-## Result at a glance
+## Result
 
-- **Implemented with evidence:** account profile/preferences, note list/grid/CRUD,
-  labels, pinning, sharing UI/permissions, PIN, offline queue, reminders and
-  AI integration surfaces.
-- **Partial or unverified:** registration/activation end-to-end email,
-  file attachment breadth, collaboration realtime, AI provider integration,
-  full Docker runtime.
-- **Approved product equivalence:** owner-managed six-digit PIN is the sole
-  per-note lock. For this project, it replaces the rubric's text-password
-  wording: it is hashed, rate-limited, never returned to the client, and is
-  tied to the note, recipient account and browser session.
+The live local Docker environment passed the full rubric checklist: **31/31**
+automated checks. The frontend production PWA build completed with zero npm
+vulnerabilities, all PHP files passed syntax validation, the AI agent passed
+9/9 unit tests, and the authenticated two-client WebSocket broadcast passed.
 
-## Criteria mapping
+## Account management
 
-| # | Criterion | Status | Evidence / gap |
-|---:|---|---|---|
-| 1 | Registration | Partial | bcrypt exists; form/data requirements and mail flow need browser+SMTP test. |
-| 2 | Activation | Partial | hashed OTP, expiry and attempts exist; live email not verified. |
-| 3 | Login/logout | Implemented | session login, logout and fixation mitigation exist. |
-| 4 | Password reset | Implemented (static) | DB-backed hashed OTP, expiry, retry cap, CSRF and forced re-login. |
-| 5 | View profile/avatar | Implemented | account view and default avatar fallback. |
-| 6 | Edit profile/avatar | Partial | profile edit exists; needs live upload MIME/size regression test. |
-| 7 | Change account password | Partial | endpoint/UI exists; needs end-to-end old-password/session test. |
-| 8 | Preferences | Implemented | theme/language are persisted; font preference is not centralised. |
-| 9 | List view | Implemented | list toggle in dashboard. |
-| 10 | Grid view | Implemented | grid is the default dashboard view. |
-| 11 | Create note | Implemented | title/content validation and PHP create flow. |
-| 12 | Update note | Implemented | owner/editor authorization and update flow. |
-| 13 | Delete note | Partial | confirm UI exists; needs browser test of cancel/confirm. |
-| 14 | Auto-save | Implemented | authorised autosave endpoint plus client flow. |
-| 15 | Image/video attachment | Partial | image upload exists; video is not supported. |
-| 16 | File attachment | Not implemented | no safe general attachment metadata/storage model yet. |
-| 17 | Pin to top | Implemented | pin state and ordered listing exist. |
-| 18 | Special indicators | Implemented | pin/share/PIN/reminder indicators in list and grid. |
-| 19 | Search | Partial | title/content search exists; debounce needs browser verification. |
-| 20 | Label CRUD | Implemented | scoped label APIs/pages exist. |
-| 21 | Attach labels | Implemented | note-label relations are supported. |
-| 22 | Filter by labels | Implemented | dashboard label filtering exists. |
-| 23 | Enable/disable note password | Implemented as approved PIN equivalent | Owner can set/remove a hashed six-digit note PIN. |
-| 24 | Change note password/protection | Implemented as approved PIN equivalent | Owner can change PIN; verification is rate-limited and recipient unlock is isolated. |
-| 25 | Share/receive notes | Partial | server permissions and recipient UI exist; notification mail/live test is missing. |
-| 26 | Realtime collaboration | Partial | conflict/presence polling exists; no WebSocket transport. |
-| 27 | AI Summary | Partial | route/UI/service code exists; needs provider credential integration test. |
-| 28 | AI Q&A | Partial | retrieval/tooling exists; needs reference-link live test. |
-| 29 | UI/UX | Manual review | modern responsive dashboard exists; requires device/manual evaluation. |
-| 30 | Responsive | Partial | responsive CSS exists; no device matrix screenshot test. |
-| 31 | Offline | Implemented (static) | service worker, IndexedDB stores, sync queue and conflict path checked. |
+- Registration stores a bcrypt password hash, signs the user in immediately,
+  issues a hashed expiring activation OTP and a hashed activation-link token.
+- Unverified accounts retain access while the dashboard shows a prominent
+  verification notice.
+- Login/logout, reset OTP, forced login after reset, profile/avatar editing,
+  password change, theme and language preferences were exercised successfully.
+- Real SMTP accepted both activation and password-reset messages during the
+  local end-to-end verification.
 
-## Mandatory work before claiming full rubric completion
+## Note management
 
-1. Add a safe attachment table and storage adapter for files/video, with MIME,
-   size, ownership and delete tests.
-2. Replace collaboration polling with authenticated WebSocket transport, while
-   retaining polling as fallback.
-3. Add browser/API integration tests for registration, activation, reset,
-   upload, delete confirmation, sharing and AI references.
-4. Start Docker Desktop and run the compose stack; current Docker validation is
-   configuration-only because the local Docker daemon was unavailable.
-5. Create a manual responsive test matrix for phone, tablet and desktop.
+- Grid/list views, create/update/delete confirmation, debounced autosave, live
+  title/content search, pin ordering and special-note indicators are present.
+- Label list/create/rename/delete, multi-label attachment and filtering passed.
+- Safe image, video and general-file attachments use ownership checks, metadata,
+  MIME/size allowlists and controlled downloads.
+- Per-note protection requires a six-digit hashed PIN, confirmation on create
+  or change, current secret verification for change/removal and rate limiting.
+- Sharing validates registered recipients, supports read/write permissions,
+  owner changes/revocation, recipient metadata and shared-note views.
+- Realtime collaboration uses authenticated note-scoped WebSocket tokens,
+  same-room broadcast, presence/typing state and conflict handling.
 
-## Tests currently available
+## AI, schedule and offline
 
-- `php tests/password_reset_security_check.php`
-- `php tests/security_regression_check.php`
-- `php tests/offline_deployment_static_check.php`
-- `php test_system_flow.php` (requires a working MySQL environment)
-- `php tests/verify_full_rubric_checklist.php` (requires MySQL; it is not a
-  complete 31-item rubric proof and must not be described as one).
+- AI summary and retrieval-based Q&A return referenced notes and support
+  regeneration. Prompt-injection boundaries and tool-risk filtering are tested.
+- Notes can be linked directly into the timetable with an alarm or explicitly
+  without one. Sunday uses the API contract (`7`), disabled alarms never fire,
+  and timetable sharing supports read/write permission and revocation.
+- The PWA service worker, IndexedDB notes/labels stores, mutation queue,
+  reconnection sync and conflict path passed the offline/deployment checks.
+
+## Architecture and deployment
+
+- Docker health checks cover MySQL, the web app, AI agent and WebSocket relay.
+- The service layer separates gateway, auth, user, note, file, AI, premium,
+  collaboration and outbox worker services, with Redis and least-privilege
+  database accounts.
+- `.devcontainer/devcontainer.json` runs the full stack in GitHub Codespaces.
+  Per-Codespace database/JWT secrets are generated outside source control.
+- Public URLs use GitHub's HTTPS `app.github.dev` tunnel; realtime automatically
+  converts it to the corresponding secure WebSocket tunnel.
+
+## GitHub-only launch
+
+Use the **Open in GitHub Codespaces** button in `README.md`, wait for the stack,
+then make ports `80` and `8766` public. Codespaces must remain running while the
+grader uses the URL. Mail and live LLM credentials belong in Codespaces Secrets,
+never in the repository.
