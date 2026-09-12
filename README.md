@@ -11,10 +11,10 @@ GitHub Pages không chạy PHP/MySQL. Repository này cung cấp cấu hình Cod
 để chạy nguyên cụm Docker và tạo URL HTTPS thuộc miền GitHub:
 
 1. Mở repository trên GitHub, chọn **Code → Codespaces → Create codespace on main**.
-2. Chờ các container healthy và mở port **80 — Notezy Web**.
+2. Chờ các container healthy và mở port **8080 — Notezy Web**.
 3. Trong tab **Ports**, đặt port `8080` và `8766` thành **Public**. Giữ port
    `8081` (phpMyAdmin) ở chế độ Private để không công khai công cụ quản trị. URL ứng dụng có
-   dạng `https://<codespace>-80.app.github.dev`.
+   dạng `https://<codespace>-8080.app.github.dev`.
 4. Để gửi email thật, tạo Codespaces secrets `MAIL_USERNAME`, `MAIL_PASSWORD`,
    `MAIL_FROM`, `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, rồi rebuild Codespace.
    Có thể thêm `GEMINI_API_KEY` và `LLM_PROVIDER=gemini` để bật LLM thật.
