@@ -17,6 +17,25 @@ case "$MYSQL_DATABASE" in (*[!A-Za-z0-9_]*|'') echo 'Invalid MYSQL_DATABASE' >&2
 escaped_password=$(printf '%s' "$SERVICE_DB_PASSWORD" | sed "s/'/''/g")
 run_mysql() { MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u root --protocol=TCP "$@"; }
 
+# Compose waits for the database healthcheck, but a freshly created MySQL
+# container can briefly stop accepting remote TCP connections while it
+# finishes its initialization scripts.  Retry here as a second line of
+# defence so Codespaces and slower Docker hosts do not leave the remaining
+# services in the "Created" state after one transient timeout.
+attempt=1
+max_attempts=60
+until MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqladmin \
+  -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u root --protocol=TCP \
+  --connect-timeout=5 ping --silent >/dev/null 2>&1; do
+  if [ "$attempt" -ge "$max_attempts" ]; then
+    echo "MySQL did not become reachable after ${max_attempts} attempts." >&2
+    exit 1
+  fi
+  echo "Waiting for MySQL at ${MYSQL_HOST}:${MYSQL_PORT} (${attempt}/${max_attempts})..."
+  attempt=$((attempt + 1))
+  sleep 2
+done
+
 # Existing Docker volumes do not re-run docker-entrypoint-initdb.d. Apply all
 # idempotent migrations before grants so upgraded deployments match new ones.
 if [ -f /migrations.sql ]; then
