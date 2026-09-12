@@ -9,7 +9,7 @@ import Footer from '../components/landing/Footer.jsx';
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-white text-gray-900 antialiased transition-colors duration-300 dark:bg-black dark:text-gray-100">
+    <div className="min-h-screen bg-[#f5f3ff] text-gray-900 antialiased transition-colors duration-300 dark:bg-black dark:text-gray-100">
       <Navbar />
       <main>
         <Hero />

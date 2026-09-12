@@ -14,6 +14,7 @@ html {
 
 body {
   font-family: var(--font-sans);
+  background: #f5f3ff;
 }
 
 /* Respect reduced-motion preferences for the few non-essential transitions we use */

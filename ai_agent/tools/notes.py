@@ -74,6 +74,10 @@ def note_tool_definitions() -> list[dict]:
                             "enum": ["Study", "Work", "Idea", "Personal", "Finance", "Task", "Urgent"],
                             "description": "Auto-detected category for the note.",
                         },
+                        "reminder_at": {
+                            "type": "string",
+                            "description": "Optional Vietnam-local reminder in exact YYYY-MM-DD HH:MM:SS format, e.g. 2026-09-11 20:00:00. Omit when the user did not request a time.",
+                        },
                     },
                     "required": ["title", "content"],
                     "additionalProperties": False,

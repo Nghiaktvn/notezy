@@ -16,21 +16,21 @@ if (!isset($_SESSION['id'])) {
 $user_id = (int) $_SESSION['id'];
 
 // Hàm xử lý nhãn
-function processLabels($conn, $note_id, $labels_raw) {
-    if ($labels_raw !== '') {
-        $labels_array = array_filter(array_map('trim', explode(',', $labels_raw)));
+function processLabels($conn, $note_id, $labels_raw, $user_id) {
+    $labels_array = $labels_raw === '' ? [] : array_filter(array_map('trim', explode(',', $labels_raw)));
 
-        // Xóa nhãn cũ
-        $sql_delete_labels = "DELETE FROM note_labels WHERE note_id = ?";
-        $stm_delete_labels = $conn->prepare($sql_delete_labels);
-        $stm_delete_labels->bind_param('i', $note_id);
-        $stm_delete_labels->execute();
-        $stm_delete_labels->close();
+    // Always clear the previous mapping first. This makes removing the last
+    // label work as expected instead of leaving a stale label on the note.
+    $sql_delete_labels = "DELETE FROM note_labels WHERE note_id = ?";
+    $stm_delete_labels = $conn->prepare($sql_delete_labels);
+    $stm_delete_labels->bind_param('i', $note_id);
+    $stm_delete_labels->execute();
+    $stm_delete_labels->close();
 
-        foreach ($labels_array as $label_name) {
+    foreach ($labels_array as $label_name) {
             // Kiểm tra label đã có chưa
-            $stmt = $conn->prepare("SELECT label_id FROM labels WHERE name = ?");
-            $stmt->bind_param("s", $label_name);
+            $stmt = $conn->prepare("SELECT label_id FROM labels WHERE name = ? AND (user_id = ? OR user_id IS NULL) LIMIT 1");
+            $stmt->bind_param("si", $label_name, $user_id);
             $stmt->execute();
             $result = $stmt->get_result();
             if ($row = $result->fetch_assoc()) {
@@ -38,8 +38,8 @@ function processLabels($conn, $note_id, $labels_raw) {
             } else {
                 // Thêm label mới
                 $stmt->close();
-                $stmt = $conn->prepare("INSERT INTO labels (name) VALUES (?)");
-                $stmt->bind_param("s", $label_name);
+                $stmt = $conn->prepare("INSERT INTO labels (name, user_id) VALUES (?, ?)");
+                $stmt->bind_param("si", $label_name, $user_id);
                 $stmt->execute();
                 $label_id = $stmt->insert_id;
             }
@@ -50,7 +50,6 @@ function processLabels($conn, $note_id, $labels_raw) {
             $stmt->bind_param("ii", $note_id, $label_id);
             $stmt->execute();
             $stmt->close();
-        }
     }
 }
 
@@ -70,7 +69,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         $labels_raw = trim($_POST['noteLabels'] ?? '');
     }
-    $password = trim($_POST['notePassword'] ?? '');
+    // PIN 6 số là cơ chế khóa duy nhất; không nhận mật khẩu chữ cho ghi chú.
+    $password = '';
     $note_pin = trim($_POST['note_pin'] ?? $_POST['pin'] ?? '');
     $background_color = trim($_POST['background_color'] ?? '#ffffff');
     $text_color = trim($_POST['text_color'] ?? '#000000');
@@ -91,42 +91,64 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $conn->query("SET SESSION sql_mode = ''");
 
             // Xử lý mật khẩu
-            $password_hash = $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : null;
+            $password_hash = null;
 
-            // Xử lý mã PIN 4 số bảo mật
+            // Xử lý mã PIN 6 số bảo mật
             $pin_hash = null;
             if ($note_pin !== '') {
-                if (!preg_match('/^\d{4}$/', $note_pin)) {
-                    throw new Exception("Mã bảo mật phải gồm đúng 4 chữ số (0000 - 9999).");
+                if (!preg_match('/^\d{6}$/', $note_pin)) {
+                    throw new Exception("Mã bảo mật phải gồm đúng 6 chữ số (000000 - 999999).");
                 }
                 $pin_hash = password_hash($note_pin, PASSWORD_DEFAULT);
             }
 
             if ($note_id > 0) {
+                // A shared editor may change content, but only the owner can
+                // change a note PIN. Password/PIN protected notes must already
+                // be unlocked in this session before their content can be saved.
+                $access = $conn->prepare("SELECT n.user_id, n.password_hash, n.pin_hash FROM notes n LEFT JOIN note_shares ns ON ns.note_id = n.note_id AND ns.shared_with_user_id = ? WHERE n.note_id = ? AND (n.user_id = ? OR ns.permission = 'write') LIMIT 1");
+                $access->bind_param('iii', $user_id, $note_id, $user_id);
+                $access->execute();
+                $existingNote = $access->get_result()->fetch_assoc();
+                $access->close();
+                if (!$existingNote) {
+                    throw new Exception('Bạn không có quyền chỉnh sửa ghi chú này.');
+                }
+                $isOwner = (int) $existingNote['user_id'] === $user_id;
+                if (!empty($existingNote['password_hash']) && empty($_SESSION['accessed_notes'][$note_id])) {
+                    throw new Exception('Hãy xác thực mật khẩu ghi chú trước khi chỉnh sửa.');
+                }
+                if (!empty($existingNote['pin_hash']) && empty($_SESSION['pin_unlocked_notes'][$note_id])) {
+                    throw new Exception('Hãy mở khóa mã PIN trước khi chỉnh sửa.');
+                }
+                if ($pin_hash !== null && !$isOwner) {
+                    throw new Exception('Chỉ chủ sở hữu mới có thể thay đổi mã PIN.');
+                }
+
                 // Cập nhật ghi chú
                 if ($pin_hash !== null) {
-                    $sql_update = "UPDATE notes SET title = ?, content = ?, pinned = ?, password_hash = ?, background_color = ?, text_color = ?, font_family = ?, pin_hash = ?, pin_set_at = NOW() WHERE note_id = ? AND user_id = ?";
+                    $sql_update = "UPDATE notes SET title = ?, content = ?, pinned_at = CASE WHEN ? = 1 AND pinned = 0 THEN NOW() WHEN ? = 0 THEN NULL ELSE pinned_at END, pinned = ?, background_color = ?, text_color = ?, font_family = ?, pin_hash = ?, pin_set_at = NOW() WHERE note_id = ? AND user_id = ?";
                     $stm_update = $conn->prepare($sql_update);
                     if (!$stm_update) throw new Exception("Lỗi truy vấn: " . $conn->error);
-                    $stm_update->bind_param('ssisssssii', $title, $content, $isPinned, $password_hash, $background_color, $text_color, $font_family, $pin_hash, $note_id, $user_id);
+                    $stm_update->bind_param('ssiiissssii', $title, $content, $isPinned, $isPinned, $isPinned, $background_color, $text_color, $font_family, $pin_hash, $note_id, $user_id);
                 } else {
-                    $sql_update = "UPDATE notes SET title = ?, content = ?, pinned = ?, password_hash = ?, background_color = ?, text_color = ?, font_family = ? WHERE note_id = ? AND user_id = ?";
+                    $sql_update = "UPDATE notes SET title = ?, content = ?, pinned_at = CASE WHEN ? = 1 AND pinned = 0 THEN NOW() WHEN ? = 0 THEN NULL ELSE pinned_at END, pinned = ?, background_color = ?, text_color = ?, font_family = ? WHERE note_id = ? AND (user_id = ? OR note_id IN (SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write'))";
                     $stm_update = $conn->prepare($sql_update);
                     if (!$stm_update) throw new Exception("Lỗi truy vấn: " . $conn->error);
-                    $stm_update->bind_param('ssissssii', $title, $content, $isPinned, $password_hash, $background_color, $text_color, $font_family, $note_id, $user_id);
+                    $stm_update->bind_param('ssiiisssiii', $title, $content, $isPinned, $isPinned, $isPinned, $background_color, $text_color, $font_family, $note_id, $user_id, $user_id);
                 }
             } else {
                 // Thêm ghi chú mới
                 if ($pin_hash !== null) {
-                    $sql_insert = "INSERT INTO notes (user_id, title, content, pinned, password_hash, background_color, text_color, font_family, pin_hash, pin_set_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                    $sql_insert = "INSERT INTO notes (user_id, title, content, pinned, pinned_at, password_hash, background_color, text_color, font_family, pin_hash, pin_set_at) VALUES (?, ?, ?, ?, IF(? = 1, NOW(), NULL), ?, ?, ?, ?, ?, NOW())";
                     $stm_insert = $conn->prepare($sql_insert);
                     if (!$stm_insert) throw new Exception("Lỗi truy vấn: " . $conn->error);
-                    $stm_insert->bind_param('ississsss', $user_id, $title, $content, $isPinned, $password_hash, $background_color, $text_color, $font_family, $pin_hash);
+                    $stm_insert->bind_param('issiisssss', $user_id, $title, $content, $isPinned, $isPinned, $password_hash, $background_color, $text_color, $font_family, $pin_hash);
                 } else {
-                    $sql_insert = "INSERT INTO notes (user_id, title, content, pinned, password_hash, background_color, text_color, font_family) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    $sql_insert = "INSERT INTO notes (user_id, title, content, pinned, pinned_at, password_hash, background_color, text_color, font_family) VALUES (?, ?, ?, ?, IF(? = 1, NOW(), NULL), ?, ?, ?, ?)";
                     $stm_insert = $conn->prepare($sql_insert);
                     if (!$stm_insert) throw new Exception("Lỗi truy vấn: " . $conn->error);
-                    $stm_insert->bind_param('ississss', $user_id, $title, $content, $isPinned, $password_hash, $background_color, $text_color, $font_family);
+                    $stm_insert->bind_param('issiissss', $user_id, $title, $content, $isPinned, $isPinned, $password_hash, $background_color, $text_color, $font_family);
                 }
             }
 
@@ -162,7 +184,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
 
             // Xử lý nhãn
-            processLabels($conn, $note_id, $labels_raw);
+            processLabels($conn, $note_id, $labels_raw, $user_id);
 
             // Xử lý upload ảnh (nếu có file đính kèm)
             $image_path = null;
@@ -219,6 +241,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 exit;
             }
         }
+    }
+}
+
+// This is the single editor for both creation and editing. A write-enabled
+// collaborator may edit a shared note through the same form as its owner.
+$editing_note = null;
+$editing_labels = [];
+$requested_note_id = (int) ($_GET['noteId'] ?? $_GET['id'] ?? 0);
+if ($requested_note_id > 0) {
+    $editStmt = $conn->prepare(
+        "SELECT n.* FROM notes n WHERE n.note_id = ? AND (n.user_id = ? OR n.note_id IN (SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write')) LIMIT 1"
+    );
+    $editStmt->bind_param('iii', $requested_note_id, $user_id, $user_id);
+    $editStmt->execute();
+    $editing_note = $editStmt->get_result()->fetch_assoc();
+    $editStmt->close();
+    if (!$editing_note) {
+        http_response_code(403);
+        $errorMessage = 'Bạn không có quyền chỉnh sửa ghi chú này.';
+    } elseif (!empty($editing_note['password_hash']) && empty($_SESSION['accessed_notes'][$requested_note_id])) {
+        $editing_note = null;
+        http_response_code(403);
+        $errorMessage = 'Hãy xác thực mật khẩu ghi chú từ danh sách trước khi chỉnh sửa.';
+    } elseif (!empty($editing_note['pin_hash']) && empty($_SESSION['pin_unlocked_notes'][$requested_note_id])) {
+        $editing_note = null;
+        http_response_code(403);
+        $errorMessage = 'Hãy mở khóa mã PIN từ danh sách trước khi chỉnh sửa.';
+    } else {
+        $labelStmt = $conn->prepare('SELECT l.name FROM labels l JOIN note_labels nl ON nl.label_id = l.label_id WHERE nl.note_id = ?');
+        $labelStmt->bind_param('i', $requested_note_id);
+        $labelStmt->execute();
+        $editing_labels = array_column($labelStmt->get_result()->fetch_all(MYSQLI_ASSOC), 'name');
+        $labelStmt->close();
     }
 }
 
@@ -365,7 +420,7 @@ if ($lstmt) {
 </head>
 <body>
     <div class="container">
-        <h2>Thêm ghi chú mới</h2>
+        <h2><?= $editing_note ? 'Chỉnh sửa ghi chú' : 'Thêm ghi chú mới' ?></h2>
         <?php if ($successMessage): ?>
             <div class="alert alert-success"><?= $successMessage ?></div>
         <?php endif; ?>
@@ -373,14 +428,14 @@ if ($lstmt) {
             <div class="alert alert-danger"><?= $errorMessage ?></div>
         <?php endif; ?>
         <form id="noteForm" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="noteId" id="noteId" value="0">
+            <input type="hidden" name="noteId" id="noteId" value="<?= (int)($editing_note['note_id'] ?? 0) ?>">
             <div class="mb-3">
                 <label for="noteTitle" class="form-label">Tiêu đề</label>
-                <input type="text" class="form-control" id="noteTitle" name="noteTitle" required>
+                <input type="text" class="form-control" id="noteTitle" name="noteTitle" value="<?= htmlspecialchars((string)($editing_note['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
             </div>
             <div class="mb-3">
                 <label for="noteContent" class="form-label">Nội dung</label>
-                <textarea class="form-control" id="noteContent" name="noteContent" rows="5" required></textarea>
+                <textarea class="form-control" id="noteContent" name="noteContent" rows="5" required><?= htmlspecialchars((string)($editing_note['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
             </div>
             <div class="mb-3">
                 <label class="form-label d-flex justify-content-between align-items-center">
@@ -430,37 +485,32 @@ if ($lstmt) {
                 </div>
             </div>
             <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="pinNote" name="pinNote">
+                <input type="checkbox" class="form-check-input" id="pinNote" name="pinNote" <?= !empty($editing_note['pinned']) ? 'checked' : '' ?>>
                 <label class="form-check-label" for="pinNote">Ghim ghi chú</label>
             </div>
             <div class="mb-3 p-3 border rounded bg-light">
                 <label for="note_pin" class="form-label fw-bold text-dark mb-1">
-                    <i class="fas fa-shield-alt text-primary me-1"></i>Bảo mật sổ bằng mã 4 số (PIN)
+                    <i class="fas fa-shield-alt text-primary me-1"></i>Bảo mật sổ bằng mã 6 số (PIN)
                 </label>
-                <input type="password" class="form-control fw-bold" id="note_pin" name="note_pin" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="•••• (Nhập 4 số, VD: 1234)" style="letter-spacing: 4px; max-width: 320px;">
-                <small class="text-muted d-block mt-1">Để trống nếu không muốn khóa sổ. Nếu đặt mã, khi mở sổ trên trang chủ cần nhập đúng 4 số này để xem và tùy chỉnh.</small>
-            </div>
-            <div class="mb-3">
-                <label for="notePassword" class="form-label">Mật khẩu chữ thông thường (tùy chọn)</label>
-                <input type="password" class="form-control" id="notePassword" name="notePassword" placeholder="Nhập mật khẩu chữ nếu muốn">
+                <input type="password" class="form-control fw-bold" id="note_pin" name="note_pin" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="•••••• (Nhập 6 số, VD: 123456)" style="letter-spacing: 4px; max-width: 320px;">
+                <small class="text-muted d-block mt-1">Để trống nếu không muốn khóa sổ. Nếu đặt mã, khi mở sổ trên trang chủ cần nhập đúng 6 số này để xem và tùy chỉnh.</small>
             </div>
             <div class="color-picker-group">
                 <div>
                     <label for="background_color" class="form-label">Màu nền</label>
-                    <input type="color" class="form-control" id="background_color" name="background_color" value="#ffffff">
+                    <input type="color" class="form-control" id="background_color" name="background_color" value="<?= htmlspecialchars((string)($editing_note['background_color'] ?? '#ffffff'), ENT_QUOTES, 'UTF-8') ?>">
                 </div>
                 <div>
                     <label for="text_color" class="form-label">Màu chữ</label>
-                    <input type="color" class="form-control" id="text_color" name="text_color" value="#000000">
+                    <input type="color" class="form-control" id="text_color" name="text_color" value="<?= htmlspecialchars((string)($editing_note['text_color'] ?? '#000000'), ENT_QUOTES, 'UTF-8') ?>">
                 </div>
             </div>
             <div class="mb-3">
                 <label for="font_family" class="form-label">Phông chữ</label>
                 <select class="form-select" id="font_family" name="font_family">
-                    <option value="Poppins">Poppins</option>
-                    <option value="Roboto">Roboto</option>
-                    <option value="Open Sans">Open Sans</option>
-                    <option value="Playfair Display">Playfair Display</option>
+                    <?php foreach (['Poppins', 'Roboto', 'Open Sans', 'Playfair Display'] as $font): ?>
+                        <option value="<?= $font ?>" <?= (($editing_note['font_family'] ?? 'Poppins') === $font) ? 'selected' : '' ?>><?= $font ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div class="mb-3">
@@ -470,6 +520,16 @@ if ($lstmt) {
                     <img id="imagePreview" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
                 </div>
             </div>
+            <div class="mb-3">
+                <label for="noteAttachments" class="form-label">Tệp đính kèm (ảnh, video, PDF, DOCX, ZIP)</label>
+                <input type="file" class="form-control" id="noteAttachments" multiple accept="image/*,video/mp4,video/webm,video/ogg,application/pdf,.docx,.zip,.txt">
+                <small class="text-muted">Có thể chọn tối đa 10 tệp. Video tối đa 25MB, tài liệu tối đa 10MB.</small>
+            </div>
+            <?php if ($editing_note): ?>
+                <div class="mb-3" id="existingAttachments" aria-live="polite">
+                    <span class="text-muted small">Đang tải tệp đính kèm…</span>
+                </div>
+            <?php endif; ?>
             <button type="submit" class="btn btn-primary" id="saveBtn">Lưu ghi chú</button>
         </form>
         <div id="autoSaveStatus">Đang lưu...</div>
@@ -477,9 +537,44 @@ if ($lstmt) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/collaboration-ws.js"></script>
     <script>
         let lastSavedData = {};
         let isSaving = false;
+
+        function connectCollaboration(noteId) {
+            if (!window.NotezyCollaboration || !noteId) return;
+            window.NotezyCollaboration.connect(Number(noteId), (change) => {
+                if (change.type !== 'draft') return;
+                const title = document.getElementById('noteTitle');
+                const content = document.getElementById('noteContent');
+                if (document.activeElement !== title && change.title !== undefined) title.value = change.title;
+                if (document.activeElement !== content && change.content !== undefined) content.value = change.content;
+                document.getElementById('autoSaveStatus').textContent = 'Đã nhận thay đổi trực tiếp từ cộng tác viên';
+                document.getElementById('autoSaveStatus').style.display = 'block';
+            });
+        }
+        connectCollaboration(document.getElementById('noteId').value);
+
+        async function loadAttachments() {
+            const noteId = Number(document.getElementById('noteId').value || 0);
+            const container = document.getElementById('existingAttachments');
+            if (!noteId || !container) return;
+            try {
+                const response = await fetch(`api/attachments.php?note_id=${encodeURIComponent(noteId)}`);
+                const result = await response.json();
+                if (!result.success || !result.attachments.length) {
+                    container.innerHTML = '<span class="text-muted small">Chưa có tệp đính kèm.</span>';
+                    return;
+                }
+                container.innerHTML = '<div class="small fw-semibold mb-1">Tệp đã đính kèm</div>' + result.attachments.map(file =>
+                    `<a class="badge text-bg-light border text-decoration-none me-1 mb-1" href="download_attachment.php?attachment_id=${encodeURIComponent(file.attachment_id)}"><i class="fas fa-paperclip me-1"></i>${String(file.original_name).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]))}</a>`
+                ).join('');
+            } catch (_) {
+                container.innerHTML = '<span class="text-danger small">Không thể tải danh sách tệp.</span>';
+            }
+        }
+        loadAttachments();
 
         // ── Label dropdown toggle ──────────────────────────────────────────────
         const labelToggle  = document.getElementById('labelDropdownToggle');
@@ -551,7 +646,6 @@ if ($lstmt) {
                 noteContent:      document.getElementById('noteContent').value,
                 noteLabels:       checked.join(','),
                 pinNote:          document.getElementById('pinNote').checked,
-                notePassword:     document.getElementById('notePassword').value,
                 background_color: document.getElementById('background_color').value,
                 text_color:       document.getElementById('text_color').value,
                 font_family:      document.getElementById('font_family').value
@@ -589,6 +683,8 @@ if ($lstmt) {
                 if (result.success) {
                     lastSavedData = formData;
                     document.getElementById('noteId').value = result.note_id;
+                    connectCollaboration(result.note_id);
+                    window.NotezyCollaboration?.send({ note_id: Number(result.note_id), type: 'draft', title: formData.noteTitle, content: formData.noteContent });
                     statusEl.textContent = 'Đã lưu tự động!';
                     setTimeout(() => { statusEl.style.display = 'none'; }, 1500);
                 } else {
@@ -604,6 +700,8 @@ if ($lstmt) {
         // Trigger auto-save on text changes
         document.querySelectorAll('#noteForm input:not([type="file"]):not([type="checkbox"]), #noteForm textarea, #noteForm select').forEach(el => {
             el.addEventListener('input', () => {
+                const noteId = Number(document.getElementById('noteId').value || 0);
+                if (noteId) window.NotezyCollaboration?.send({ note_id: noteId, type: 'draft', title: document.getElementById('noteTitle').value, content: document.getElementById('noteContent').value });
                 clearTimeout(window.autoSaveTimeout);
                 window.autoSaveTimeout = setTimeout(autoSave, 3000);
             });
@@ -647,6 +745,16 @@ if ($lstmt) {
 
                 if (!result.success) {
                     throw new Error(result.message || 'Lỗi khi lưu ghi chú');
+                }
+
+                const attachments = document.getElementById('noteAttachments').files;
+                if (attachments.length) {
+                    const attachmentData = new FormData();
+                    attachmentData.append('note_id', result.note_id);
+                    for (const file of attachments) attachmentData.append('attachments[]', file);
+                    const attachmentResponse = await fetch('api/attachments.php', { method: 'POST', body: attachmentData });
+                    const attachmentResult = await attachmentResponse.json();
+                    if (!attachmentResult.success) throw new Error(attachmentResult.message || 'Không thể tải tệp đính kèm');
                 }
 
                 window.parent.location.reload();

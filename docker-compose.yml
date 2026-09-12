@@ -20,10 +20,11 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-noreply@notezy.local}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Notezy}
+      # The application talks directly to the Python orchestration service.
       AI_AGENT_URL: http://ai_agent:8765
-      AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:-change_me_to_a_long_random_string}
       LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}
       APP_ENV: ${APP_ENV:-local}
       APP_URL: ${APP_URL:-http://localhost:8080}
     depends_on:
@@ -48,6 +49,8 @@ services:
       - db_data:/var/lib/mysql
       - ./note.sql:/docker-entrypoint-initdb.d/01_note.sql
       - ./migrations.sql:/docker-entrypoint-initdb.d/02_migrations.sql
+      - ./services/db/premium.sql:/docker-entrypoint-initdb.d/03_premium.sql
+      - ./services/db/production.sql:/docker-entrypoint-initdb.d/04_production.sql
     # Port 3307 on host → 3306 inside container.
     # Use 3307 to avoid conflict with local MySQL/XAMPP on 3306.
     ports:
@@ -59,33 +62,12 @@ services:
       retries: 5
       start_period: 20s
 
-  ai_agent:
-    image: python:3.12-slim
-    working_dir: /app
-    volumes:
-      - .:/app
-      - storage_data:/app/storage
-    command: python ai_agent/server.py
-    environment:
-      AI_AGENT_HOST: 0.0.0.0
-      AI_AGENT_PORT: "8765"
-      AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:-change_me_to_a_long_random_string}
-      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-    ports:
-      - "8765:8765"
-    restart: unless-stopped
-
   # FIX: phpMyAdmin was missing from this file entirely — that's why it
   # never started under Docker (it only comes bundled for free with XAMPP).
   phpmyadmin:
     image: phpmyadmin:latest
     restart: unless-stopped
+    profiles: ["tools"]
     environment:
       PMA_HOST: db
       PMA_PORT: "3306"
@@ -97,6 +79,50 @@ services:
         condition: service_healthy
     ports:
       - "8081:80"
+
+  collab_ws:
+    build:
+      context: .
+      dockerfile: collaboration_ws.Dockerfile
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python", "collaboration_ws.py"]
+    environment:
+      COLLAB_WS_PORT: "8766"
+      COLLAB_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}
+    ports:
+      - "8766:8766"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8766/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # Real AI orchestration service. It is deliberately separate from the PHP
+  # web process and is reachable from the host for a health/demo check only.
+  ai_agent:
+    image: python:3.12-slim
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python", "ai_agent/server.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      AI_AGENT_HOST: "0.0.0.0"
+      AI_AGENT_PORT: "8765"
+      AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+    ports:
+      - "8765:8765"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 volumes:
   db_data:

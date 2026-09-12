@@ -105,6 +105,69 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+-- ── Runtime account metadata ─────────────────────────────────────────────
+-- These fields used to be added from PHP page requests. Keeping the migration
+-- here makes existing installations upgrade safely without request-time DDL
+-- locks or duplicate-column HTTP 500 errors.
+SET @col_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'last_seen_at'
+);
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE users ADD COLUMN last_seen_at DATETIME NULL DEFAULT NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'
+);
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE users ADD COLUMN role ENUM(''user'',''admin'') NOT NULL DEFAULT ''user''',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Rubric completion: account activation links, pin ordering and attachments ──
+-- These changes are deliberately idempotent so they can also be applied to an
+-- existing Docker volume through phpMyAdmin.
+SET @col_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'activation_token_hash'
+);
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE users ADD COLUMN activation_token_hash CHAR(64) NULL DEFAULT NULL, ADD COLUMN activation_token_expires_at DATETIME NULL DEFAULT NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'notes' AND COLUMN_NAME = 'pinned_at'
+);
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE notes ADD COLUMN pinned_at DATETIME NULL DEFAULT NULL, ADD INDEX idx_notes_pinned_order (user_id, pinned, pinned_at)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS `note_attachments` (
+  `attachment_id` INT NOT NULL AUTO_INCREMENT,
+  `note_id` INT NOT NULL,
+  `uploaded_by_user_id` INT NOT NULL,
+  `original_name` VARCHAR(255) NOT NULL,
+  `stored_name` VARCHAR(255) NOT NULL,
+  `mime_type` VARCHAR(100) NOT NULL,
+  `file_size` BIGINT UNSIGNED NOT NULL,
+  `attachment_type` ENUM('image','video','file') NOT NULL DEFAULT 'file',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`attachment_id`),
+  KEY `idx_note_attachments_note` (`note_id`),
+  CONSTRAINT `fk_note_attachments_note` FOREIGN KEY (`note_id`) REFERENCES `notes` (`note_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_note_attachments_user` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── 8. users — Activation OTP fields ──────────────────────────────────────
 -- FIX: these were plain "ADD COLUMN" with no existence check. That's fine
 -- the very first time the script runs, but Docker only executes files in
@@ -245,6 +308,35 @@ CREATE TABLE IF NOT EXISTS `timetable` (
   KEY `idx_timetable_user` (`user_id`),
   CONSTRAINT `fk_timetable_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── Timetable links and sharing ──────────────────────────────────────────
+-- A calendar item can open the related study/work note. The nullable link
+-- keeps older schedules valid and lets a user remove the original note.
+SET @col_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'timetable' AND COLUMN_NAME = 'note_id'
+);
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE timetable ADD COLUMN note_id INT(11) NULL DEFAULT NULL, ADD KEY idx_timetable_note (note_id)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS `timetable_shares` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `timetable_id` INT(11) NOT NULL,
+  `owner_user_id` INT(11) NOT NULL,
+  `shared_with_user_id` INT(11) NOT NULL,
+  `permission` ENUM('read','write') NOT NULL DEFAULT 'read',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_timetable_share` (`timetable_id`, `shared_with_user_id`),
+  KEY `idx_timetable_shared_user` (`shared_with_user_id`),
+  CONSTRAINT `fk_timetable_share_item` FOREIGN KEY (`timetable_id`) REFERENCES `timetable` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_timetable_share_owner` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_timetable_share_user` FOREIGN KEY (`shared_with_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- =============================================================
 -- Hosting: GitHub integrations, Render deployments, custom domains

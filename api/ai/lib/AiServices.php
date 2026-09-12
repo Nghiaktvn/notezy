@@ -20,6 +20,7 @@ function ai_risk_for(string $tool): string {
         'summarize_note'     => 'write',
         'generate_flashcards'=> 'write',
         'generate_quiz'      => 'write',
+        'create_schedule'    => 'write',
         // ── Destructive ──────────────────────────────────────────────────────
         'delete_note'        => 'destructive',
     ];
@@ -34,7 +35,7 @@ function ai_allowed_tools(): array {
         // Write / AI-generate
         'create_note', 'update_note', 'create_label',
         'suggest_labels', 'extract_tasks', 'summarize_note',
-        'generate_flashcards', 'generate_quiz',
+        'generate_flashcards', 'generate_quiz', 'create_schedule',
         // Destructive
         'delete_note',
     ];
@@ -97,6 +98,8 @@ class AiNoteTools {
                 return $this->updateNote($args);
             case 'create_label':
                 return $this->createLabel($args);
+            case 'create_schedule':
+                return $this->createSchedule($args);
             case 'delete_note':
                 return $this->deleteNote($args);
             default:
@@ -390,6 +393,30 @@ class AiNoteTools {
         return ['ok' => true, 'labels' => $labels];
     }
 
+    private function createSchedule(array $args): array {
+        $title = trim((string) ($args['title'] ?? ''));
+        $day = (int) ($args['day_of_week'] ?? 0);
+        $start = trim((string) ($args['start_time'] ?? ''));
+        $end = trim((string) ($args['end_time'] ?? ''));
+        $date = !empty($args['specific_date']) ? trim((string) $args['specific_date']) : null;
+        $reminder = (int) ($args['reminder_minutes'] ?? 15);
+        if ($title === '' || mb_strlen($title, 'UTF-8') > 255 || $day < 1 || $day > 7
+            || !preg_match('/^\d{2}:\d{2}$/', $start) || !preg_match('/^\d{2}:\d{2}$/', $end)
+            || $start >= $end || ($date !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date))
+            || !in_array($reminder, [-1, 0, 5, 10, 15, 30, 60], true)) {
+            return ['ok' => false, 'error' => 'Thông tin lịch học chưa hợp lệ'];
+        }
+        $location = ai_truncate(trim((string) ($args['location'] ?? '')), 255);
+        $teacher = ai_truncate(trim((string) ($args['teacher'] ?? '')), 255);
+        $note = ai_truncate(trim((string) ($args['note'] ?? '')), 3000);
+        $color = '#2563eb';
+        $stmt = $this->conn->prepare('INSERT INTO timetable (user_id, title, day_of_week, start_time, end_time, location, teacher, color, note, reminder_minutes, specific_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        if (!$stmt) return ['ok' => false, 'error' => 'Không thể tạo lịch học'];
+        $stmt->bind_param('isissssssis', $this->user_id, $title, $day, $start, $end, $location, $teacher, $color, $note, $reminder, $date);
+        if (!$stmt->execute()) return ['ok' => false, 'error' => 'Không thể lưu lịch học'];
+        return ['ok' => true, 'schedule_id' => (int) $stmt->insert_id, 'title' => $title, 'start_time' => $start, 'end_time' => $end, 'reminder_minutes' => $reminder, 'specific_date' => $date, 'day_of_week' => $day];
+    }
+
     private function createNote(array $args): array {
         $title = trim((string) ($args['title'] ?? ''));
         $content = trim((string) ($args['content'] ?? ''));
@@ -397,6 +424,10 @@ class AiNoteTools {
         $note_type = $this->normalizeNoteType($args['note_type'] ?? 'note');
         $background_color = $this->normalizeHexColor($args['background_color'] ?? null, '#ffffff');
         $text_color = $this->normalizeHexColor($args['text_color'] ?? null, '#000000');
+        $reminder_at = $this->normalizeVietnamReminder($args['reminder_at'] ?? null);
+        if (($args['reminder_at'] ?? null) !== null && $reminder_at === null) {
+            return ['ok' => false, 'error' => 'Invalid reminder time'];
+        }
         if ($title === '' || mb_strlen($title, 'UTF-8') > 255) {
             return ['ok' => false, 'error' => 'Invalid title'];
         }
@@ -404,10 +435,10 @@ class AiNoteTools {
             return ['ok' => false, 'error' => 'Invalid content'];
         }
         $stmt = $this->conn->prepare(
-            "INSERT INTO notes (user_id, title, content, note_type, background_color, text_color)
-             VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO notes (user_id, title, content, note_type, background_color, text_color, reminder_at, reminder_sent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0)"
         );
-        $stmt->bind_param('isssss', $this->user_id, $title, $content, $note_type, $background_color, $text_color);
+        $stmt->bind_param('issssss', $this->user_id, $title, $content, $note_type, $background_color, $text_color, $reminder_at);
         if (!$stmt->execute()) {
             return ['ok' => false, 'error' => 'Failed to create note'];
         }
@@ -426,6 +457,7 @@ class AiNoteTools {
             'note_type'        => $note_type,
             'background_color' => $background_color,
             'text_color'       => $text_color,
+            'reminder_at'      => $reminder_at,
         ];
     }
 
@@ -471,6 +503,20 @@ class AiNoteTools {
     private function normalizeHexColor($raw, string $default): string {
         $val = trim((string) $raw);
         return preg_match('/^#[0-9a-fA-F]{6}$/', $val) ? $val : $default;
+    }
+
+    private function normalizeVietnamReminder($raw): ?string {
+        if ($raw === null || trim((string) $raw) === '') {
+            return null;
+        }
+        $zone = new DateTimeZone('Asia/Ho_Chi_Minh');
+        $value = trim((string) $raw);
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $value, $zone);
+        $errors = DateTimeImmutable::getLastErrors();
+        if (!$date || ($errors !== false && ($errors['warning_count'] || $errors['error_count']))) {
+            return null;
+        }
+        return $date->format('Y-m-d H:i:s');
     }
 
     private function updateNote(array $args): array {

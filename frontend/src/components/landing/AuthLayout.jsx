@@ -5,7 +5,7 @@ import ThemeToggle from '../ThemeToggle.jsx';
 
 export default function AuthLayout({ title, subtitle, footer, children }) {
   return (
-    <div className="flex min-h-screen flex-col bg-white transition-colors duration-300 dark:bg-black">
+    <div className="flex min-h-screen flex-col bg-[#f5f3ff] transition-colors duration-300 dark:bg-black">
       <header className="flex items-center justify-between px-5 py-4 sm:px-8">
         <Link to="/" className="flex items-center gap-2.5">
           <NotezyLogo className="h-7 w-7" />

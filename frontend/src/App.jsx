@@ -49,7 +49,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#f5f3ff] flex">
       <div className="w-64 bg-white shadow-md p-4 flex flex-col">
         <h1 className="text-2xl font-bold mb-8">Notezy AI</h1>
         <ul className="space-y-2 flex-1">

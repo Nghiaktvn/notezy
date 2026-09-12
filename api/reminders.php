@@ -116,6 +116,18 @@ if ($method === 'POST') {
         exit();
     }
     $reminder_at = isset($data['reminder_at']) && $data['reminder_at'] !== '' ? $data['reminder_at'] : null;
+    if ($reminder_at !== null) {
+        $zone = new DateTimeZone('Asia/Ho_Chi_Minh');
+        $parsed = DateTimeImmutable::createFromFormat('Y-m-d\\TH:i', $reminder_at, $zone)
+            ?: DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $reminder_at, $zone);
+        $errors = DateTimeImmutable::getLastErrors();
+        if (!$parsed || ($errors !== false && ($errors['warning_count'] || $errors['error_count']))) {
+            http_response_code(422);
+            echo json_encode(["status" => "error", "message" => "Thời gian nhắc không hợp lệ."]);
+            exit();
+        }
+        $reminder_at = $parsed->format('Y-m-d H:i:s');
+    }
     $upd = $conn->prepare(
         "UPDATE notes SET reminder_at = ?, reminder_sent = 0 WHERE note_id = ? AND user_id = ?"
     );

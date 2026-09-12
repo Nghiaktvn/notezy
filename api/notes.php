@@ -62,16 +62,20 @@ switch ($method) {
             }
 
             $unlocked_notes = isset($_SESSION['accessed_notes']) ? $_SESSION['accessed_notes'] : [];
+            $unlocked_pins = isset($_SESSION['pin_unlocked_notes']) ? $_SESSION['pin_unlocked_notes'] : [];
             $has_pwd = !empty($row['password_hash']);
             $is_pwd_locked = $has_pwd && empty($unlocked_notes[$poll_note_id]);
+            $has_pin = !empty($row['pin_hash']);
+            $is_pin_locked = $has_pin && empty($unlocked_pins[$poll_note_id]);
 
-            if ($is_pwd_locked) {
+            if ($is_pwd_locked || $is_pin_locked) {
                 $row['content'] = '';
                 $row['is_password_locked'] = true;
             } else {
                 $row['is_password_locked'] = false;
                 $row['content'] = htmlspecialchars($row['content'], ENT_QUOTES, 'UTF-8');
             }
+            $row['is_pin_locked'] = $is_pin_locked;
             unset($row['password_hash'], $row['pin_hash']);
 
             $row['title'] = htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8');
@@ -89,7 +93,7 @@ switch ($method) {
                     LEFT JOIN note_labels nl ON n.note_id = nl.note_id
                     LEFT JOIN labels l ON nl.label_id = l.label_id
                     WHERE n.user_id = ? AND n.note_type = ? AND n.archived = ?
-                    GROUP BY n.note_id ORDER BY n.pinned DESC, n.created_at DESC";
+                    GROUP BY n.note_id ORDER BY n.pinned DESC, n.pinned_at DESC, n.updated_at DESC";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("isi", $user_id, $type_filter, $archived_filter);
         } else {
@@ -98,7 +102,7 @@ switch ($method) {
                     LEFT JOIN note_labels nl ON n.note_id = nl.note_id
                     LEFT JOIN labels l ON nl.label_id = l.label_id
                     WHERE n.user_id = ? AND n.archived = ?
-                    GROUP BY n.note_id ORDER BY n.pinned DESC, n.created_at DESC";
+                    GROUP BY n.note_id ORDER BY n.pinned DESC, n.pinned_at DESC, n.updated_at DESC";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("ii", $user_id, $archived_filter);
         }
@@ -107,16 +111,21 @@ switch ($method) {
         $result = $stmt->get_result();
         $notes = [];
         $unlocked_notes = isset($_SESSION['accessed_notes']) ? $_SESSION['accessed_notes'] : [];
+        $unlocked_pins = isset($_SESSION['pin_unlocked_notes']) ? $_SESSION['pin_unlocked_notes'] : [];
 
         while ($row = $result->fetch_assoc()) {
             $row['labels'] = $row['labels'] ? explode(',', $row['labels']) : [];
             $row_id = (int)$row['note_id'];
             $has_pwd = !empty($row['password_hash']);
             $is_pwd_locked = $has_pwd && empty($unlocked_notes[$row_id]);
+            $has_pin = !empty($row['pin_hash']);
+            $is_pin_locked = $has_pin && empty($unlocked_pins[$row_id]);
             $row['has_password'] = $has_pwd;
             $row['is_password_locked'] = $is_pwd_locked;
+            $row['has_pin'] = $has_pin;
+            $row['is_pin_locked'] = $is_pin_locked;
 
-            if ($is_pwd_locked) {
+            if ($is_pwd_locked || $is_pin_locked) {
                 $row['content'] = '';
             } else {
                 $row['content'] = htmlspecialchars($row['content'], ENT_QUOTES, 'UTF-8');
@@ -150,10 +159,10 @@ switch ($method) {
         if ($note_type === '') $note_type = $ai_result['type'];
 
         // FIX: Use prepared statement — no string interpolation
-        $sql = "INSERT INTO notes (user_id, title, content, pinned, status, deadline, note_type, background_color, text_color, reminder_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO notes (user_id, title, content, pinned, pinned_at, status, deadline, note_type, background_color, text_color, reminder_at)
+                VALUES (?, ?, ?, ?, IF(? = 1, NOW(), NULL), ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ississssss", $user_id, $title, $content, $pinned, $status, $deadline, $note_type, $background_color, $text_color, $reminder_at);
+        $stmt->bind_param("issiissssss", $user_id, $title, $content, $pinned, $pinned, $status, $deadline, $note_type, $background_color, $text_color, $reminder_at);
 
         if ($stmt->execute()) {
             $note_id = $conn->insert_id;
@@ -231,7 +240,7 @@ switch ($method) {
 
         // Verify ownership OR write permission in note_shares
         $auth_stmt = $conn->prepare(
-            "SELECT note_id, title, content, updated_at FROM notes 
+            "SELECT note_id, title, content, updated_at, password_hash, pin_hash FROM notes
              WHERE note_id = ? 
                AND (user_id = ? OR note_id IN (
                    SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write'
@@ -246,6 +255,13 @@ switch ($method) {
             exit();
         }
         $auth_stmt->close();
+
+        if ((!empty($current_note['password_hash']) && empty($_SESSION['accessed_notes'][$note_id]))
+            || (!empty($current_note['pin_hash']) && empty($_SESSION['pin_unlocked_notes'][$note_id]))) {
+            http_response_code(423);
+            echo json_encode(["status" => "error", "message" => "Hãy mở khóa ghi chú trước khi chỉnh sửa."]);
+            exit();
+        }
 
         if (!$force_save && $client_updated_at !== '' && !empty($current_note['updated_at']) && $current_note['updated_at'] > $client_updated_at) {
             http_response_code(409);
@@ -272,9 +288,13 @@ switch ($method) {
         foreach ($allowed_fields as $field) {
             if (!isset($data[$field])) continue;
             if ($field === 'pinned') {
+                $nextPinned = (int) $data[$field];
+                $set_parts[] = "pinned_at = CASE WHEN ? = 1 AND pinned = 0 THEN NOW() WHEN ? = 0 THEN NULL ELSE pinned_at END";
                 $set_parts[] = "pinned = ?";
-                $types .= 'i';
-                $values[] = (int)$data[$field];
+                $types .= 'iii';
+                $values[] = $nextPinned;
+                $values[] = $nextPinned;
+                $values[] = $nextPinned;
             } elseif ($field === 'background_color' || $field === 'text_color') {
                 $color = trim((string)$data[$field]);
                 if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) continue;
@@ -326,11 +346,22 @@ switch ($method) {
             exit();
         }
         // Fetch image path first
-        $img_stmt = $conn->prepare("SELECT image_path FROM notes WHERE note_id = ? AND user_id = ?");
+        $img_stmt = $conn->prepare("SELECT image_path, password_hash, pin_hash FROM notes WHERE note_id = ? AND user_id = ?");
         $img_stmt->bind_param("ii", $note_id, $user_id);
         $img_stmt->execute();
         $img_row = $img_stmt->get_result()->fetch_assoc();
-        if ($img_row && !empty($img_row['image_path'])) {
+        if (!$img_row) {
+            http_response_code(404);
+            echo json_encode(["status" => "error", "message" => "Note not found"]);
+            exit();
+        }
+        if ((!empty($img_row['password_hash']) && empty($_SESSION['accessed_notes'][$note_id]))
+            || (!empty($img_row['pin_hash']) && empty($_SESSION['pin_unlocked_notes'][$note_id]))) {
+            http_response_code(423);
+            echo json_encode(["status" => "error", "message" => "Hãy mở khóa ghi chú trước khi xóa."]);
+            exit();
+        }
+        if (!empty($img_row['image_path'])) {
             $full_path = __DIR__ . '/../' . $img_row['image_path'];
             if (file_exists($full_path)) @unlink($full_path);
         }

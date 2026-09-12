@@ -100,6 +100,11 @@
             this._syncCheckedAlarmsFromStorage(dateStr);
 
             this.items.forEach(item => {
+                // -1 is the explicit "no alarm" value. Keep the schedule and
+                // linked note visible, but never produce sound/notifications.
+                const reminderValue = Number.parseInt(item.reminder_minutes, 10);
+                if (Number.isFinite(reminderValue) && reminderValue < 0) return;
+
                 // Kiểm tra điều kiện ngày (theo thứ hàng tuần hoặc theo ngày cụ thể)
                 const matchDay = (item.specific_date && item.specific_date === dateStr) ||
                                  (!item.specific_date && item.day_of_week === dayOfWeek);
@@ -108,7 +113,7 @@
 
                 const [startH, startM] = item.start_time.split(':').map(Number);
                 const classStartTotalMinutes = startH * 60 + startM;
-                const remindBefore = parseInt(item.reminder_minutes, 10) || 0;
+                const remindBefore = Number.isFinite(reminderValue) ? reminderValue : 0;
                 const alarmTargetMinutes = classStartTotalMinutes - remindBefore;
 
                 // Khóa nhận diện duy nhất cho lần báo trong ngày

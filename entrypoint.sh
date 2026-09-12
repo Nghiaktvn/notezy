@@ -13,4 +13,11 @@ mkdir -p /var/www/html/uploads
 chown -R www-data:www-data /var/www/html/uploads
 chmod -R 775 /var/www/html/uploads
 
+# Persistent server-side sessions must survive Apache restarts and be writable
+# by the unprivileged web user.  Vietnam is the application timezone.
+mkdir -p /var/www/html/storage/sessions
+chown -R www-data:www-data /var/www/html/storage
+chmod -R 775 /var/www/html/storage
+export TZ=Asia/Ho_Chi_Minh
+
 exec apache2-foreground

@@ -16,8 +16,8 @@ if str(AGENT_DIR) not in sys.path:
 os.environ["LLM_PROVIDER"] = "mock"
 
 from ai_agent import handle_request, _sanitize_tool_calls  # noqa: E402
-from prompts import SYSTEM_PROMPT  # noqa: E402
-from tools import ALL_TOOLS, risk_for  # noqa: E402
+from ai_agent.prompts import SYSTEM_PROMPT  # noqa: E402
+from ai_agent.tools import ALL_TOOLS, risk_for  # noqa: E402
 
 
 class ToolSecurityTests(unittest.TestCase):
@@ -59,7 +59,7 @@ class PromptTests(unittest.TestCase):
         out = handle_request({"messages": [{"role": "user", "content": "Tìm các note về React"}], "context": {}})
         self.assertTrue(out["ok"])
         names = [c["name"] for c in out["data"]["tool_calls"]]
-        self.assertIn("search_notes", names)
+        self.assertIn("semantic_search", names)
 
     def test_create_uses_tool(self):
         out = handle_request({"messages": [{"role": "user", "content": "Tạo cho tôi một note về Docker"}], "context": {}})

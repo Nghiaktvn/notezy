@@ -133,7 +133,30 @@ for ($i = 0; $i < $max_loops; $i++) {
                 'note_type' => $result['note_type'],
                 'background_color' => $result['background_color'],
                 'text_color' => $result['text_color'],
+                'reminder_at' => $result['reminder_at'],
                 'content' => "Đã tạo ghi chú « {$result['title']} ».",
+                'requires_confirmation' => false,
+            ];
+            break 2;
+        }
+
+        if ($name === 'create_schedule') {
+            $result = $tools->execute('create_schedule', $args);
+            if (!$result['ok']) {
+                $final_response = [
+                    'type' => 'message',
+                    'content' => 'Không tạo được lịch học: ' . ($result['error'] ?? 'lỗi không xác định'),
+                    'requires_confirmation' => false,
+                ];
+                break 2;
+            }
+            $when = $result['specific_date'] ?: ('thứ ' . ((int) $result['day_of_week'] + 1) . ' hằng tuần');
+            $final_response = [
+                'type' => 'schedule_created',
+                'action' => 'create_schedule',
+                'schedule_id' => $result['schedule_id'],
+                'title' => $result['title'],
+                'content' => 'Đã thêm “' . $result['title'] . '” vào lịch: ' . $when . ', ' . $result['start_time'] . '–' . $result['end_time'] . '.',
                 'requires_confirmation' => false,
             ];
             break 2;

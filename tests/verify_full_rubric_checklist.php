@@ -57,10 +57,11 @@ $userId = (int)($userRow['id'] ?? 0);
 $otpValid = !empty($userRow['activation_otp_hash']) && password_verify($otp, $userRow['activation_otp_hash']);
 $unactivatedInitially = ((int)$userRow['activated'] === 0);
 
-// Verify login is blocked when not activated
-$blockedLogin = login($testUser, $testPass);
-$loginBlockedPassed = is_array($blockedLogin) && ($blockedLogin['code'] ?? '') === 'not_activated';
-report("Login blocked for unactivated user", $loginBlockedPassed, "Returned code: not_activated");
+// The assignment allows unverified users to use the app, with a persistent
+// activation reminder. Confirm login succeeds and exposes that state.
+$unverifiedLogin = login($testUser, $testPass);
+$unverifiedLoginPassed = is_array($unverifiedLogin) && !empty($unverifiedLogin['success']) && !empty($unverifiedLogin['unverified']);
+report("Unverified user can log in with activation reminder", $unverifiedLoginPassed, "Unverified flag returned by login");
 
 // 1.2 Account activation
 $stmt = $conn->prepare("UPDATE users SET activated = 1, activation_otp_hash = NULL, activation_otp_expires_at = NULL WHERE id = ?");

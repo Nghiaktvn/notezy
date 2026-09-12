@@ -1,13 +1,13 @@
 <?php
 require_once dirname(__DIR__) . '/includes/session.php';
 /**
- * api/note_pin.php — 4-digit PIN / Security Code lock for notebooks (sổ ghi chú).
+ * api/note_pin.php — 6-digit PIN / Security Code lock for notebooks (sổ ghi chú).
  *
- * Sổ ghi chú được bảo mật bằng mã 4 số:
- *   - Mã bảo mật gồm đúng 4 chữ số (numeric only: 0000-9999).
- *   - Khi ĐẶT mã lần đầu: Nhập mã 4 số và xác nhận.
- *   - Khi ĐỔI hoặc GỠ mã: Có thể xác nhận bằng mã 4 số hiện tại hoặc mật khẩu tài khoản.
- *   - Khi MỞ SỔ: Nhập đúng mã 4 số đã thiết lập trước đó để xem nội dung và tùy chỉnh sự kiện của sổ.
+ * Sổ ghi chú được bảo mật bằng mã 6 số:
+ *   - Mã bảo mật gồm đúng 6 chữ số (numeric only: 000000-999999).
+ *   - Khi ĐẶT mã lần đầu: Nhập mã 6 số và xác nhận.
+ *   - Khi ĐỔI hoặc GỠ mã: Có thể xác nhận bằng mã 6 số hiện tại hoặc mật khẩu tài khoản.
+ *   - Khi MỞ SỔ: Nhập đúng mã 6 số đã thiết lập trước đó để xem nội dung và tùy chỉnh sự kiện của sổ.
  *   - Mở khóa hợp lệ sẽ được lưu vào phiên đăng nhập (note_pin_unlocks và session).
  *
  * Actions:
@@ -61,12 +61,12 @@ function get_shared_note($conn, $note_id, $user_id) {
     return $row;
 }
 
-function is_unlocked_this_session($conn, $note_id, $session_id) {
+function is_unlocked_this_session($conn, $note_id, $user_id, $session_id) {
     if (!empty($_SESSION['pin_unlocked_notes'][$note_id])) {
         return true;
     }
-    $stmt = $conn->prepare("SELECT id FROM note_pin_unlocks WHERE note_id = ? AND session_id = ?");
-    $stmt->bind_param("is", $note_id, $session_id);
+    $stmt = $conn->prepare("SELECT id FROM note_pin_unlocks WHERE note_id = ? AND user_id = ? AND session_id = ?");
+    $stmt->bind_param("iis", $note_id, $user_id, $session_id);
     $stmt->execute();
     $found = $stmt->get_result()->num_rows > 0;
     $stmt->close();
@@ -74,6 +74,24 @@ function is_unlocked_this_session($conn, $note_id, $session_id) {
         $_SESSION['pin_unlocked_notes'][$note_id] = true;
     }
     return $found;
+}
+
+function pin_verify_allowed(int $note_id): bool {
+    $window = 15 * 60;
+    $limit = 8;
+    $now = time();
+    $state = $_SESSION['pin_attempts'][$note_id] ?? ['started_at' => $now, 'count' => 0];
+    if (($now - (int) $state['started_at']) >= $window) {
+        $state = ['started_at' => $now, 'count' => 0];
+    }
+    $_SESSION['pin_attempts'][$note_id] = $state;
+    return (int) $state['count'] < $limit;
+}
+
+function record_pin_failure(int $note_id): void {
+    $state = $_SESSION['pin_attempts'][$note_id] ?? ['started_at' => time(), 'count' => 0];
+    $state['count'] = (int) $state['count'] + 1;
+    $_SESSION['pin_attempts'][$note_id] = $state;
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -96,7 +114,7 @@ switch ($action) {
 
     case 'status':
         $locked = !empty($note['pin_hash']);
-        $unlocked = $locked ? is_unlocked_this_session($conn, $note_id, $session_id) : true;
+        $unlocked = $locked ? is_unlocked_this_session($conn, $note_id, $user_id, $session_id) : true;
         respond(true, "OK", ["pin_locked" => $locked, "unlocked" => $unlocked]);
         break;
 
@@ -108,11 +126,11 @@ switch ($action) {
         $old_pin = trim((string) ($_POST['old_pin'] ?? ''));
         $account_password = (string) ($_POST['account_password'] ?? '');
 
-        if (!preg_match('/^\d{4}$/', $pin)) {
-            respond(false, "Mã bảo mật phải gồm đúng 4 chữ số (0000 - 9999).");
+        if (!preg_match('/^\d{6}$/', $pin)) {
+            respond(false, "Mã bảo mật phải gồm đúng 6 chữ số (000000 - 999999).");
         }
         if ($pin !== $pin_confirm) {
-            respond(false, "Hai lần nhập mã bảo mật 4 số không khớp nhau.");
+            respond(false, "Hai lần nhập mã bảo mật 6 số không khớp nhau.");
         }
 
         // Nếu sổ đã có mã PIN từ trước, yêu cầu xác nhận mã cũ hoặc mật khẩu tài khoản
@@ -132,7 +150,7 @@ switch ($action) {
             }
 
             if (!$verified) {
-                respond(false, "Vui lòng nhập đúng mã bảo mật 4 số hiện tại hoặc mật khẩu đăng nhập để đổi mã.");
+                respond(false, "Vui lòng nhập đúng mã bảo mật 6 số hiện tại hoặc mật khẩu đăng nhập để đổi mã.");
             }
         }
 
@@ -154,11 +172,16 @@ switch ($action) {
         $ins->execute();
         $ins->close();
 
-        respond(true, "Đã bật bảo mật 4 số cho sổ ghi chú thành công!");
+        respond(true, "Đã bật bảo mật 6 số cho sổ ghi chú thành công!");
         break;
 
     case 'verify':
         if ($method !== 'POST') respond(false, "Phương thức yêu cầu không hợp lệ.");
+
+        if (!pin_verify_allowed($note_id)) {
+            http_response_code(429);
+            respond(false, "Bạn đã nhập sai PIN quá nhiều lần. Hãy thử lại sau 15 phút.");
+        }
 
         if (empty($note['pin_hash'])) {
             $_SESSION['pin_unlocked_notes'][$note_id] = true;
@@ -174,14 +197,16 @@ switch ($action) {
         }
 
         $pin = trim((string) ($_POST['pin'] ?? ''));
-        if (!preg_match('/^\d{4}$/', $pin)) {
-            respond(false, "Mã bảo mật phải gồm đúng 4 chữ số.");
+        if (!preg_match('/^\d{6}$/', $pin)) {
+            respond(false, "Mã bảo mật phải gồm đúng 6 chữ số.");
         }
 
         if (!password_verify($pin, $note['pin_hash'])) {
-            respond(false, "Mã bảo mật 4 số không chính xác. Vui lòng thử lại.");
+            record_pin_failure($note_id);
+            respond(false, "Mã bảo mật 6 số không chính xác. Vui lòng thử lại.");
         }
 
+        unset($_SESSION['pin_attempts'][$note_id]);
         $_SESSION['pin_unlocked_notes'][$note_id] = true;
 
         $ins = $conn->prepare(
@@ -228,7 +253,7 @@ switch ($action) {
         }
 
         if (!$verified) {
-            respond(false, "Vui lòng nhập đúng mã bảo mật 4 số hiện tại hoặc mật khẩu đăng nhập để gỡ khóa.");
+            respond(false, "Vui lòng nhập đúng mã bảo mật 6 số hiện tại hoặc mật khẩu đăng nhập để gỡ khóa.");
         }
 
         $stmt = $conn->prepare("UPDATE notes SET pin_hash = NULL, pin_set_at = NULL WHERE note_id = ? AND user_id = ?");
@@ -243,10 +268,9 @@ switch ($action) {
         $del->execute();
         $del->close();
 
-        respond(true, "Đã gỡ bảo mật 4 số cho sổ ghi chú thành công!");
+        respond(true, "Đã gỡ bảo mật 6 số cho sổ ghi chú thành công!");
         break;
 
     default:
         respond(false, "Hành động không hợp lệ.");
 }
-

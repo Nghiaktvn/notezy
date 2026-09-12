@@ -35,7 +35,7 @@ $force_save        = !empty($_POST['force_save']);
 
 // Authorisation & Fetch current state: owner OR shared-write
 $auth = $conn->prepare(
-    "SELECT n.note_id, n.title, n.content, n.updated_at, u.username as owner_name
+    "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash, n.pin_hash, u.username as owner_name
      FROM notes n
      JOIN users u ON n.user_id = u.id
      WHERE n.note_id = ?
@@ -52,6 +52,12 @@ $auth->close();
 
 if (!$current_note) {
     echo json_encode(["success" => false, "message" => "Bạn không có quyền chỉnh sửa ghi chú này."]);
+    exit();
+}
+if ((!empty($current_note['password_hash']) && empty($_SESSION['accessed_notes'][$note_id]))
+    || (!empty($current_note['pin_hash']) && empty($_SESSION['pin_unlocked_notes'][$note_id]))) {
+    http_response_code(423);
+    echo json_encode(["success" => false, "message" => "Hãy mở khóa ghi chú trước khi lưu tự động."]);
     exit();
 }
 

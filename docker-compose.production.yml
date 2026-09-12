@@ -1,0 +1,37 @@
+# Production overlay. Combine with docker-compose.yml and
+# docker-compose.services.yml; it removes development source mounts and keeps
+# all internal services private except the browser-facing web app and gateway.
+services:
+  db_provisioner:
+    environment:
+      SERVICE_DB_PASSWORD: ${SERVICE_DB_PASSWORD:?Set SERVICE_DB_PASSWORD to a unique production secret}
+
+  web:
+    volumes: !override
+      - uploads_data:/var/www/html/uploads
+      - storage_data:/var/www/html/storage
+    environment:
+      APP_ENV: production
+
+  ai_agent:
+    build:
+      context: .
+      dockerfile: ai_agent/Dockerfile
+    volumes: !override
+      - ai_index_data:/app/ai_agent/storage
+    environment:
+      APP_ENV: production
+      AI_AGENT_HOST: "0.0.0.0"
+      AI_AGENT_PORT: "8765"
+    ports: !override []
+
+  collab_ws:
+    ports: !override
+      - "127.0.0.1:8766:8766"
+
+  gateway:
+    ports: !override
+      - "127.0.0.1:8088:8080"
+
+volumes:
+  ai_index_data:

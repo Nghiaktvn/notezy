@@ -1,4 +1,10 @@
 <?php
+// The rubric requires one editor for creating and editing notes. Keep this
+// legacy URL working, but always render the shared editor implementation.
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
+    header('Location: themghichu.php?noteId=' . urlencode((string)(int)$_GET['id']));
+    exit;
+}
 require_once __DIR__ . '/includes/session.php';
 require_once('db.php');
 notezy_session_start();
@@ -175,7 +181,7 @@ if ($note['pin_hash'] && empty($_SESSION['pin_unlocked_notes'][$note_id])) {
     $pin_error = '';
     if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['note_pin'])) {
         $entered_pin = trim($_POST['note_pin']);
-        if (preg_match('/^\d{4}$/', $entered_pin) && password_verify($entered_pin, $note['pin_hash'])) {
+        if (preg_match('/^\d{6}$/', $entered_pin) && password_verify($entered_pin, $note['pin_hash'])) {
             $_SESSION['pin_unlocked_notes'][$note_id] = true;
             $ins_pin = $conn->prepare("INSERT INTO note_pin_unlocks (note_id, user_id, session_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = NOW()");
             if ($ins_pin) {
@@ -187,7 +193,7 @@ if ($note['pin_hash'] && empty($_SESSION['pin_unlocked_notes'][$note_id])) {
             header('Location: edit_note.php?id=' . urlencode($note_id));
             exit;
         } else {
-            $pin_error = 'Mã bảo mật 4 số không đúng. Vui lòng nhập lại.';
+            $pin_error = 'Mã bảo mật 6 số không đúng. Vui lòng nhập lại.';
         }
     }
     ?>
@@ -252,7 +258,7 @@ if ($note['pin_hash'] && empty($_SESSION['pin_unlocked_notes'][$note_id])) {
             <?php endif; ?>
             <form method="post">
                 <input type="password" name="note_pin" class="form-control pin-input" required
-                    inputmode="numeric" pattern="\d{4}" maxlength="4" minlength="4"
+                    inputmode="numeric" pattern="\d{6}" maxlength="6" minlength="6"
                     placeholder="••••" autofocus autocomplete="off">
                 <button type="submit" class="btn btn-primary">Mở khóa sổ</button>
                 <a href="index_notezy.php" class="btn btn-link text-decoration-none text-muted small mt-2 d-block">
@@ -274,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
     $content = trim($_POST['content'] ?? '');
     $labels_raw = trim($_POST['labels'] ?? '');
     $pinned = isset($_POST['pinned']) ? 1 : 0;
-    $password = trim($_POST['password'] ?? '');
+    $password = '';
     $background_color = trim($_POST['background_color'] ?? '#ffffff');
     $text_color = trim($_POST['text_color'] ?? '#000000');
     $font_family = trim($_POST['font_family'] ?? 'Poppins');
@@ -284,14 +290,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
     } else {
         $conn->begin_transaction();
         try {
-            // Cập nhật ghi chú: Hỗ trợ Bật, Đổi hoặc Gỡ bỏ (disable) mật khẩu
-            if (!empty($_POST['remove_password'])) {
-                $password_hash = null;
-            } elseif ($password !== '') {
-                $password_hash = password_hash($password, PASSWORD_DEFAULT);
-            } else {
-                $password_hash = $note['password_hash'];
-            }
+            // PIN 6 số là cơ chế khóa duy nhất. Retire old per-note passwords.
+            $password_hash = null;
             $sql_update = "UPDATE notes SET title = ?, content = ?, pinned = ?, password_hash = ?, background_color = ?, text_color = ?, font_family = ?, updated_at = NOW() WHERE note_id = ? AND (user_id = ? OR note_id IN (SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write'))";
             $stm_update = $conn->prepare($sql_update);
             if (!$stm_update) {
@@ -661,26 +661,13 @@ exit;
                 <input type="checkbox" class="form-check-input" id="pinned" name="pinned" <?= $note['pinned'] ? 'checked' : '' ?>>
                 <label class="form-check-label" for="pinned">Ghim ghi chú lên đầu</label>
             </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Mật khẩu ghi chú</label>
-                <input type="password" class="form-control" id="password" name="password"
-                    placeholder="<?= !empty($note['password_hash']) ? 'Ghi chú đang có mật khẩu (nhập mới để đổi)' : 'Để trống nếu không đặt mật khẩu' ?>">
-                <?php if (!empty($note['password_hash'])): ?>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" name="remove_password" id="remove_password" value="1">
-                    <label class="form-check-label text-danger fw-semibold" for="remove_password">
-                        <i class="fas fa-lock-open me-1"></i> Gỡ bỏ mật khẩu bảo vệ ghi chú này
-                    </label>
-                </div>
-                <?php endif; ?>
-            </div>
             <div class="mb-3 p-3" style="border:1px solid #e2e2e2;border-radius:8px;">
-                <label class="form-label d-block">🔒 Bảo mật sổ với mã 4 số (PIN)</label>
+                <label class="form-label d-block">🔒 Bảo mật sổ với mã 6 số (PIN)</label>
                 <p class="text-muted mb-2" style="font-size:.85rem;">
-                    Bảo vệ sổ ghi chú bằng mã 4 số bí mật. Khi mở sổ trên trang chủ hoặc chỉnh sửa, hệ thống sẽ yêu cầu nhập đúng 4 số này để xem nội dung và tùy chỉnh sự kiện.
+                    Bảo vệ sổ ghi chú bằng mã 6 số bí mật. Người được chia sẻ cũng phải nhập PIN do bạn cung cấp.
                 </p>
                 <div id="pinStatusText" class="mb-2" style="font-size:.9rem;">Đang kiểm tra trạng thái bảo mật...</div>
-                <button type="button" id="pinSetBtn" class="btn btn-outline-dark btn-sm" style="display:none;">Đặt mã bảo mật (4 số)</button>
+                <button type="button" id="pinSetBtn" class="btn btn-outline-dark btn-sm" style="display:none;">Đặt mã bảo mật (6 số)</button>
                 <button type="button" id="pinRemoveBtn" class="btn btn-outline-danger btn-sm" style="display:none;">Gỡ mã bảo mật</button>
             </div>
             <div class="mb-3 p-3" style="border:1px solid #e2e2e2;border-radius:8px;">
@@ -736,6 +723,7 @@ exit;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/offline-store.js"></script>
+    <script src="js/collaboration-ws.js"></script>
     <script>
         const noteId = <?= $note_id ?>;
         let lastKnownUpdatedAt = <?= json_encode($note['updated_at'] ?? '') ?>;
@@ -770,9 +758,9 @@ exit;
             const { value: pinPair } = await Swal.fire({
                 title: 'Đặt mã bảo mật 4 số',
                 html:
-                    '<input id="swalPin1" type="password" inputmode="numeric" maxlength="4" pattern="\\d{4}" ' +
+                    '<input id="swalPin1" type="password" inputmode="numeric" maxlength="6" pattern="\\d{6}" ' +
                     'class="swal2-input" placeholder="Nhập 4 số bí mật (0000-9999)" style="letter-spacing:6px;text-align:center;">' +
-                    '<input id="swalPin2" type="password" inputmode="numeric" maxlength="4" pattern="\\d{4}" ' +
+                    '<input id="swalPin2" type="password" inputmode="numeric" maxlength="6" pattern="\\d{6}" ' +
                     'class="swal2-input" placeholder="Nhập lại mã 4 số" style="letter-spacing:6px;text-align:center;">',
                 focusConfirm: false,
                 showCancelButton: true,
@@ -781,8 +769,8 @@ exit;
                 preConfirm: () => {
                     const pin = document.getElementById('swalPin1').value.trim();
                     const pinConfirm = document.getElementById('swalPin2').value.trim();
-                    if (!/^\d{4}$/.test(pin)) {
-                        Swal.showValidationMessage('Mã bảo mật phải gồm đúng 4 chữ số.');
+                    if (!/^\d{6}$/.test(pin)) {
+                        Swal.showValidationMessage('Mã bảo mật phải gồm đúng 6 chữ số.');
                         return false;
                     }
                     if (pin !== pinConfirm) {
@@ -884,6 +872,29 @@ exit;
         let lastKnownContent = document.getElementById('content').value;
         let isTyping = false;
         let typingTimeout = null;
+
+        // WebSocket is the primary low-latency channel. The polling endpoint
+        // below remains a compatibility fallback for older deployments.
+        function connectEditorWebSocket() {
+            if (!window.NotezyCollaboration || !noteId) return;
+            window.NotezyCollaboration.connect(noteId, (change) => {
+                if (change.type !== 'draft') return;
+                const titleEl = document.getElementById('title');
+                const contentEl = document.getElementById('content');
+                const hasLocalEdits = titleEl.value !== lastKnownTitle || contentEl.value !== lastKnownContent;
+                if (hasLocalEdits || document.activeElement === titleEl || document.activeElement === contentEl) {
+                    showConflictModal({ title: change.title || '', content: change.content || '', updated_at: change.updated_at || '' }, 'Cộng tác viên');
+                    return;
+                }
+                if (typeof change.title === 'string') titleEl.value = change.title;
+                if (typeof change.content === 'string') contentEl.value = change.content;
+                lastKnownTitle = titleEl.value;
+                lastKnownContent = contentEl.value;
+                highlightFields();
+                showStatus('Đã nhận thay đổi tức thời từ cộng tác viên', '#0dcaf0', 'fas fa-bolt');
+            });
+        }
+        connectEditorWebSocket();
 
         // Floating Save Status Indicator
         const statusEl = document.createElement('div');
@@ -1055,6 +1066,11 @@ exit;
 
         function scheduleAutoSave() {
             isTyping = true;
+            window.NotezyCollaboration?.send({
+                type: 'draft', note_id: noteId,
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value
+            });
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => { isTyping = false; }, 1200);
 

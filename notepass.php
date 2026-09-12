@@ -88,7 +88,7 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
     $pin_error = '';
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_pin'])) {
         $entered_pin = trim($_POST['note_pin']);
-        if (preg_match('/^\d{4}$/', $entered_pin) && password_verify($entered_pin, $note['pin_hash'])) {
+        if (preg_match('/^\d{6}$/', $entered_pin) && password_verify($entered_pin, $note['pin_hash'])) {
             $_SESSION['pin_unlocked_notes'][$note_id] = true;
             $ins_pin = $conn->prepare("INSERT INTO note_pin_unlocks (note_id, user_id, session_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = NOW()");
             if ($ins_pin) {
@@ -100,7 +100,7 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
             header("Location: notepass.php?id=" . urlencode($note_id));
             exit;
         } else {
-            $pin_error = 'Mã bảo mật 4 số không chính xác. Vui lòng thử lại.';
+            $pin_error = 'Mã bảo mật 6 số không chính xác. Vui lòng thử lại.';
         }
     }
     ?>
@@ -153,7 +153,7 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
             <form method="post">
                 <div class="mb-3">
                     <input type="password" name="note_pin" class="form-control pin-input shadow-sm" required
-                           inputmode="numeric" pattern="\d{4}" maxlength="4" minlength="4"
+                           inputmode="numeric" pattern="\d{6}" maxlength="6" minlength="6"
                            placeholder="••••" autofocus autocomplete="off">
                 </div>
                 <button type="submit" class="btn btn-dark w-100 py-2 rounded-pill fw-semibold mb-2">
@@ -171,7 +171,7 @@ exit;
 }
 
 // Kiểm tra mật khẩu chữ thông thường nếu cần
-if ($note && $note['password_hash'] && !isset($_SESSION['accessed_notes'][$note_id])) {
+if (false && $note && $note['password_hash'] && !isset($_SESSION['accessed_notes'][$note_id])) {
     if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['password'])) {
         if (password_verify($_POST['password'], $note['password_hash'])) {
             $_SESSION['accessed_notes'][$note_id] = true;

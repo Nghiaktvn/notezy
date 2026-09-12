@@ -62,7 +62,7 @@ function notezy_mailer(): PHPMailer {
  * Gửi email OTP kích hoạt tài khoản.
  * @return true|string   true nếu gửi thành công, string lỗi nếu thất bại
  */
-function sendActivationEmail($email, $otp = '', $toName = 'User') {
+function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLink = '') {
     $email = notezy_valid_email($email);
     if ($email === null) {
         return 'Lỗi gửi email: địa chỉ nhận không hợp lệ';
@@ -79,13 +79,19 @@ function sendActivationEmail($email, $otp = '', $toName = 'User') {
         $mail->addAddress($email, $toName);
         $mail->isHTML(true);
         $mail->Subject = 'Kích hoạt tài khoản Notezy';
+        $safeLink = filter_var($activationLink, FILTER_VALIDATE_URL) ? $activationLink : '';
+        $linkHtml = $safeLink !== ''
+            ? "<p><a href=\"" . htmlspecialchars($safeLink, ENT_QUOTES, 'UTF-8') . "\" style=\"display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none\">Kích hoạt tài khoản</a></p>"
+            : '';
         $mail->Body    = "Chào <b>$toName</b>,<br><br>"
-                       . "Mã OTP kích hoạt tài khoản của bạn là:<br>"
+                       . "Bấm liên kết dưới đây để kích hoạt tài khoản:<br>"
+                       . $linkHtml
+                       . "<p>Hoặc nhập mã OTP kích hoạt:</p>"
                        . "<h2 style='letter-spacing:4px;color:#2563eb;'>$otp</h2>"
                        . "<p>Mã có hiệu lực trong <strong>5 phút</strong>.</p>"
                        . "<p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.</p>"
                        . "<p>-- Đội ngũ Notezy</p>";
-        $mail->AltBody = "Mã OTP kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
+        $mail->AltBody = ($safeLink !== '' ? "Kích hoạt tài khoản: $safeLink\n" : '') . "Mã OTP kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
         $mail->send();
         return true;
     } catch (Exception $e) {

@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Notezy - Your Thoughts, Organized & Intelligent | AI Notepad</title>
-    <meta name="description" content="Ghi chú thông minh thế hệ mới kết hợp trợ lý AI, bảo mật sổ bằng mã 4 số và tùy chỉnh giao diện Sáng (Trắng - Xanh lá) & Tối (Đen - Đỏ)." />
+    <meta name="description" content="Ghi chú thông minh thế hệ mới kết hợp trợ lý AI, bảo mật ghi chú bằng mã PIN 6 số và tùy chỉnh giao diện Sáng/Tối." />
     <link rel="icon" href="logo.png" type="image/png" />
 
     <!-- Google Fonts -->
@@ -188,9 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
             const [loginSuccessMsg, setLoginSuccessMsg] = useState('');
             const [loginForm, setLoginForm] = useState({ username: '', password: '', error: '', loading: false });
             const [regForm, setRegForm] = useState({
-                firstname: '',
-                lastname: '',
-                username: '',
+                displayName: '',
                 email: '',
                 password: '',
                 passwordConfirm: '',
@@ -256,11 +254,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
             // Handle Pin unlock simulation
             const handleMockupUnlock = (e) => {
                 e.preventDefault();
-                if (mockupPinInput === '2026') {
+                if (mockupPinInput === '202606') {
                     setIsMockupPinUnlocked(true);
                     setMockupPinError('');
                 } else {
-                    setMockupPinError('Mã không đúng! Thử nhập 2026.');
+                    setMockupPinError('Mã không đúng! Thử nhập 202606.');
                 }
             };
 
@@ -310,9 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
 
                 try {
                     const formData = new URLSearchParams();
-                    formData.append('first', regForm.firstname);
-                    formData.append('last', regForm.lastname);
-                    formData.append('user', regForm.username);
+                    formData.append('display_name', regForm.displayName);
                     formData.append('email', regForm.email);
                     formData.append('pass', regForm.password);
                     formData.append('pass-confirm', regForm.passwordConfirm);
@@ -330,14 +326,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                             window.location.href = data.redirect;
                             return;
                         }
-                        // Tự động chuyển sang tab đăng nhập và điền sẵn username
-                        setLoginForm(prev => ({ ...prev, username: regForm.username, error: '' }));
-                        setLoginSuccessMsg('🎉 Đăng ký thành công! Hãy nhập mật khẩu để đăng nhập.');
-                        setAuthMode('login');
+                        setLoginSuccessMsg('🎉 Đăng ký thành công! Bạn đã được đăng nhập.');
                         setRegForm({
-                            firstname: '',
-                            lastname: '',
-                            username: '',
+                            displayName: '',
                             email: '',
                             password: '',
                             passwordConfirm: '',
@@ -357,8 +348,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
             return (
                 <div className="min-h-screen transition-colors duration-300">
                     {/* ── 1. FLOATING NAVBAR (Theo phong cách NotaAI) ── */}
-                    <header className="sticky top-0 z-50 pt-3.5 px-4 sm:px-8">
-                        <nav className={`mx-auto flex max-w-6xl items-center justify-between px-5 py-2.5 rounded-full transition-all duration-300 border ${
+                    <header className="sticky top-0 z-50 pt-3.5 px-2 sm:px-8">
+                        <nav className={`mx-auto flex max-w-6xl items-center justify-between px-3 sm:px-5 py-2.5 rounded-full transition-all duration-300 border ${
                             isDark
                                 ? 'bg-black/90 backdrop-blur-xl border-red-900/40 shadow-xl shadow-red-950/20'
                                 : 'bg-white/90 backdrop-blur-xl border-gray-200/80 shadow-lg shadow-green-950/5'
@@ -382,13 +373,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                             <div className="hidden lg:flex items-center gap-8">
                                 <a href="#features" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors">Tính năng</a>
                                 <a href="#ai" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors">Trợ lý AI</a>
-                                <a href="#security" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors">Bảo mật 4 số</a>
+                                <a href="#security" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-red-400 transition-colors">Bảo mật 6 số</a>
                                 <a href="#demo" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors">Xem Demo</a>
                                 <a href="#pricing" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors">Bảng giá</a>
                             </div>
 
                             {/* Right actions: Theme Toggle + Login + Start */}
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1 sm:gap-3">
                                 {/* Button 2 chế độ: Sáng (Trắng - Xanh) & Tối (Đen - Đỏ) */}
                                 <button
                                     type="button"
@@ -413,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 <button
                                     type="button"
                                     onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
-                                    className="rounded-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 hover:text-green-700 dark:text-gray-200 dark:hover:bg-neutral-900 dark:hover:text-red-400 transition-all"
+                                    className="rounded-full px-2 sm:px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 hover:text-green-700 dark:text-gray-200 dark:hover:bg-neutral-900 dark:hover:text-red-400 transition-all"
                                 >
                                     Đăng nhập
                                 </button>
@@ -422,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 <button
                                     type="button"
                                     onClick={() => { setAuthMode('register'); setIsAuthModalOpen(true); }}
-                                    className={`rounded-full px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95 ${
+                                    className={`hidden min-[360px]:block rounded-full px-3 sm:px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95 ${
                                         isDark
                                             ? 'bg-red-600 hover:bg-red-500 shadow-red-600/30'
                                             : 'bg-green-600 hover:bg-green-700 shadow-green-600/25'
@@ -458,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 }`}>
                                     Mới
                                 </span>
-                                <span>Trợ lý AI Tóm tắt • Bảo mật sổ mã 4 số</span>
+                                <span>Trợ lý AI Tóm tắt • Bảo mật sổ mã 6 số</span>
                                 <span className={isDark ? 'text-red-400' : 'text-green-600'}>→</span>
                             </div>
 
@@ -479,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                             <p className="mx-auto mt-6 max-w-2xl text-base sm:text-xl leading-relaxed text-gray-600 dark:text-gray-300 font-normal">
                                 Capture your ideas. Let AI organize the rest.
                                 <br className="hidden sm:inline" />
-                                {' '}Sổ ghi chép thông minh thế hệ mới, tích hợp khóa bảo vệ riêng tư 4 số và trợ lý AI tóm tắt tức thì.
+                                {' '}Sổ ghi chép thông minh thế hệ mới, tích hợp khóa bảo vệ riêng tư 6 số và trợ lý AI tóm tắt tức thì.
                             </p>
 
                             {/* CTA Buttons */}
@@ -556,7 +547,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                         }`}
                                     >
                                         <i className="fas fa-lock"></i>
-                                        <span>📝 Quick notes & Khóa 4 số</span>
+                                        <span>📝 Quick notes & Khóa 6 số</span>
                                     </button>
                                 </div>
 
@@ -602,7 +593,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                         Kế hoạch ra mắt tính năng bảo mật Notezy
                                                     </h4>
                                                     <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                                                        Nhóm phát triển đã bổ sung mã PIN 4 số bảo vệ từng sổ ghi chú, tích hợp trợ lý AI thông minh tóm tắt nội dung và xây dựng 2 chế độ màu Sáng (Trắng + Xanh) và Tối (Đen + Đỏ). Toàn bộ hệ thống chạy mượt mà trên môi trường thực tế...
+                                                        Nhóm phát triển đã bổ sung mã PIN 6 số bảo vệ từng ghi chú, tích hợp trợ lý AI thông minh tóm tắt nội dung và xây dựng 2 chế độ màu Sáng/Tối. Toàn bộ hệ thống chạy mượt mà trên môi trường thực tế...
                                                     </p>
                                                 </div>
 
@@ -628,7 +619,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                     <div className="space-y-2 mt-3 text-xs text-gray-800 dark:text-gray-200">
                                                         <div className="flex items-start gap-2">
                                                             <i className={`fas fa-check-circle mt-0.5 ${isDark ? 'text-red-500' : 'text-green-600'}`}></i>
-                                                            <span><strong>Khóa 4 số (PIN):</strong> Bảo vệ sổ ghi chú độc lập, chỉ xem khi nhập đúng mã.</span>
+                                                            <span><strong>Khóa 6 số (PIN):</strong> Bảo vệ ghi chú độc lập, chỉ xem khi nhập đúng mã.</span>
                                                         </div>
                                                         <div className="flex items-start gap-2">
                                                             <i className={`fas fa-check-circle mt-0.5 ${isDark ? 'text-red-500' : 'text-green-600'}`}></i>
@@ -667,7 +658,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                     }`}>
                                                         <div className="flex items-center justify-between mb-1">
                                                             <h5 className="text-xs font-bold text-gray-900 dark:text-white">
-                                                                Sổ ghi chú <span className="bg-yellow-200 text-yellow-900 px-1 rounded">bảo mật</span> 4 số
+                                                                Sổ ghi chú <span className="bg-yellow-200 text-yellow-900 px-1 rounded">bảo mật</span> 6 số
                                                             </h5>
                                                             <span className={`text-[10px] font-bold ${isDark ? 'text-red-400' : 'text-green-700'}`}>
                                                                 Đã ghim
@@ -715,22 +706,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                         <i className={`fas ${isMockupPinUnlocked ? 'fa-lock-open text-base' : 'fa-lock text-base'}`}></i>
                                                     </div>
                                                     <h5 className="text-sm font-bold text-gray-900 dark:text-white">
-                                                        {isMockupPinUnlocked ? 'Sổ đã được mở khóa thành công!' : 'Sổ ghi chú đã khóa bằng mã 4 số'}
+                                                        {isMockupPinUnlocked ? 'Sổ đã được mở khóa thành công!' : 'Sổ ghi chú đã khóa bằng mã 6 số'}
                                                     </h5>
                                                     <p className="text-xs text-gray-500 mt-1 mb-3">
                                                         {isMockupPinUnlocked
                                                             ? 'Nội dung và sự kiện đã hiển thị đầy đủ.'
-                                                            : 'Nhập đúng mã 4 số (Ví dụ: 2026) để mở sổ:'}
+                                                            : 'Nhập đúng mã 6 số (Ví dụ: 202606) để mở sổ:'}
                                                     </p>
 
                                                     {!isMockupPinUnlocked ? (
                                                         <form onSubmit={handleMockupUnlock} className="flex flex-col items-center gap-2">
                                                             <input
                                                                 type="password"
-                                                                maxLength="4"
+                                                                maxLength="6"
                                                                 value={mockupPinInput}
                                                                 onChange={(e) => setMockupPinInput(e.target.value)}
-                                                                placeholder="•••• (Nhập 2026)"
+                                                                placeholder="•••••• (Nhập 202606)"
                                                                 className={`w-36 text-center text-lg font-bold tracking-widest px-3 py-1.5 rounded-lg border focus:outline-none ${
                                                                     isDark
                                                                         ? 'bg-black border-red-800 text-white focus:border-red-500'
@@ -790,7 +781,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                                 Nội dung và sự kiện bị khóa bảo mật
                                                             </span>
                                                             <span className="text-[10px] text-gray-400 mt-1">
-                                                                Nhập mã 2026 ở bên trái để mở sổ
+                                                                Nhập mã 202606 ở bên trái để mở sổ
                                                             </span>
                                                         </div>
                                                     )}
@@ -826,7 +817,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                     </span>
                                 </h2>
                                 <p className="mt-4 text-base text-gray-600 dark:text-gray-400">
-                                    Mọi công cụ ghi chép, trợ lý AI tóm tắt, tìm kiếm tức thì và bảo mật 4 số riêng tư.
+                                    Mọi công cụ ghi chép, trợ lý AI tóm tắt, tìm kiếm tức thì và bảo mật 6 số riêng tư.
                                 </p>
                             </div>
 
@@ -897,10 +888,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                         <i className="fas fa-shield-halved text-lg"></i>
                                     </div>
                                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
-                                        🔒 Bảo mật sổ với mã 4 số
+                                        🔒 Bảo mật sổ với mã 6 số
                                     </h3>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                                        Đặt mã bảo mật 4 số độc lập cho từng cuốn sổ. Bìa khóa che kín nội dung, chỉ mở khi nhập đúng mã 4 số.
+                                        Đặt mã bảo mật 6 số độc lập cho từng ghi chú. Bìa khóa che kín nội dung, chỉ mở khi nhập đúng mã 6 số.
                                     </p>
                                 </div>
 
@@ -955,7 +946,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 See Notezy in action
                             </h2>
                             <p className="mx-auto mt-3 max-w-xl text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                                Trải nghiệm cách ghi chú, cài đặt mã bảo vệ 4 số và nhờ trợ lý AI tóm tắt chỉ trong 45 giây.
+                                Trải nghiệm cách ghi chú, cài đặt mã bảo vệ 6 số và nhờ trợ lý AI tóm tắt chỉ trong 45 giây.
                             </p>
 
                             {/* Video Player Box */}
@@ -994,7 +985,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                 <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse"></span>
                                                 <span className="text-xs font-bold uppercase tracking-wider text-gray-300">
                                                     {demoStep === 1 && 'Bước 1/3: Tạo sổ ghi chú & Gắn nhãn màu'}
-                                                    {demoStep === 2 && 'Bước 2/3: Khóa bảo mật sổ với mã 4 số bí mật'}
+                                                    {demoStep === 2 && 'Bước 2/3: Khóa bảo mật ghi chú với mã 6 số bí mật'}
                                                     {demoStep === 3 && 'Bước 3/3: Trợ lý AI tóm tắt & lập danh sách việc'}
                                                 </span>
                                             </div>
@@ -1027,16 +1018,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                     <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-400">
                                                         <i className="fas fa-lock"></i>
                                                     </div>
-                                                    <h4 className="font-bold text-sm text-white">Kích hoạt mã bảo mật 4 số</h4>
+                                                    <h4 className="font-bold text-sm text-white">Kích hoạt mã bảo mật 6 số</h4>
                                                     <div className="my-3 flex justify-center gap-2">
-                                                        {['2', '0', '2', '6'].map((n, i) => (
+                                                        {['2', '0', '2', '6', '0', '6'].map((n, i) => (
                                                             <span key={i} className="h-9 w-9 rounded-lg bg-black border border-white/20 flex items-center justify-center font-bold text-lg text-green-400 dark:text-red-400">
                                                                 {n}
                                                             </span>
                                                         ))}
                                                     </div>
                                                     <p className="text-xs text-gray-400">
-                                                        Bìa khóa che phủ nội dung. Nhập đúng 4 số để mở sổ xem nội dung và tùy chỉnh sự kiện!
+                                                        Bìa khóa che phủ nội dung. Nhập đúng 6 số để mở ghi chú xem nội dung và tùy chỉnh!
                                                     </p>
                                                 </div>
                                             )}
@@ -1054,7 +1045,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <i className="fas fa-check text-green-500 dark:text-red-500"></i>
-                                                            <span>Kích hoạt nút Bảo mật 4 số trên toàn bộ sổ</span>
+                                                            <span>Kích hoạt nút Bảo mật 6 số trên toàn bộ ghi chú</span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <i className="fas fa-check text-green-500 dark:text-red-500"></i>
@@ -1135,7 +1126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                             </div>
 
                             <p className="mt-6 text-xs text-white/70 font-medium">
-                                Miễn phí mãi mãi · Riêng tư tuyệt đối · Khóa bảo mật 4 số an toàn
+                                Miễn phí mãi mãi · Riêng tư tuyệt đối · Khóa bảo mật 6 số an toàn
                             </p>
                         </div>
                     </section>
@@ -1182,7 +1173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                         {authMode === 'login' ? 'Đăng nhập Notezy' : 'Tạo tài khoản mới'}
                                     </h3>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {authMode === 'login' ? 'Chào mừng bạn quay trở lại với không gian ghi chú' : 'Khám phá trợ lý AI và bảo mật 4 số ngay'}
+                                        {authMode === 'login' ? 'Chào mừng bạn quay trở lại với không gian ghi chú' : 'Khám phá trợ lý AI và bảo mật 6 số ngay'}
                                     </p>
                                 </div>
 
@@ -1309,49 +1300,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 ) : (
                                     /* FORM ĐĂNG KÝ TRỰC TIẾP */
                                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">
-                                                    Họ
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={regForm.firstname}
-                                                    onChange={(e) => setRegForm(prev => ({ ...prev, firstname: e.target.value }))}
-                                                    placeholder="Nguyễn"
-                                                    className={`w-full rounded-xl border px-3 py-2 text-xs focus:outline-none ${
-                                                        isDark ? 'bg-neutral-900 border-white/10 text-white focus:border-red-500' : 'bg-gray-50 border-gray-300 text-gray-900 focus:border-green-600'
-                                                    }`}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">
-                                                    Tên
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={regForm.lastname}
-                                                    onChange={(e) => setRegForm(prev => ({ ...prev, lastname: e.target.value }))}
-                                                    placeholder="Văn A"
-                                                    className={`w-full rounded-xl border px-3 py-2 text-xs focus:outline-none ${
-                                                        isDark ? 'bg-neutral-900 border-white/10 text-white focus:border-red-500' : 'bg-gray-50 border-gray-300 text-gray-900 focus:border-green-600'
-                                                    }`}
-                                                />
-                                            </div>
-                                        </div>
-
                                         <div>
                                             <label className="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">
-                                                Tên tài khoản (Username)
+                                                Tên hiển thị
                                             </label>
                                             <input
                                                 type="text"
                                                 required
-                                                value={regForm.username}
-                                                onChange={(e) => setRegForm(prev => ({ ...prev, username: e.target.value }))}
-                                                placeholder="nguyenvana"
+                                                value={regForm.displayName}
+                                                onChange={(e) => setRegForm(prev => ({ ...prev, displayName: e.target.value }))}
+                                                placeholder="Nguyễn Văn A"
                                                 className={`w-full rounded-xl border px-3.5 py-2 text-xs focus:outline-none ${
                                                     isDark ? 'bg-neutral-900 border-white/10 text-white focus:border-red-500' : 'bg-gray-50 border-gray-300 text-gray-900 focus:border-green-600'
                                                 }`}

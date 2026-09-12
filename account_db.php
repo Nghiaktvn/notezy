@@ -32,15 +32,6 @@ function login($username, $password)
         return "Mật khẩu không hợp lệ.";
     }
 
-    if ((int) $data['activated'] === 0) {
-        return [
-            'success' => false,
-            'code' => 'not_activated',
-            'email' => $data['email'],
-            'error' => 'Tài khoản chưa được kích hoạt. Vui lòng nhập mã OTP đã gửi đến email.',
-        ];
-    }
-
     notezy_ensure_user_last_seen_column($conn);
     $seen = $conn->prepare("UPDATE users SET last_seen_at = NOW() WHERE id = ?");
     if ($seen) {
@@ -49,7 +40,9 @@ function login($username, $password)
         $seen->close();
     }
 
-    return ['success' => true, 'user' => $data];
+    // The rubric explicitly permits unverified users to use the application;
+    // the dashboard displays a persistent verification notice until activation.
+    return ['success' => true, 'user' => $data, 'unverified' => ((int) $data['activated'] === 0)];
 }
 
 /**
@@ -88,31 +81,36 @@ function register($username, $firstname, $lastname, $email, $password)
     $otp     = (string) random_int(100000, 999999);
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
     $expires = date('Y-m-d H:i:s', time() + 300); // 5 phút
+    $activationToken = bin2hex(random_bytes(32));
+    $activationTokenHash = hash('sha256', $activationToken);
+    $activationTokenExpires = date('Y-m-d H:i:s', time() + 86400); // 24 hours
 
     if ($existing && (int) $existing['activated'] === 0) {
         $sql = "UPDATE users SET username = ?, firstname = ?, lastname = ?, email = ?,
                 pass = NULL, password_hash = ?,
-                activation_otp_hash = ?, activation_otp_expires_at = ?, activation_otp_attempts = 0, activated = 0
+                activation_otp_hash = ?, activation_otp_expires_at = ?, activation_otp_attempts = 0,
+                activation_token_hash = ?, activation_token_expires_at = ?, activated = 0
                 WHERE id = ?";
         $stm = $conn->prepare($sql);
         $id = (int) $existing['id'];
-        $stm->bind_param('sssssssi', $username, $firstname, $lastname, $email, $hashed, $otpHash, $expires, $id);
+        $stm->bind_param('sssssssssi', $username, $firstname, $lastname, $email, $hashed, $otpHash, $expires, $activationTokenHash, $activationTokenExpires, $id);
         if ($stm->execute()) {
-            return ['success' => true, 'otp' => $otp, 'email' => $email, 'activated' => 0];
+            return ['success' => true, 'user_id' => $id, 'otp' => $otp, 'email' => $email, 'activation_token' => $activationToken, 'activated' => 0];
         }
         return ['success' => false, 'error' => $stm->error];
     }
 
     $sql = "INSERT INTO users
             (username, firstname, lastname, email, pass, password_hash,
-             activation_otp_hash, activation_otp_expires_at, activation_otp_attempts, activated)
-            VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 0, 0)";
+             activation_otp_hash, activation_otp_expires_at, activation_otp_attempts,
+             activation_token_hash, activation_token_expires_at, activated)
+            VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 0, ?, ?, 0)";
 
     $stm = $conn->prepare($sql);
-    $stm->bind_param('sssssss', $username, $firstname, $lastname, $email, $hashed, $otpHash, $expires);
+    $stm->bind_param('sssssssss', $username, $firstname, $lastname, $email, $hashed, $otpHash, $expires, $activationTokenHash, $activationTokenExpires);
 
     if ($stm->execute()) {
-        return ['success' => true, 'otp' => $otp, 'email' => $email, 'activated' => 0];
+        return ['success' => true, 'user_id' => (int) $conn->insert_id, 'otp' => $otp, 'email' => $email, 'activation_token' => $activationToken, 'activated' => 0];
     }
 
     return ['success' => false, 'error' => $stm->error];

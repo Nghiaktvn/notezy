@@ -72,13 +72,13 @@ if ($has_mysql && $conn) {
     $timeDiff = $expiresAt - time();
     echo "✅ Confirmed OTP expiry: {$userA_db['activation_otp_expires_at']} (~{$timeDiff}s remaining, expected ~300s)\n";
 
-    // TEST 2: LOGIN BLOCKED FOR UNACTIVATED USER
-    echo "\n--- TEST 2: Login Blocked for activated = 0 ---\n";
+    // TEST 2: UNVERIFIED USERS MAY USE THE APP WITH AN ACTIVATION REMINDER
+    echo "\n--- TEST 2: Unverified login and activation reminder ---\n";
     $loginRes = login($test_username_a, $test_pass);
-    if (is_array($loginRes) && ($loginRes['code'] ?? '') === 'not_activated') {
-        echo "✅ Correctly blocked login: " . $loginRes['error'] . " (code: not_activated)\n";
+    if (is_array($loginRes) && !empty($loginRes['success']) && !empty($loginRes['unverified'])) {
+        echo "✅ Unverified user logged in and is marked for the activation reminder\n";
     } else {
-        die("❌ FAILED: Login should have been blocked with code 'not_activated'\n");
+        die("❌ FAILED: Unverified login should succeed with an unverified flag\n");
     }
 
     // TEST 3: OTP VERIFICATION & ACTIVATION
@@ -256,19 +256,19 @@ $mock_user = [
     'otp_expires_at' => date('Y-m-d H:i:s', $expiry)
 ];
 
-// Verify login blocked when activated = 0
+// The assignment permits unverified access while the UI displays a reminder.
 function mock_check_login($user) {
     if ((int)$user['activated'] === 0) {
-        return ['success' => false, 'code' => 'not_activated', 'error' => 'Tài khoản chưa được kích hoạt.'];
+        return ['success' => true, 'unverified' => true];
     }
     return ['success' => true];
 }
 
 $res = mock_check_login($mock_user);
-if ($res['code'] === 'not_activated') {
-    echo "✅ Unactivated account access gate: correctly blocked with code 'not_activated'\n";
+if (!empty($res['success']) && !empty($res['unverified'])) {
+    echo "✅ Unactivated account access: allowed with activation reminder\n";
 } else {
-    die("❌ Login gate failed to block unactivated account\n");
+    die("❌ Unactivated account should be allowed with activation reminder\n");
 }
 
 // Verify wrong OTP rejected

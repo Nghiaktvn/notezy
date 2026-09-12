@@ -19,6 +19,10 @@ function notezy_session_start(): void
         session_save_path($session_dir);
     }
 
+    // Notezy is designed for Vietnamese users. Keep all PHP date formatting
+    // and server-side reminder calculations in the same, explicit timezone.
+    date_default_timezone_set('Asia/Ho_Chi_Minh');
+
     session_set_cookie_params([
         'httponly' => true,
         'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',

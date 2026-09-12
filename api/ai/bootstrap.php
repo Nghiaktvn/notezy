@@ -55,7 +55,7 @@ function ai_check_origin(): void {
     $ok = in_array($origin, $allowed, true);
     if (!$ok) {
         $app = rtrim((string) getenv('APP_URL'), '/');
-        if ($app !== '' && strpos($origin, $app) === 0) {
+        if ($app !== '' && hash_equals($app, rtrim($origin, '/'))) {
             $ok = true;
         }
     }

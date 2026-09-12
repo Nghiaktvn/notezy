@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
 notezy_session_start();
+require_once __DIR__ . '/includes/csrf.php';
 require_once('db.php');
 require_once('sendmail.php');
 
@@ -19,6 +20,9 @@ if (isset($_SESSION['reset_otp_time']) && time() - $_SESSION['reset_otp_time'] >
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_check((string) ($_POST['csrf_token'] ?? ''))) {
+        $error = 'Phiên làm việc không hợp lệ. Vui lòng tải lại trang và thử lại.';
+    } else {
     $action = $_POST['action'] ?? '';
 
     // ── STEP 1: Send OTP ───────────────────────────────────────────────────
@@ -43,13 +47,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // FIX #10: Lưu OTP hash thay plaintext
                 $otpHash = password_hash($otp, PASSWORD_DEFAULT);
 
-                // Save hash + metadata to session (not plaintext OTP)
+                // Session only tracks the reset flow. OTP state is persisted in
+                // the database so verification remains server-authoritative.
                 $_SESSION['reset_otp_email']    = $input_email;
-                $_SESSION['reset_otp_hash']     = $otpHash;
                 $_SESSION['reset_otp_time']     = time();
-                $_SESSION['reset_otp_attempts'] = 0;
                 $_SESSION['reset_step']         = 2;
                 $_SESSION['reset_verified']     = false;
+
+                $expires = date('Y-m-d H:i:s', time() + 900);
+                $otpStmt = $conn->prepare('UPDATE users SET reset_otp_hash = ?, reset_otp_expires_at = ?, reset_otp_attempts = 0 WHERE id = ?');
+                $otpStmt->bind_param('ssi', $otpHash, $expires, $user['id']);
+                $otpStmt->execute();
+                $otpStmt->close();
 
                 $email = $input_email;
                 $step  = 2;
@@ -58,8 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($mailResult !== true) {
                     // Mail failed — don't expose email existence, but revert step
                     $step = 1;
-                    unset($_SESSION['reset_otp_email'], $_SESSION['reset_otp_hash'],
-                          $_SESSION['reset_otp_time'], $_SESSION['reset_otp_attempts'],
+                    unset($_SESSION['reset_otp_email'],
+                          $_SESSION['reset_otp_time'],
                           $_SESSION['reset_step'], $_SESSION['reset_verified']);
                     $success = '';
                     $error   = 'Không thể gửi email. Vui lòng thử lại sau.';
@@ -71,7 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── STEP 2: Verify OTP ─────────────────────────────────────────────────
     elseif ($action === 'verify_otp' && $step == 2) {
         $input_otp   = trim($_POST['otp'] ?? '');
-        $otp_attempts = $_SESSION['reset_otp_attempts'] ?? 0;
+        $conn = create_connect();
+        $otpStmt = $conn->prepare('SELECT reset_otp_hash, reset_otp_expires_at, reset_otp_attempts FROM users WHERE email = ? LIMIT 1');
+        $otpStmt->bind_param('s', $_SESSION['reset_otp_email']);
+        $otpStmt->execute();
+        $otpData = $otpStmt->get_result()->fetch_assoc();
+        $otpStmt->close();
+        $otp_attempts = (int) ($otpData['reset_otp_attempts'] ?? 5);
 
         if ($otp_attempts >= 5) {
             $error = "Bạn đã nhập sai OTP quá nhiều lần. Vui lòng thử lại từ đầu.";
@@ -80,18 +95,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'reset_otp_email', 'reset_otp_hash', 'reset_otp_time', 'reset_otp_attempts', 'reset_step', 'reset_verified'
             ]));
             $step = 1;
-        } elseif (empty($_SESSION['reset_otp_hash'])) {
+        } elseif (!$otpData || empty($otpData['reset_otp_hash']) || new DateTimeImmutable($otpData['reset_otp_expires_at']) < new DateTimeImmutable('now')) {
             $error = "Phiên đã hết hạn. Vui lòng thử lại.";
             $step  = 1;
-        } elseif (password_verify($input_otp, $_SESSION['reset_otp_hash'])) {
+        } elseif (preg_match('/^\d{6}$/', $input_otp) && password_verify($input_otp, $otpData['reset_otp_hash'])) {
             // FIX: OTP is invalidated immediately after successful verify
-            unset($_SESSION['reset_otp_hash']);
+            $clear = $conn->prepare('UPDATE users SET reset_otp_hash = NULL, reset_otp_expires_at = NULL, reset_otp_attempts = 0 WHERE email = ?');
+            $clear->bind_param('s', $_SESSION['reset_otp_email']);
+            $clear->execute();
+            $clear->close();
             $_SESSION['reset_step']     = 3;
             $_SESSION['reset_verified'] = true;
             $step    = 3;
             $success = "Xác nhận OTP thành công. Vui lòng nhập mật khẩu mới.";
         } else {
-            $_SESSION['reset_otp_attempts'] = $otp_attempts + 1;
+            $inc = $conn->prepare('UPDATE users SET reset_otp_attempts = reset_otp_attempts + 1 WHERE email = ?');
+            $inc->bind_param('s', $_SESSION['reset_otp_email']);
+            $inc->execute();
+            $inc->close();
             $remaining = max(0, 4 - $otp_attempts);
             $error = "Sai mã OTP. Bạn còn $remaining lần thử.";
         }
@@ -114,20 +135,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $conn   = create_connect();
                 $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
-                $stmt   = $conn->prepare("UPDATE users SET password_hash = ?, pass = NULL WHERE email = ?");
+                $stmt   = $conn->prepare("UPDATE users SET password_hash = ?, pass = NULL, reset_otp_hash = NULL, reset_otp_expires_at = NULL, reset_otp_attempts = 0 WHERE email = ?");
                 $stmt->bind_param('ss', $hashed, $_SESSION['reset_otp_email']);
                 if ($stmt->execute() && $stmt->affected_rows > 0) {
                     $success = "Đổi mật khẩu thành công. <a href='index.php'>Đăng nhập ngay</a>";
+                    // A reset must not authenticate the requester. End any
+                    // existing login state so the new password is required.
+                    unset($_SESSION['id'], $_SESSION['theme'], $_SESSION['language'], $_SESSION['pin_unlocked_notes']);
+                    session_regenerate_id(true);
                     // Clear entire reset session
-                    $_SESSION = array_diff_key($_SESSION, array_flip([
-                        'reset_otp_email', 'reset_otp_hash', 'reset_otp_time', 'reset_otp_attempts', 'reset_step', 'reset_verified'
-                    ]));
+                    $_SESSION = array_diff_key($_SESSION, array_flip(['reset_otp_email', 'reset_otp_time', 'reset_step', 'reset_verified']));
                     $step = 4; // Done
                 } else {
                     $error = "Có lỗi xảy ra. Vui lòng thử lại.";
                 }
             }
         }
+    }
     }
 }
 ?>
@@ -163,6 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php if ($step == 1): ?>
                 <!-- STEP 1: Enter email -->
                 <form method="post" id="form-reset-email">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="action" value="send_email">
                     <div class="mb-3">
                         <label class="form-label">Nhập Email của bạn</label>
@@ -175,6 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- STEP 2: Enter OTP -->
                 <p class="text-muted small mb-3">Mã OTP đã được gửi đến email của bạn (hiệu lực 15 phút).</p>
                 <form method="post" id="form-verify-reset-otp">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="action" value="verify_otp">
                     <div class="mb-3">
                         <label class="form-label">Nhập mã OTP</label>
@@ -187,6 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php elseif ($step == 3): ?>
                 <!-- STEP 3: New password -->
                 <form method="post" id="form-new-password">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="action" value="reset_password">
                     <div class="mb-3">
                         <label class="form-label">Mật khẩu mới</label>

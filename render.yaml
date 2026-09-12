@@ -16,3 +16,7 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: AI_AGENT_SHARED_SECRET
+        generateValue: true
+      - key: TZ
+        value: Asia/Ho_Chi_Minh

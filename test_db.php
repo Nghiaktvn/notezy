@@ -3,6 +3,9 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(403);
     exit('This script can only be run from the command line.');
 }
+if (getenv('NOTEZY_DIAGNOSTIC') !== '1') {
+    exit("Set NOTEZY_DIAGNOSTIC=1 to run this maintainer diagnostic.\n");
+}
 
 // test_db.php: Diagnostic script to check MySQL and phpMyAdmin database state
 require_once __DIR__ . '/env.php';

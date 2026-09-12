@@ -32,7 +32,7 @@ if ($seen_stmt) {
 }
 
 // Kiểm tra tài khoản đã kích hoạt và lấy preferences
-$sql = "SELECT activated, theme, language FROM users WHERE id = ?";
+$sql = "SELECT activated, theme, language, email FROM users WHERE id = ?";
 $stm = $conn->prepare($sql);
 if (!$stm) {
     die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
@@ -107,7 +107,7 @@ try {
         WHERE n.user_id = ? OR ns.note_id IS NOT NULL
         GROUP BY n.note_id, n.title, n.content, n.pinned, n.created_at, n.user_id, n.password_hash, n.archived, n.image_path, n.updated_at,
                  n.pin_hash, n.background_color, n.text_color, n.font_family, n.reminder_at, n.status, n.deadline, u.username, ns.permission, ns.shared_at
-        ORDER BY n.pinned DESC, n.created_at DESC
+        ORDER BY n.pinned DESC, n.pinned_at DESC, n.updated_at DESC
     ";
     $stm = $conn->prepare($sql);
     if (!$stm) {
@@ -129,9 +129,9 @@ try {
     // Danh sách các sổ đã mở khóa mã bảo mật trong phiên hiện tại
     $session_id = session_id();
     $unlocked_pin_notes = isset($_SESSION['pin_unlocked_notes']) ? $_SESSION['pin_unlocked_notes'] : [];
-    $chk_stm = $conn->prepare("SELECT note_id FROM note_pin_unlocks WHERE session_id = ?");
+    $chk_stm = $conn->prepare("SELECT note_id FROM note_pin_unlocks WHERE user_id = ? AND session_id = ?");
     if ($chk_stm) {
-        $chk_stm->bind_param('s', $session_id);
+        $chk_stm->bind_param('is', $user_id, $session_id);
         $chk_stm->execute();
         $chk_res = $chk_stm->get_result();
         while ($chk_row = $chk_res->fetch_assoc()) {
@@ -150,13 +150,14 @@ try {
         $row['has_pin'] = $has_pin;
         $row['is_pin_locked'] = $has_pin && empty($unlocked_pin_notes[$nid]);
 
-        $has_pwd = !empty($row['password_hash']);
-        $row['has_password'] = $has_pwd;
-        $row['is_password_locked'] = $has_pwd && empty($accessed_notes[$nid]);
+        // A note may use a full per-note password, a PIN, or both. Neither
+        // secret is returned to the browser; only its locked state is exposed.
+        $row['has_password'] = !empty($row['password_hash']);
+        $row['is_password_locked'] = $row['has_password'] && empty($accessed_notes[$nid]);
 
         // Bảo vệ nội dung chống rò rỉ khi chưa xác thực mật khẩu
-        if ($row['is_password_locked']) {
-            $row['masked_content'] = '[Ghi chú này đã được bảo vệ bằng mật khẩu. Vui lòng mở khóa để xem nội dung.]';
+        if ($row['is_pin_locked'] || $row['is_password_locked']) {
+            $row['masked_content'] = '[Ghi chú này được bảo vệ. Vui lòng xác thực để xem hoặc chỉnh sửa.]';
         } else {
             $row['masked_content'] = $row['content'];
         }
@@ -1006,6 +1007,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                         
                         
                     <li class="nav-item"><a class="nav-link text-primary fw-bold" href="thoikhoabieu.php"><i class="fas fa-calendar-alt me-1"></i>Thời khóa biểu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="premium.php"><i class="fas fa-crown me-1"></i>Premium</a></li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal" title="Tìm kiếm">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search align-middle" viewBox="0 0 16 16">
@@ -1059,6 +1061,14 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 
 <!-- MAIN CONTENT -->
 <main class="main-content">
+    <?php if (!empty($error) && (int)($user_info['activated'] ?? 1) === 0): ?>
+        <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2" role="alert">
+            <span><i class="fas fa-envelope-open-text me-1"></i><strong>Tài khoản chưa xác thực.</strong> Bạn vẫn có thể sử dụng Notezy; hãy mở email để bấm liên kết kích hoạt hoặc nhập OTP.</span>
+            <a class="btn btn-sm btn-warning" href="verify_activation.php?email=<?= urlencode((string)($user_info['email'] ?? '')) ?>">Xác thực ngay</a>
+        </div>
+    <?php elseif (isset($_GET['activated'])): ?>
+        <div class="alert alert-success" role="alert"><i class="fas fa-check-circle me-1"></i>Tài khoản đã được kích hoạt thành công.</div>
+    <?php endif; ?>
     <h2 class="text-center mb-4"><?= htmlspecialchars($t['note_list']) ?></h2>
     
     <div class="view-controls d-flex justify-content-end flex-wrap gap-2">
@@ -1119,7 +1129,7 @@ $card_style = '';
                         <div>
                             <?php if ($note['has_pin']): ?>
                                 <?php if ($note['is_pin_locked']): ?>
-                                    <span class="badge bg-danger pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock me-1"></i>Bảo mật 4 số</span>
+                                    <span class="badge bg-danger pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock me-1"></i>Bảo mật 6 số</span>
                                 <?php else: ?>
                                     <span class="badge bg-success pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock-open me-1"></i>Đã mở khóa</span>
                                 <?php endif; ?>
@@ -1166,12 +1176,12 @@ $card_style = '';
                             <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
                     <?php elseif ($note['is_pin_locked']): ?>
-                        <!-- Khung che bảo mật 4 số -->
+                        <!-- Khung che bảo mật PIN 6 số -->
                         <div class="locked-note-cover text-center p-3 my-2 rounded bg-light border border-warning-subtle shadow-sm" id="lockedCover_grid_<?= $note['note_id'] ?>">
                             <div class="mb-2 text-warning">
                                 <i class="fas fa-shield-alt fa-2x"></i>
                             </div>
-                            <div class="fw-bold text-dark small mb-1">Sổ đã khóa bảo mật 4 số</div>
+                            <div class="fw-bold text-dark small mb-1">Sổ đã khóa bảo mật 6 số</div>
                             <p class="text-muted small mb-2" style="font-size:0.75rem;">Nhập đúng mã bảo mật đã thiết lập để xem nội dung và tùy chỉnh sự kiện.</p>
                             <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')">
                                 <i class="fas fa-key me-1"></i> Mở sổ
@@ -1211,12 +1221,8 @@ $card_style = '';
                         </button>
 
                         <!-- NÚT MỞ SỔ / XEM & TÙY CHỈNH (ICON-ONLY) -->
-                        <?php if ($note['is_password_locked']): ?>
-                            <button type="button" class="btn btn-action-icon btn-unlock" onclick="openUnlockPasswordModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>', 'notepass.php?id=<?= $note['note_id'] ?>')" title="Mở khóa mật khẩu ghi chú">
-                                <i class="fas fa-unlock-alt text-primary"></i>
-                            </button>
-                        <?php elseif ($note['is_pin_locked']): ?>
-                            <button type="button" class="btn btn-action-icon btn-unlock" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>', 'notepass.php?id=<?= $note['note_id'] ?>')" title="Mở khóa sổ (Nhập mã 4 số) & tùy chỉnh sự kiện">
+                        <?php if ($note['is_pin_locked']): ?>
+                            <button type="button" class="btn btn-action-icon btn-unlock" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>', 'notepass.php?id=<?= $note['note_id'] ?>')" title="Mở khóa ghi chú (Nhập mã 6 số) & tùy chỉnh sự kiện">
                                 <i class="fas fa-lock-open"></i>
                             </button>
                         <?php else: ?>
@@ -1236,14 +1242,10 @@ $card_style = '';
                                 <i class="fas fa-share-alt"></i>
                             </button>
 
-                            <!-- NÚT QUẢN LÝ MẬT KHẨU GHI CHÚ (PASSWORD) -->
-                            <button type="button" class="btn btn-action-icon <?= $note['has_password'] ? 'btn-password-active text-primary' : '' ?>" onclick="openManagePasswordModal(<?= $note['note_id'] ?>, <?= $note['has_password'] ? 'true' : 'false' ?>)" title="<?= $note['has_password'] ? 'Mật khẩu bảo vệ: Đang bật (Bấm để đổi/tắt)' : 'Cài đặt mật khẩu bảo vệ' ?>">
-                                <i class="fas fa-key"></i>
-                            </button>
                         <?php endif; ?>
 
-                        <!-- NÚT BẢO MẬT VỚI 4 SỐ (PIN) -->
-                        <button type="button" class="btn btn-action-icon <?= $note['has_pin'] ? 'btn-pin-active' : 'btn-pin' ?>" onclick="openManagePinModal(<?= $note['note_id'] ?>, <?= $note['has_pin'] ? 'true' : 'false' ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')" title="<?= $note['has_pin'] ? 'Bảo mật 4 số: Đang bảo vệ (Bấm để đổi/gỡ)' : 'Cài đặt mã bảo mật 4 số' ?>">
+                        <!-- NÚT BẢO MẬT VỚI PIN 6 SỐ -->
+                        <button type="button" class="btn btn-action-icon <?= $note['has_pin'] ? 'btn-pin-active' : 'btn-pin' ?>" onclick="openManagePinModal(<?= $note['note_id'] ?>, <?= $note['has_pin'] ? 'true' : 'false' ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')" title="<?= $note['has_pin'] ? 'Bảo mật 6 số: Đang bảo vệ (Bấm để đổi/gỡ)' : 'Cài đặt mã bảo mật 6 số' ?>">
                             <i class="fas fa-shield-alt"></i>
                         </button>
 
@@ -1294,8 +1296,8 @@ $card_style = '';
                             <div class="mb-2 text-warning">
                                 <i class="fas fa-shield-alt fa-2x"></i>
                             </div>
-                            <div class="fw-bold text-dark small mb-1">Sổ đã khóa bảo mật 4 số</div>
-                            <p class="text-muted small mb-2" style="font-size:0.75rem;">Chủ sổ đã đặt mã bảo mật. Nhập đúng mã 4 số để xem nội dung.</p>
+                            <div class="fw-bold text-dark small mb-1">Sổ đã khóa bảo mật 6 số</div>
+                            <p class="text-muted small mb-2" style="font-size:0.75rem;">Chủ sổ đã đặt mã bảo mật. Nhập đúng mã 6 số để xem nội dung.</p>
                             <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')">
                                 <i class="fas fa-key me-1"></i> Mở sổ
                             </button>
@@ -1371,7 +1373,7 @@ $card_style = '';
                             <?php endif; ?>
                             <?php if ($note['has_pin']): ?>
                                 <?php if ($note['is_pin_locked']): ?>
-                                    <span class="badge bg-danger pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock me-1"></i>Bảo mật 4 số</span>
+                                    <span class="badge bg-danger pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock me-1"></i>Bảo mật 6 số</span>
                                 <?php else: ?>
                                     <span class="badge bg-success pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock-open me-1"></i>Đã mở khóa</span>
                                 <?php endif; ?>
@@ -1405,7 +1407,7 @@ $card_style = '';
                     <?php elseif ($note['is_pin_locked']): ?>
                         <div class="locked-note-cover p-3 rounded bg-light border border-warning-subtle text-center my-2" id="lockedCover_list_<?= $note['note_id'] ?>">
                             <span class="text-warning me-2"><i class="fas fa-lock"></i></span>
-                            <span class="text-dark small fw-semibold">Sổ đã khóa bảo mật bằng 4 số.</span>
+                            <span class="text-dark small fw-semibold">Sổ đã khóa bảo mật bằng 6 số.</span>
                             <button type="button" class="btn btn-sm btn-primary rounded-pill ms-2 px-3" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')">
                                 <i class="fas fa-key me-1"></i> Mở sổ
                             </button>
@@ -1438,12 +1440,8 @@ $card_style = '';
                         </button>
 
                         <!-- NÚT MỞ SỔ / XEM & TÙY CHỈNH (ICON-ONLY) -->
-                        <?php if ($note['is_password_locked']): ?>
-                            <button type="button" class="btn btn-action-icon btn-unlock" onclick="openUnlockPasswordModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>', 'notepass.php?id=<?= $note['note_id'] ?>')" title="Mở khóa mật khẩu ghi chú">
-                                <i class="fas fa-unlock-alt text-primary"></i>
-                            </button>
-                        <?php elseif ($note['is_pin_locked']): ?>
-                            <button type="button" class="btn btn-action-icon btn-unlock" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>', 'notepass.php?id=<?= $note['note_id'] ?>')" title="Mở khóa sổ (Nhập mã 4 số) & tùy chỉnh sự kiện">
+                        <?php if ($note['is_pin_locked']): ?>
+                            <button type="button" class="btn btn-action-icon btn-unlock" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>', 'notepass.php?id=<?= $note['note_id'] ?>')" title="Mở khóa ghi chú (Nhập mã 6 số) & tùy chỉnh sự kiện">
                                 <i class="fas fa-lock-open"></i>
                             </button>
                         <?php else: ?>
@@ -1463,14 +1461,10 @@ $card_style = '';
                                 <i class="fas fa-share-alt"></i>
                             </button>
 
-                            <!-- NÚT QUẢN LÝ MẬT KHẨU GHI CHÚ (PASSWORD) -->
-                            <button type="button" class="btn btn-action-icon <?= $note['has_password'] ? 'btn-password-active text-primary' : '' ?>" onclick="openManagePasswordModal(<?= $note['note_id'] ?>, <?= $note['has_password'] ? 'true' : 'false' ?>)" title="<?= $note['has_password'] ? 'Mật khẩu bảo vệ: Đang bật (Bấm để đổi/tắt)' : 'Cài đặt mật khẩu bảo vệ' ?>">
-                                <i class="fas fa-key"></i>
-                            </button>
                         <?php endif; ?>
 
-                        <!-- NÚT BẢO MẬT VỚI 4 SỐ (PIN) -->
-                        <button type="button" class="btn btn-action-icon <?= $note['has_pin'] ? 'btn-pin-active' : 'btn-pin' ?>" onclick="openManagePinModal(<?= $note['note_id'] ?>, <?= $note['has_pin'] ? 'true' : 'false' ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')" title="<?= $note['has_pin'] ? 'Bảo mật 4 số: Đang bảo vệ (Bấm để đổi/gỡ)' : 'Cài đặt mã bảo mật 4 số' ?>">
+                        <!-- NÚT BẢO MẬT VỚI PIN 6 SỐ -->
+                        <button type="button" class="btn btn-action-icon <?= $note['has_pin'] ? 'btn-pin-active' : 'btn-pin' ?>" onclick="openManagePinModal(<?= $note['note_id'] ?>, <?= $note['has_pin'] ? 'true' : 'false' ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')" title="<?= $note['has_pin'] ? 'Bảo mật 6 số: Đang bảo vệ (Bấm để đổi/gỡ)' : 'Cài đặt mã bảo mật 6 số' ?>">
                             <i class="fas fa-shield-alt"></i>
                         </button>
 
@@ -1518,8 +1512,8 @@ $card_style = '';
                                 <div class="mb-2 text-warning">
                                     <i class="fas fa-shield-alt fa-2x"></i>
                                 </div>
-                                <div class="fw-bold text-dark small mb-1">Sổ đã khóa bảo mật 4 số</div>
-                                <p class="text-muted small mb-2" style="font-size:0.75rem;">Chủ sổ đã đặt mã bảo mật. Nhập đúng mã 4 số để xem nội dung.</p>
+                                <div class="fw-bold text-dark small mb-1">Sổ đã khóa bảo mật 6 số</div>
+                                <p class="text-muted small mb-2" style="font-size:0.75rem;">Chủ sổ đã đặt mã bảo mật. Nhập đúng mã 6 số để xem nội dung.</p>
                                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm" onclick="openUnlockPinModal(<?= $note['note_id'] ?>, '<?= htmlspecialchars(addslashes($note['title'])) ?>')">
                                     <i class="fas fa-key me-1"></i> Mở sổ
                                 </button>
@@ -1824,7 +1818,7 @@ $card_style = '';
         </div>
     </div>
 
-    <!-- Unlock PIN Modal (Mở khóa bảo mật 4 số để xem nội dung và tùy chỉnh sự kiện) -->
+    <!-- Unlock PIN Modal (Mở khóa bảo mật 6 số để xem nội dung và tùy chỉnh sự kiện) -->
     <div class="modal fade" id="unlockPinModal" tabindex="-1" aria-labelledby="unlockPinModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
@@ -1844,11 +1838,11 @@ $card_style = '';
                             </span>
                         </div>
                         <h6 class="fw-bold mb-1 text-dark" id="unlockPinNoteTitle">Sổ ghi chú</h6>
-                        <p class="text-muted small mb-3">Nhập đúng mã bảo mật 4 số đã thiết lập trước đó để xem nội dung và tùy chỉnh sự kiện của sổ:</p>
+                        <p class="text-muted small mb-3">Nhập đúng mã bảo mật 6 số đã thiết lập trước đó để xem nội dung và tùy chỉnh sự kiện của sổ:</p>
                         <div class="mb-3 d-flex justify-content-center">
                             <input type="password" id="unlockPinInput" name="pin" class="form-control text-center fw-bold fs-3 shadow-sm"
                                    style="width: 200px; letter-spacing: 12px; border-radius: 10px;"
-                                   maxlength="4" minlength="4" pattern="\d{4}" inputmode="numeric" required placeholder="••••" autofocus autocomplete="off">
+                                   maxlength="6" minlength="6" pattern="\d{6}" inputmode="numeric" required placeholder="••••••" autofocus autocomplete="off">
                         </div>
                         <div id="unlockPinError" class="alert alert-danger small py-2 d-none"></div>
                     </div>
@@ -1863,13 +1857,13 @@ $card_style = '';
         </div>
     </div>
 
-    <!-- Manage PIN Modal (Bảo mật sổ với 4 số: Đặt mã, Đổi mã, Gỡ mã) -->
+    <!-- Manage PIN Modal (Bảo mật sổ với 6 số: Đặt mã, Đổi mã, Gỡ mã) -->
     <div class="modal fade" id="managePinModal" tabindex="-1" aria-labelledby="managePinModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
                 <div class="modal-header border-bottom bg-light" style="border-radius: 16px 16px 0 0;">
                     <h5 class="modal-title fw-bold text-dark" id="managePinModalLabel">
-                        <i class="fas fa-shield-alt text-primary me-2"></i>Bảo mật sổ ghi chú (4 số)
+                        <i class="fas fa-shield-alt text-primary me-2"></i>Bảo mật sổ ghi chú (6 số)
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
@@ -1881,21 +1875,21 @@ $card_style = '';
 
                         <!-- Nhập mã cũ hoặc pass khi sổ đã được đặt PIN trước đó -->
                         <div id="managePinOldSection" style="display:none;" class="mb-3">
-                            <label for="manageOldPin" class="form-label small fw-semibold">Mã bảo mật 4 số hiện tại (hoặc mật khẩu đăng nhập):</label>
-                            <input type="password" id="manageOldPin" name="old_pin" class="form-control fw-bold" placeholder="Nhập 4 số hiện tại hoặc mật khẩu">
+                            <label for="manageOldPin" class="form-label small fw-semibold">Mã bảo mật 6 số hiện tại (hoặc mật khẩu đăng nhập):</label>
+                            <input type="password" id="manageOldPin" name="old_pin" class="form-control fw-bold" placeholder="Nhập 6 số hiện tại hoặc mật khẩu">
                         </div>
 
-                        <!-- Nhập mã 4 số mới -->
+                        <!-- Nhập mã 6 số mới -->
                         <div id="managePinNewSection">
                             <div class="mb-3">
-                                <label for="manageNewPin" class="form-label small fw-semibold" id="manageNewPinLabel">Mã bảo mật 4 số mới:</label>
+                                <label for="manageNewPin" class="form-label small fw-semibold" id="manageNewPinLabel">Mã bảo mật 6 số mới:</label>
                                 <input type="password" id="manageNewPin" name="pin" class="form-control text-center fw-bold fs-4"
-                                       style="letter-spacing: 8px; max-width: 200px;" maxlength="4" minlength="4" pattern="\d{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
+                                       style="letter-spacing: 8px; max-width: 200px;" maxlength="6" minlength="6" pattern="\d{6}" inputmode="numeric" placeholder="••••••" required autocomplete="off">
                             </div>
                             <div class="mb-3">
-                                <label for="manageConfirmPin" class="form-label small fw-semibold">Xác nhận lại mã bảo mật (4 số):</label>
+                                <label for="manageConfirmPin" class="form-label small fw-semibold">Xác nhận lại mã bảo mật (6 số):</label>
                                 <input type="password" id="manageConfirmPin" name="pin_confirm" class="form-control text-center fw-bold fs-4"
-                                       style="letter-spacing: 8px; max-width: 200px;" maxlength="4" minlength="4" pattern="\d{4}" inputmode="numeric" placeholder="••••" required autocomplete="off">
+                                       style="letter-spacing: 8px; max-width: 200px;" maxlength="6" minlength="6" pattern="\d{6}" inputmode="numeric" placeholder="••••••" required autocomplete="off">
                             </div>
                         </div>
 
@@ -1946,7 +1940,7 @@ $card_style = '';
                                     <option value="4">Thứ 5 (Thứ Năm)</option>
                                     <option value="5">Thứ 6 (Thứ Sáu)</option>
                                     <option value="6">Thứ 7 (Thứ Bảy)</option>
-                                    <option value="0">Chủ Nhật</option>
+                                    <option value="7">Chủ Nhật</option>
                                 </select>
                             </div>
                             <div class="col-5">
@@ -1979,6 +1973,8 @@ $card_style = '';
                         <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light border small">
                             <span><i class="fas fa-bell text-warning me-1"></i> Báo thức nhắc trước:</span>
                             <select id="tt_reminder" name="reminder_minutes" class="form-select form-select-sm w-auto">
+                                <option value="-1">Không đặt báo thức</option>
+                                <option value="0">Đúng giờ bắt đầu</option>
                                 <option value="5">5 phút</option>
                                 <option value="15" selected>15 phút</option>
                                 <option value="30">30 phút</option>
@@ -2064,26 +2060,22 @@ $card_style = '';
                             </div>
                         </div>
 
-                        <!-- Mục bảo mật với mã 4 số -->
+                        <!-- Mục bảo mật với mã 6 số -->
                         <div class="p-3 mb-3 border rounded-3 bg-light-subtle">
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" id="directEnablePin" onchange="toggleDirectPinInput(this)">
                                 <label class="form-check-label fw-bold text-dark" for="directEnablePin">
-                                    <i class="fas fa-shield-alt text-primary me-1"></i>Bảo mật sổ bằng mã 4 số (PIN)
+                                    <i class="fas fa-shield-alt text-primary me-1"></i>Bảo mật sổ bằng mã 6 số (PIN)
                                 </label>
                             </div>
                             <div id="directPinWrapper" style="display:none;" class="mt-2">
-                                <label for="directNotePin" class="form-label small fw-semibold">Nhập mã bảo mật 4 số (0000 - 9999):</label>
-                                <input type="password" class="form-control fw-bold" id="directNotePin" name="note_pin" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="•••• (4 số)" style="letter-spacing: 6px; max-width: 180px; font-size: 1.1rem;" autocomplete="off">
-                                <small class="text-muted d-block mt-1">Khi mở sổ trên trang chủ, bạn sẽ cần nhập đúng mã 4 số này để xem nội dung và tùy chỉnh sự kiện.</small>
+                                <label for="directNotePin" class="form-label small fw-semibold">Nhập mã bảo mật 6 số (000000 - 999999):</label>
+                                <input type="password" class="form-control fw-bold" id="directNotePin" name="note_pin" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="•••••• (6 số)" style="letter-spacing: 6px; max-width: 180px; font-size: 1.1rem;" autocomplete="off">
+                                <small class="text-muted d-block mt-1">Người được chia sẻ cũng cần nhập đúng PIN 6 số do chủ sở hữu cung cấp.</small>
                             </div>
                         </div>
 
                         <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label for="directNotePassword" class="form-label fw-semibold">Mật khẩu chữ thông thường (tùy chọn)</label>
-                                <input type="password" class="form-control" id="directNotePassword" name="notePassword" placeholder="Để trống nếu không đặt mật khẩu">
-                            </div>
                             <div class="col-md-6">
                                 <label for="directNoteImage" class="form-label fw-semibold">Ảnh đính kèm (tối đa 5MB)</label>
                                 <input type="file" class="form-control" id="directNoteImage" name="noteImage" accept="image/*">
@@ -3033,7 +3025,7 @@ $card_style = '';
     }
 });
 
-// ── Quản lý và Mở khóa Sổ ghi chú bằng mã bảo mật 4 số ──────────
+// ── Quản lý và Mở khóa Sổ ghi chú bằng mã bảo mật 6 số ──────────
 function toggleDirectPinInput(checkbox) {
     const wrapper = document.getElementById('directPinWrapper');
     const input = document.getElementById('directNotePin');
@@ -3048,7 +3040,7 @@ function toggleDirectPinInput(checkbox) {
     }
 }
 
-// Mở modal nhập mã 4 số để mở sổ
+// Mở modal nhập mã 6 số để mở sổ
 function openUnlockPinModal(noteId, noteTitle, redirectUrl = '') {
     document.getElementById('unlockPinNoteId').value = noteId;
     document.getElementById('unlockPinNoteTitle').textContent = noteTitle || 'Sổ ghi chú #' + noteId;
@@ -3065,7 +3057,7 @@ function openUnlockPinModal(noteId, noteTitle, redirectUrl = '') {
     setTimeout(() => pinInput.focus(), 400);
 }
 
-// Xử lý gửi form mở khóa mã 4 số
+// Xử lý gửi form mở khóa mã 6 số
 document.getElementById('unlockPinForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('unlockPinSubmitBtn');
@@ -3074,8 +3066,8 @@ document.getElementById('unlockPinForm')?.addEventListener('submit', async funct
     const pin = document.getElementById('unlockPinInput').value.trim();
     const errBox = document.getElementById('unlockPinError');
 
-    if (!/^\d{4}$/.test(pin)) {
-        errBox.textContent = 'Mã bảo mật phải gồm đúng 4 chữ số.';
+    if (!/^\d{6}$/.test(pin)) {
+        errBox.textContent = 'Mã bảo mật phải gồm đúng 6 chữ số.';
         errBox.classList.remove('d-none');
         return;
     }
@@ -3126,7 +3118,7 @@ document.getElementById('unlockPinForm')?.addEventListener('submit', async funct
                 });
             }
         } else {
-            errBox.textContent = data.message || 'Mã bảo mật 4 số không đúng.';
+            errBox.textContent = data.message || 'Mã bảo mật 6 số không đúng.';
             errBox.classList.remove('d-none');
             document.getElementById('unlockPinInput').select();
         }
@@ -3139,7 +3131,7 @@ document.getElementById('unlockPinForm')?.addEventListener('submit', async funct
     }
 });
 
-// Mở modal cài đặt / đổi / gỡ mã bảo mật 4 số
+// Mở modal cài đặt / đổi / gỡ mã bảo mật 6 số
 function openManagePinModal(noteId, hasPin, noteTitle) {
     document.getElementById('managePinNoteId').value = noteId;
     document.getElementById('managePinNoteTitle').textContent = noteTitle || 'Sổ ghi chú #' + noteId;
@@ -3155,25 +3147,25 @@ function openManagePinModal(noteId, hasPin, noteTitle) {
 
     if (hasPin) {
         alertBox.className = 'alert alert-warning small py-2 mb-3';
-        alertBox.innerHTML = '<i class="fas fa-lock me-1"></i> Sổ này đang được bảo vệ bằng mã 4 số. Nhập mã hiện tại để đổi mã mới hoặc gỡ bỏ.';
+        alertBox.innerHTML = '<i class="fas fa-lock me-1"></i> Sổ này đang được bảo vệ bằng mã 6 số. Nhập mã hiện tại để đổi mã mới hoặc gỡ bỏ.';
         oldSection.style.display = 'block';
         oldInput.setAttribute('required', 'required');
         removeSection.style.display = 'block';
-        labelNew.textContent = 'Mã bảo mật 4 số mới:';
+        labelNew.textContent = 'Mã bảo mật 6 số mới:';
     } else {
         alertBox.className = 'alert alert-info small py-2 mb-3';
-        alertBox.innerHTML = '<i class="fas fa-shield-alt me-1"></i> Sổ này chưa có mã bảo vệ. Hãy thiết lập 4 số bí mật để khóa sổ an toàn.';
+        alertBox.innerHTML = '<i class="fas fa-shield-alt me-1"></i> Sổ này chưa có mã bảo vệ. Hãy thiết lập 6 số bí mật để khóa sổ an toàn.';
         oldSection.style.display = 'none';
         oldInput.removeAttribute('required');
         removeSection.style.display = 'none';
-        labelNew.textContent = 'Đặt mã bảo mật 4 số:';
+        labelNew.textContent = 'Đặt mã bảo mật 6 số:';
     }
 
     const modalEl = document.getElementById('managePinModal');
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
-// Xử lý lưu thiết lập mã bảo mật 4 số
+// Xử lý lưu thiết lập mã bảo mật 6 số
 document.getElementById('managePinForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('managePinSubmitBtn');
@@ -3182,12 +3174,12 @@ document.getElementById('managePinForm')?.addEventListener('submit', async funct
     const pinConfirm = document.getElementById('manageConfirmPin').value.trim();
     const oldPin = document.getElementById('manageOldPin').value.trim();
 
-    if (!/^\d{4}$/.test(pin)) {
-        Swal.fire({ icon: 'warning', title: 'Lỗi', text: 'Mã bảo mật phải gồm đúng 4 chữ số.' });
+    if (!/^\d{6}$/.test(pin)) {
+        Swal.fire({ icon: 'warning', title: 'Lỗi', text: 'Mã bảo mật phải gồm đúng 6 chữ số.' });
         return;
     }
     if (pin !== pinConfirm) {
-        Swal.fire({ icon: 'warning', title: 'Lỗi', text: 'Hai lần nhập mã bảo mật 4 số không khớp nhau.' });
+        Swal.fire({ icon: 'warning', title: 'Lỗi', text: 'Hai lần nhập mã bảo mật 6 số không khớp nhau.' });
         return;
     }
 
@@ -3210,7 +3202,7 @@ document.getElementById('managePinForm')?.addEventListener('submit', async funct
             await Swal.fire({
                 icon: 'success',
                 title: 'Thành công!',
-                text: data.message || 'Đã cài đặt bảo mật 4 số cho sổ ghi chú thành công!',
+                text: data.message || 'Đã cài đặt bảo mật 6 số cho sổ ghi chú thành công!',
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -3235,9 +3227,9 @@ document.getElementById('manageRemovePinBtn')?.addEventListener('click', async f
     if (!confirmPin) {
         const { value: inputVal } = await Swal.fire({
             title: 'Xác nhận gỡ bảo mật',
-            text: 'Vui lòng nhập mã bảo mật 4 số hiện tại (hoặc mật khẩu tài khoản) để gỡ khóa:',
+            text: 'Vui lòng nhập mã bảo mật 6 số hiện tại (hoặc mật khẩu tài khoản) để gỡ khóa:',
             input: 'password',
-            inputPlaceholder: 'Nhập 4 số hiện tại hoặc mật khẩu',
+            inputPlaceholder: 'Nhập 6 số hiện tại hoặc mật khẩu',
             showCancelButton: true,
             confirmButtonText: 'Xác nhận gỡ',
             cancelButtonText: 'Hủy'
@@ -3260,7 +3252,7 @@ document.getElementById('manageRemovePinBtn')?.addEventListener('click', async f
             await Swal.fire({
                 icon: 'success',
                 title: 'Đã gỡ bảo mật!',
-                text: 'Sổ ghi chú này không còn khóa mã 4 số nữa.',
+                text: 'Sổ ghi chú này không còn khóa mã 6 số nữa.',
                 timer: 1200,
                 showConfirmButton: false
             });
@@ -3278,14 +3270,14 @@ document.getElementById('directAddNoteForm')?.addEventListener('submit', async f
     e.preventDefault();
     const btn = document.getElementById('directSaveNoteBtn');
 
-    // Kiểm tra nếu bật mã PIN thì phải đúng 4 số
+    // Kiểm tra nếu bật mã PIN thì phải đúng 6 số
     const enablePin = document.getElementById('directEnablePin')?.checked;
     const pinVal = document.getElementById('directNotePin')?.value.trim();
-    if (enablePin && (!pinVal || !/^\d{4}$/.test(pinVal))) {
+    if (enablePin && (!pinVal || !/^\d{6}$/.test(pinVal))) {
         Swal.fire({
             icon: 'warning',
             title: 'Mã bảo mật không hợp lệ',
-            text: 'Vui lòng nhập đúng 4 chữ số (0000 - 9999) để bảo mật sổ ghi chú.'
+            text: 'Vui lòng nhập đúng 6 chữ số (000000 - 999999) để bảo mật sổ ghi chú.'
         });
         document.getElementById('directNotePin').focus();
         return;
@@ -3432,7 +3424,10 @@ document.getElementById('formAddToTimetable')?.addEventListener('submit', async 
         location: document.getElementById('tt_location').value.trim(),
         note: document.getElementById('tt_note').value.trim(),
         color: document.getElementById('tt_color').value.trim(),
-        reminder_minutes: parseInt(document.getElementById('tt_reminder').value, 10)
+        reminder_minutes: parseInt(document.getElementById('tt_reminder').value, 10),
+        note_id: document.getElementById('tt_note_id').value
+            ? parseInt(document.getElementById('tt_note_id').value, 10)
+            : null
     };
 
     try {

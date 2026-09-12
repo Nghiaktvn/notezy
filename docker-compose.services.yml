@@ -1,0 +1,169 @@
+x-php-environment: &php_environment
+  DB_HOST: db
+  DB_PORT: "3306"
+  DB_NAME: ${DB_NAME:-notezy}
+  DB_USER: root
+  DB_PASSWORD: ${SERVICE_DB_PASSWORD:-${DB_PASSWORD:?Set DB_PASSWORD in .env}}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  JWT_SECRET: ${JWT_SECRET:-${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET (or JWT_SECRET) before starting services}}
+  APP_TIMEZONE: Asia/Ho_Chi_Minh
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Runs idempotently before PHP services and gives each service only the
+  # database permissions it needs. No destructive schema operation occurs.
+  db_provisioner:
+    image: mysql:8.0
+    restart: "no"
+    command: ["sh", "/provision-service-users.sh"]
+    volumes:
+      - ./services/db/provision-service-users.sh:/provision-service-users.sh:ro
+      - ./migrations.sql:/migrations.sql:ro
+      - ./services/db/premium.sql:/premium.sql:ro
+      - ./services/db/production.sql:/production.sql:ro
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${DB_NAME:-notezy}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      SERVICE_DB_PASSWORD: ${SERVICE_DB_PASSWORD:-${DB_PASSWORD:?Set DB_PASSWORD in .env}}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: php -S 0.0.0.0:8080 -t /app/services/gateway/public /app/services/gateway/router.php
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET (or JWT_SECRET) before starting services}}
+    ports:
+      - "8088:8080"
+    depends_on:
+      auth_service:
+        condition: service_started
+      note_service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/health') ? 0 : 1);"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  auth_service:
+    <<: &php_service
+      build:
+        context: .
+        dockerfile: services/Dockerfile
+      environment:
+        <<: *php_environment
+      depends_on:
+        db:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+        db_provisioner:
+          condition: service_completed_successfully
+      restart: unless-stopped
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_auth
+    command: php -S 0.0.0.0:8080 -t /app/services/auth/public /app/services/auth/router.php
+    healthcheck: &service_health
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/health') ? 0 : 1);"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  user_service:
+    <<: *php_service
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_user
+    command: php -S 0.0.0.0:8080 -t /app/services/user/public /app/services/user/router.php
+    healthcheck: *service_health
+
+  note_service:
+    <<: *php_service
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_note
+    command: php -S 0.0.0.0:8080 -t /app/services/note/public /app/services/note/router.php
+    healthcheck: *service_health
+
+  file_service:
+    <<: *php_service
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_file
+    command: php -S 0.0.0.0:8080 -t /app/services/file/public /app/services/file/router.php
+    healthcheck: *service_health
+    volumes:
+      - uploads_data:/app/uploads
+
+  ai_service:
+    <<: *php_service
+    command: php -S 0.0.0.0:8080 -t /app/services/ai/public /app/services/ai/router.php
+    healthcheck: *service_health
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_ai
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      AI_AGENT_URL: http://ai_agent:8765
+      AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}
+
+  premium_service:
+    <<: *php_service
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_premium
+    command: php -S 0.0.0.0:8080 -t /app/services/premium/public /app/services/premium/router.php
+    healthcheck: *service_health
+
+  collaboration_service:
+    <<: *php_service
+    command: php -S 0.0.0.0:8080 -t /app/services/collaboration/public /app/services/collaboration/router.php
+    healthcheck: *service_health
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_collaboration
+      COLLAB_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}
+      COLLAB_WS_PUBLIC_URL: ${COLLAB_WS_PUBLIC_URL:-ws://localhost:8766}
+
+  outbox_worker:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command: php /app/services/outbox/worker.php
+    restart: unless-stopped
+    environment:
+      <<: *php_environment
+      DB_USER: notezy_outbox
+    depends_on:
+      db_provisioner:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$f='/tmp/outbox-worker.heartbeat'; exit(is_file($$f) && time()-filemtime($$f)<10 ? 0 : 1);"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis_data:
+  uploads_data:

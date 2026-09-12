@@ -1,6 +1,9 @@
 """Context builder — enriches payload context for the AI agent."""
 from __future__ import annotations
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from .memory import ConversationMemory, UserMemory
 
 
@@ -25,6 +28,9 @@ class ContextBuilder:
         - User memory (preferred_language, frequent_topics)
         """
         ctx = dict(raw_context)
+        now_vn = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+        ctx["vietnam_now"] = now_vn.strftime("%Y-%m-%d %H:%M:%S")
+        ctx["timezone"] = "Asia/Ho_Chi_Minh"
 
         # ── Conversation memory ──────────────────────────────────────────────
         if conv_memory.last_note_id and not ctx.get("last_referenced_note_id"):

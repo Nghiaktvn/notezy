@@ -11,6 +11,7 @@ from .search import search_tool_definitions
 from .tasks import task_tool_definitions
 from .labels import label_tool_definitions
 from .analytics import analytics_tool_definitions
+from .schedule import schedule_tool_definitions
 
 # ── Risk classification ─────────────────────────────────────────────────────
 READ_TOOLS = {
@@ -32,6 +33,7 @@ WRITE_TOOLS = {
     "summarize_note",
     "generate_flashcards",   # plural — matches tool schema in analytics.py
     "generate_quiz",
+    "create_schedule",
 }
 DESTRUCTIVE_TOOLS = {"delete_note"}
 
@@ -56,4 +58,5 @@ def tool_definitions() -> list[dict]:
         + task_tool_definitions()
         + label_tool_definitions()
         + analytics_tool_definitions()
+        + schedule_tool_definitions()
     )

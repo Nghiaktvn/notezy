@@ -22,6 +22,13 @@ $user_b_name = 'User Beta';
 
 notezy_session_start();
 
+// This visual fixture exists for maintainers, not end users. Real-time
+// collaboration is available through shared notes in the application.
+if (strtolower((string) getenv('APP_ENV')) === 'production') {
+    http_response_code(404);
+    exit();
+}
+
 if (extension_loaded('mysqli')) {
     try {
         @require_once __DIR__ . '/db.php';

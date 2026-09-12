@@ -67,22 +67,6 @@ function create_connect($fatal = false) {
     $primary_port = (int)DB_PORT;
     $attempt = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, $primary_port);
 
-    // Tự động dò cổng thay thế (3307, 3306, 3308) và mật khẩu ('root_password', '') để tương thích cả Docker lẫn XAMPP
-    if ($attempt->connect_error && (DB_HOST === '127.0.0.1' || DB_HOST === 'localhost')) {
-        $candidate_ports = array_unique([$primary_port, 3307, 3306, 3308]);
-        $candidate_passes = array_unique([DB_PASS, 'root_password', '', 'root']);
-        foreach ($candidate_ports as $alt_port) {
-            foreach ($candidate_passes as $alt_pass) {
-                if ($alt_port === $primary_port && $alt_pass === DB_PASS) continue;
-                $alt_conn = @new mysqli(DB_HOST, DB_USER, $alt_pass, DB_NAME, $alt_port);
-                if (!$alt_conn->connect_error) {
-                    $attempt = $alt_conn;
-                    break 2;
-                }
-            }
-        }
-    }
-
     if ($attempt->connect_error) {
         $error_msg = $attempt->connect_error;
         error_log('Notezy DB Connect Error: ' . $error_msg);
@@ -111,27 +95,6 @@ function create_connect($fatal = false) {
     $conn->set_charset('utf8mb4');
     // Fix múi giờ: đặt về +07:00 (giờ Việt Nam) để NOW() khớp với giờ người dùng nhập
     $conn->query("SET time_zone = '+07:00'");
-
-    // Auto-init schema if deploying to a fresh cloud DB
-    static $tables_checked = false;
-    if (!$tables_checked) {
-        $tables_checked = true;
-        $chk = @$conn->query("SHOW TABLES LIKE 'users'");
-        if ($chk && $chk->num_rows === 0) {
-            $sql_file = __DIR__ . '/../note.sql';
-            if (file_exists($sql_file)) {
-                $sql_content = file_get_contents($sql_file);
-                @$conn->multi_query($sql_content);
-                while (@$conn->next_result()) {;}
-            }
-            $mig_file = __DIR__ . '/../migrations.sql';
-            if (file_exists($mig_file)) {
-                $mig_content = file_get_contents($mig_file);
-                @$conn->multi_query($mig_content);
-                while (@$conn->next_result()) {;}
-            }
-        }
-    }
 
     return $conn;
 }

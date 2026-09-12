@@ -63,7 +63,12 @@ class Handler(BaseHTTPRequestHandler):
         """Check shared secret header. Returns True if authorized."""
         secret = os.environ.get("AI_AGENT_SHARED_SECRET", "")
         got = self.headers.get("X-Notezy-Agent-Secret", "")
-        return not secret or got == secret
+        if not secret:
+            # A missing key must never expose the agent in a production
+            # deployment. Local mock development can still run without one.
+            return os.environ.get("APP_ENV", "local").lower() != "production"
+        import hmac
+        return hmac.compare_digest(got, secret)
 
     def _read_json(self, max_bytes: int = 400_000) -> tuple[dict | None, int]:
         """Read and parse JSON body. Returns (parsed_dict, error_code)."""

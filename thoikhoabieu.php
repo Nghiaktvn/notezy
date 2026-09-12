@@ -22,6 +22,15 @@ $res = $stm->get_result();
 $user_info = $res->fetch_assoc() ?: [];
 $avatar = !empty($user_info['avatar']) ? $user_info['avatar'] : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
+
+$available_notes = [];
+$note_stmt = $conn->prepare('SELECT note_id, title FROM notes WHERE user_id = ? AND archived = 0 ORDER BY pinned DESC, updated_at DESC LIMIT 200');
+if ($note_stmt) {
+    $note_stmt->bind_param('i', $user_id);
+    $note_stmt->execute();
+    $available_notes = $note_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $note_stmt->close();
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -41,7 +50,7 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
             --primary: #4f46e5;
             --primary-hover: #4338ca;
             --primary-soft: rgba(79, 70, 229, 0.1);
-            --bg-page: #f8fafc;
+            --bg-page: #f3f0ff;
             --card-bg: #ffffff;
             --card-border: #e2e8f0;
             --text-main: #1e293b;
@@ -55,7 +64,7 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
             --primary: #6366f1;
             --primary-hover: #818cf8;
             --primary-soft: rgba(99, 102, 241, 0.15);
-            --bg-page: #0f172a;
+            --bg-page: #171426;
             --card-bg: #1e293b;
             --card-border: #334155;
             --text-main: #f8fafc;
@@ -68,10 +77,15 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-page);
+            background-image: linear-gradient(135deg, #f8f7ff 0%, #f3f0ff 48%, #eef2ff 100%);
             color: var(--text-main);
             min-height: 100vh;
             padding-top: 80px;
             transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode {
+            background-image: linear-gradient(135deg, #171426 0%, #171b35 48%, #1e1b3a 100%);
         }
 
         /* Navbar */
@@ -392,6 +406,11 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
                         <i class="fas fa-tags me-1"></i> Quản lý nhãn
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="premium.php">
+                        <i class="fas fa-crown me-1"></i> Premium
+                    </a>
+                </li>
             </ul>
 
             <div class="d-flex align-items-center gap-3">
@@ -670,6 +689,16 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
                         <label class="form-label fw-semibold">Ghi chú thêm</label>
                         <textarea class="form-control" id="schNote" name="note" rows="2" placeholder="Mang giáo trình, nộp bài tập..."></textarea>
                     </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold" for="schNoteId">Gắn ghi chú</label>
+                        <select class="form-select" id="schNoteId" name="note_id">
+                            <option value="">Chưa gắn ghi chú</option>
+                            <?php foreach ($available_notes as $available_note): ?>
+                                <option value="<?= (int) $available_note['note_id'] ?>"><?= htmlspecialchars($available_note['title'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="modal-footer border-top px-4 py-3">
@@ -803,21 +832,37 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
 
         card.innerHTML = `
             <div class="card-title">
-                <span>${item.title}</span>
+                <span>${escapeHtml(item.title)}</span>
                 ${item.reminder_minutes >= 0 ? `<i class="fas fa-bell" title="Báo trước ${item.reminder_minutes}p"></i>` : ''}
             </div>
             <div class="card-time">
                 <i class="far fa-clock"></i> ${item.start_time} - ${item.end_time}
             </div>
-            ${item.location ? `<div class="card-info"><i class="fas fa-map-marker-alt"></i> ${item.location}</div>` : ''}
-            ${item.teacher ? `<div class="card-info"><i class="fas fa-user-graduate"></i> ${item.teacher}</div>` : ''}
+            ${item.location ? `<div class="card-info"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.location)}</div>` : ''}
+            ${item.teacher ? `<div class="card-info"><i class="fas fa-user-graduate"></i> ${escapeHtml(item.teacher)}</div>` : ''}
+            ${item.note_id && !item.is_shared ? `<button type="button" class="card-act-btn mt-2" data-note-id="${item.note_id}" title="Mở ghi chú liên kết"><i class="fas fa-sticky-note"></i> ${escapeHtml(item.linked_note_title || 'Mở ghi chú')}</button>` : ''}
             <div class="schedule-card-actions">
-                <button class="card-act-btn" onclick="event.stopPropagation(); editSchedule(${item.id});" title="Sửa"><i class="fas fa-pen"></i></button>
-                <button class="card-act-btn text-danger" onclick="event.stopPropagation(); deleteSchedule(${item.id});" title="Xóa"><i class="fas fa-trash"></i></button>
+                ${!item.is_shared ? `<button class="card-act-btn" data-share-id="${item.id}" title="Chia sẻ"><i class="fas fa-user-plus"></i></button><button class="card-act-btn" onclick="event.stopPropagation(); editSchedule(${item.id});" title="Sửa"><i class="fas fa-pen"></i></button><button class="card-act-btn text-danger" onclick="event.stopPropagation(); deleteSchedule(${item.id});" title="Xóa"><i class="fas fa-trash"></i></button>` : '<span class="badge text-bg-light">Được chia sẻ</span>'}
             </div>
         `;
 
-        card.onclick = () => editSchedule(item.id);
+        const noteButton = card.querySelector('[data-note-id]');
+        if (noteButton) {
+            noteButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                window.location.href = `edit_note.php?id=${noteButton.dataset.noteId}`;
+            });
+        }
+
+        const shareButton = card.querySelector('[data-share-id]');
+        if (shareButton) {
+            shareButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                openSharePrompt(item);
+            });
+        }
+
+        card.onclick = () => { if (!item.is_shared) editSchedule(item.id); };
         return card;
     }
 
@@ -880,7 +925,7 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
                     const pill = document.createElement('div');
                     pill.className = 'calendar-event-pill';
                     pill.style.backgroundColor = item.color || '#4f46e5';
-                    pill.innerHTML = `<i class="far fa-clock me-1"></i>${item.start_time} ${item.title}`;
+                    pill.innerHTML = `<i class="far fa-clock me-1"></i>${item.start_time} ${escapeHtml(item.title)}`;
                     pill.onclick = (e) => { e.stopPropagation(); editSchedule(item.id); };
                     cell.appendChild(pill);
                 }
@@ -935,6 +980,7 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
         document.getElementById('schTeacher').value = item.teacher;
         document.getElementById('schReminderMinutes').value = item.reminder_minutes;
         document.getElementById('schNote').value = item.note;
+        document.getElementById('schNoteId').value = item.note_id || '';
 
         const colorDot = document.querySelector(`.color-dot-radio[data-color="${item.color}"]`) || 
                          document.querySelector('.color-dot-radio[data-color="#4f46e5"]');
@@ -962,7 +1008,8 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
             teacher: document.getElementById('schTeacher').value.trim(),
             color: document.getElementById('schColor').value,
             reminder_minutes: parseInt(document.getElementById('schReminderMinutes').value, 10),
-            note: document.getElementById('schNote').value.trim()
+            note: document.getElementById('schNote').value.trim(),
+            note_id: document.getElementById('schNoteId').value ? parseInt(document.getElementById('schNoteId').value, 10) : null
         };
 
         const btn = document.getElementById('schSaveBtn');
@@ -995,6 +1042,43 @@ $theme = $_SESSION['theme'] ?? ($user_info['theme'] ?? 'light');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save me-1"></i> Lưu lại';
+        }
+    }
+
+    function escapeHtml(value) {
+        const element = document.createElement('div');
+        element.textContent = value == null ? '' : String(value);
+        return element.innerHTML;
+    }
+
+    async function openSharePrompt(item) {
+        const result = await Swal.fire({
+            title: 'Chia sẻ lịch học',
+            html: `<p class="text-muted small mb-3">${escapeHtml(item.title)}</p><input id="shareRecipient" class="swal2-input" placeholder="Email hoặc tên đăng nhập"><select id="sharePermission" class="swal2-select"><option value="read">Chỉ xem</option><option value="write">Có thể sửa</option></select>`,
+            showCancelButton: true,
+            confirmButtonText: 'Chia sẻ',
+            cancelButtonText: 'Hủy',
+            preConfirm: async () => {
+                const recipient = document.getElementById('shareRecipient').value.trim();
+                const permission = document.getElementById('sharePermission').value;
+                if (!recipient) {
+                    Swal.showValidationMessage('Nhập email hoặc tên đăng nhập.');
+                    return false;
+                }
+                const response = await fetch('api/timetable_share.php', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+                    body: JSON.stringify({ timetable_id: item.id, recipient, permission })
+                });
+                const json = await response.json();
+                if (!response.ok || json.status !== 'success') {
+                    Swal.showValidationMessage(json.message || 'Không thể chia sẻ lịch.');
+                    return false;
+                }
+                return json;
+            }
+        });
+        if (result.isConfirmed) {
+            Swal.fire({ icon: 'success', title: 'Đã chia sẻ', timer: 1200, showConfirmButton: false });
         }
     }
 

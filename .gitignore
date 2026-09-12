@@ -11,6 +11,7 @@ composer.lock
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/dev-dist/
 node_modules/
 
 # ── User-uploaded content (not source, and may contain private data) ─────
@@ -26,6 +27,6 @@ Thumbs.db
 .idea/
 
 # ── AI agent local state ──────────────────────────────────────────────────
-ai_agent/__pycache__/
-ai_agent/*.pyc
+**/__pycache__/
+*.pyc
 ai_agent/.pytest_cache/

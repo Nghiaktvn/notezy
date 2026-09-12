@@ -4,6 +4,11 @@ require_once 'db.php';
 notezy_session_start();
 header('Content-Type: application/json');
 
+// Retired: note passwords are intentionally unavailable; use api/note_pin.php.
+http_response_code(410);
+echo json_encode(["status" => "error", "message" => "Khóa bằng mật khẩu đã được thay bằng PIN 6 số."]);
+exit();
+
 if (!isset($_SESSION['id'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized"]);
     exit();

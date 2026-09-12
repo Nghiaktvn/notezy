@@ -12,12 +12,45 @@ require_once('sendmail.php');
 $error   = '';
 $success = '';
 $email   = trim($_GET['email'] ?? $_POST['email'] ?? '');
+$activationToken = trim((string) ($_GET['token'] ?? ''));
 $mailWarning = $_SESSION['otp_mail_warning'] ?? '';
 unset($_SESSION['otp_mail_warning']);
 
-// Validate email parameter
-if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+// Activation link flow: the raw token exists only in the email; the database
+// stores its SHA-256 digest and a 24-hour expiry.
+if ($activationToken !== '') {
+    $conn = create_connect();
+    $tokenHash = hash('sha256', $activationToken);
+    $stmt = $conn->prepare('SELECT id, email, theme, language FROM users WHERE activation_token_hash = ? AND activation_token_expires_at >= NOW() LIMIT 1');
+    $stmt->bind_param('s', $tokenHash);
+    $stmt->execute();
+    $tokenUser = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($tokenUser) {
+        $activate = $conn->prepare('UPDATE users SET activated = 1, activation_token_hash = NULL, activation_token_expires_at = NULL, activation_otp_hash = NULL, activation_otp_expires_at = NULL, activation_otp_attempts = 0 WHERE id = ?');
+        $activate->bind_param('i', $tokenUser['id']);
+        if ($activate->execute()) {
+            session_regenerate_id(true);
+            $_SESSION['id'] = (int) $tokenUser['id'];
+            $_SESSION['theme'] = $tokenUser['theme'] ?? 'light';
+            $_SESSION['language'] = $tokenUser['language'] ?? 'vi';
+            unset($_SESSION['demo_otp']);
+            header('Location: index_notezy.php?activated=1');
+            exit();
+        }
+        $error = 'Không thể kích hoạt tài khoản. Vui lòng thử lại.';
+    } else {
+        $error = 'Liên kết kích hoạt không hợp lệ hoặc đã hết hạn.';
+    }
+}
+
+// A bad activation link is rendered as a friendly validation page instead of
+// terminating with a raw error. OTP flow still requires a valid email.
+if ((empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) && $activationToken === '') {
     die('❌ Yêu cầu không hợp lệ. <a href="register.php">Đăng ký lại</a>.');
+}
+if ((empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) && $activationToken !== '') {
+    $email = '';
 }
 
 // Fetch user by email
@@ -87,11 +120,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $otpHash = password_hash($otp, PASSWORD_DEFAULT);
                 $expires = date('Y-m-d H:i:s', time() + 300);
 
-                $stmt = $conn->prepare("UPDATE users SET activation_otp_hash = ?, activation_otp_expires_at = ?, activation_otp_attempts = 0 WHERE id = ?");
-                $stmt->bind_param('ssi', $otpHash, $expires, $user['id']);
+                $token = bin2hex(random_bytes(32));
+                $tokenHash = hash('sha256', $token);
+                $tokenExpires = date('Y-m-d H:i:s', time() + 86400);
+                $stmt = $conn->prepare("UPDATE users SET activation_otp_hash = ?, activation_otp_expires_at = ?, activation_otp_attempts = 0, activation_token_hash = ?, activation_token_expires_at = ? WHERE id = ?");
+                $stmt->bind_param('ssssi', $otpHash, $expires, $tokenHash, $tokenExpires, $user['id']);
                 $stmt->execute();
 
-                $mailResult = sendActivationEmail($email, $otp, $user['firstname']);
+                $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
+                $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($token);
+                $mailResult = sendActivationEmail($email, $otp, $user['firstname'], $activationLink);
                 $_SESSION['demo_otp'] = $otp;
                 if ($mailResult === true) {
                     $_SESSION['otp_resend_at_' . md5($email)] = time();
