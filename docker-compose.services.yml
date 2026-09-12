@@ -27,6 +27,10 @@ services:
   db_provisioner:
     image: mysql:8.0
     restart: "no"
+    # Share the database network namespace for deterministic bootstrap on
+    # Docker-in-Docker hosts (including GitHub Codespaces).  This avoids a
+    # transient bridge/DNS route leaving all dependent services in Created.
+    network_mode: "service:db"
     command: ["sh", "/provision-service-users.sh"]
     volumes:
       - ./services/db/provision-service-users.sh:/provision-service-users.sh:ro
@@ -34,7 +38,7 @@ services:
       - ./services/db/premium.sql:/premium.sql:ro
       - ./services/db/production.sql:/production.sql:ro
     environment:
-      MYSQL_HOST: db
+      MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: "3306"
       MYSQL_DATABASE: ${DB_NAME:-notezy}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
