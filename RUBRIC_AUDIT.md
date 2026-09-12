@@ -59,6 +59,7 @@ vulnerabilities, all PHP files passed syntax validation, the AI agent passed
 ## GitHub-only launch
 
 Use the **Open in GitHub Codespaces** button in `README.md`, wait for the stack,
-then make ports `80` and `8766` public. Codespaces must remain running while the
+then make ports `8080` and `8766` public. Keep phpMyAdmin port `8081` private.
+Codespaces must remain running while the
 grader uses the URL. Mail and live LLM credentials belong in Codespaces Secrets,
 never in the repository.

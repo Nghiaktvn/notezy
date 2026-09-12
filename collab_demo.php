@@ -141,7 +141,7 @@ if (isset($_GET['switch_user'])) {
         $_SESSION['id'] = $user_id_b;
         $_SESSION['username'] = 'collab_user_b';
     }
-    header("Location: edit_note.php?id=" . $demo_note_id);
+    header("Location: themghichu.php?id=" . $demo_note_id);
     exit();
 }
 ?>

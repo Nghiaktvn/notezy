@@ -1,37 +1,27 @@
 {
   "name": "Notezy Full Stack",
-  "dockerComposeFile": [
-    "../docker-compose.yml",
-    "../docker-compose.services.yml"
-  ],
-  "service": "web",
-  "workspaceFolder": "/var/www/html",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    }
+  },
   "initializeCommand": "bash .devcontainer/initialize.sh",
-  "overrideCommand": false,
-  "shutdownAction": "stopCompose",
-  "runServices": [
-    "db",
-    "redis",
-    "db_provisioner",
-    "ai_agent",
-    "collab_ws",
-    "web",
-    "auth_service",
-    "user_service",
-    "note_service",
-    "file_service",
-    "ai_service",
-    "premium_service",
-    "collaboration_service",
-    "outbox_worker",
-    "gateway"
-  ],
-  "forwardPorts": [80, 8765, 8766, 8088],
+  "postCreateCommand": "docker compose -f docker-compose.yml -f docker-compose.services.yml --profile tools up -d",
+  "postStartCommand": "docker compose -f docker-compose.yml -f docker-compose.services.yml --profile tools up -d",
+  "forwardPorts": [8080, 8081, 8765, 8766, 8088],
   "portsAttributes": {
-    "80": { "label": "Notezy Web", "onAutoForward": "openBrowser" },
+    "8080": { "label": "Notezy Web", "onAutoForward": "openBrowser" },
+    "8081": { "label": "Notezy phpMyAdmin", "onAutoForward": "notify" },
     "8765": { "label": "Notezy AI health", "onAutoForward": "silent" },
     "8766": { "label": "Notezy realtime WebSocket", "onAutoForward": "notify" },
     "8088": { "label": "Notezy API gateway", "onAutoForward": "silent" }
   },
-  "remoteUser": "root"
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+  "remoteUser": "vscode"
 }

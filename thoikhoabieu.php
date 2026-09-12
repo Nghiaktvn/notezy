@@ -850,7 +850,7 @@ if ($note_stmt) {
         if (noteButton) {
             noteButton.addEventListener('click', (event) => {
                 event.stopPropagation();
-                window.location.href = `edit_note.php?id=${noteButton.dataset.noteId}`;
+                window.location.href = `themghichu.php?id=${noteButton.dataset.noteId}`;
             });
         }
 

@@ -553,7 +553,7 @@ if ($is_owner && $_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['revoke'])
                     </a>
                     <div class="d-flex gap-2">
                         <?php if ($is_owner || $permission == 'write'): ?>
-                            <a href="edit_note.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-primary">
+                            <a href="themghichu.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-primary">
                                 <i class="fas fa-edit me-1"></i> Chỉnh sửa & Tùy chỉnh sự kiện
                             </a>
                         <?php endif; ?>

@@ -502,7 +502,7 @@ if ($conn && !$conn->connect_error) {
             const time = esc(row.created_at || '');
             if (row.message_type === 'note') {
                 const permission = row.permission === 'write' ? 'Editor' : 'Viewer';
-                const url = row.permission === 'write' || Number(row.can_edit) === 1 ? `edit_note.php?id=${row.note_id}` : `notepass.php?id=${row.note_id}`;
+                const url = row.permission === 'write' || Number(row.can_edit) === 1 ? `themghichu.php?id=${row.note_id}` : `notepass.php?id=${row.note_id}`;
                 return `<div class="bubble-row ${mine ? 'me' : ''}">
                     <div class="note-card-chat">
                         <div class="note-card-title"><i class="fa-solid fa-note-sticky text-primary"></i>${esc(row.note_title || 'Ghi chú được chia sẻ')}</div>

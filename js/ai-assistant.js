@@ -84,7 +84,7 @@
       <div class="notezy-ai-note-body">${esc(resp.note_content).replace(/\n/g, '<br>')}</div>
       <div class="notezy-ai-labels">${(resp.labels || []).map(l => '<span>' + esc(l) + '</span>').join('')}</div>
       <div class="notezy-ai-actions">
-        <a href="edit_note.php?id=${resp.note_id}" class="notezy-ai-open-link">Mở ghi chú</a>
+        <a href="themghichu.php?id=${resp.note_id}" class="notezy-ai-open-link">Mở ghi chú</a>
       </div>
     `;
     return wrap;

@@ -10,7 +10,7 @@ if [[ ! -f .env ]]; then
   codespace_name="${CODESPACE_NAME:-}"
   forwarding_domain="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
   if [[ -n "$codespace_name" ]]; then
-    app_url="https://${codespace_name}-80.${forwarding_domain}"
+    app_url="https://${codespace_name}-8080.${forwarding_domain}"
     websocket_url="wss://${codespace_name}-8766.${forwarding_domain}"
   else
     app_url="http://localhost:8080"

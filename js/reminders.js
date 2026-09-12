@@ -63,7 +63,7 @@
             const li = document.createElement('li');
             li.className = 'notif-item border-bottom';
             li.innerHTML = `
-                <a class="dropdown-item py-2 px-3" href="edit_note.php?id=${item.note_id}" style="white-space:normal;">
+                <a class="dropdown-item py-2 px-3" href="themghichu.php?id=${item.note_id}" style="white-space:normal;">
                     <div class="d-flex align-items-start gap-2">
                         <i class="fas fa-bell text-warning mt-1 flex-shrink-0"></i>
                         <div>
@@ -92,7 +92,7 @@
                     icon: 'logo.png',
                     tag: 'notezy-reminder-' + item.note_id,
                 });
-                n.onclick = () => { window.focus(); window.location.href = 'edit_note.php?id=' + item.note_id; };
+                n.onclick = () => { window.focus(); window.location.href = 'themghichu.php?id=' + item.note_id; };
             } catch (e) {}
         }
 
@@ -118,7 +118,7 @@
                 timerProgressBar: true,
             }).then(res => {
                 if (res.isConfirmed) {
-                    window.location.href = 'edit_note.php?id=' + item.note_id;
+                    window.location.href = 'themghichu.php?id=' + item.note_id;
                 }
             });
         } else {
@@ -126,7 +126,7 @@
             const toast = document.createElement('div');
             toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:#4f46e5;color:#fff;padding:14px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.25);cursor:pointer;max-width:320px;font-family:inherit;';
             toast.innerHTML = `<strong>⏰ Nhắc nhở:</strong><br>${escHtml(item.title)}`;
-            toast.onclick = () => { window.location.href = 'edit_note.php?id=' + item.note_id; };
+            toast.onclick = () => { window.location.href = 'themghichu.php?id=' + item.note_id; };
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 10000);
         }

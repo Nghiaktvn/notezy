@@ -662,8 +662,9 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                 font-size: 0.75rem;
             }
             .note-actions {
-                flex-direction: column;
-                align-items: flex-end;
+                flex-direction: row;
+                align-items: center;
+                justify-content: flex-end;
             }
             .note-actions .btn {
                 margin-bottom: 5px;
@@ -705,6 +706,17 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             }
             .note-grid {
                 grid-template-columns: 1fr !important;
+                min-width: 0;
+                width: 100%;
+                gap: 12px;
+            }
+            .note-grid > * {
+                min-width: 0;
+                max-width: 100%;
+            }
+            .note-grid > .d-flex {
+                flex-wrap: wrap;
+                gap: 8px;
             }
             .note-item {
                 padding: 10px !important;
@@ -719,8 +731,13 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                 width: 100%;
             }
             .note-actions .btn {
-                width: 100%;
                 font-size: 0.75rem;
+            }
+            .note-actions .btn.btn-action-icon {
+                width: 35px;
+                min-width: 35px;
+                height: 35px;
+                margin-bottom: 0;
             }
             .navbar-brand.logo {
                 font-size: 1.1rem;
@@ -1232,7 +1249,7 @@ $card_style = '';
                         <?php endif; ?>
 
                         <!-- NÚT CHỈNH SỬA (ICON-ONLY) -->
-                        <a href="edit_note.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-action-icon btn-edit" title="Chỉnh sửa ghi chú">
+                        <a href="themghichu.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-action-icon btn-edit" title="Chỉnh sửa ghi chú">
                             <i class="fas fa-edit"></i>
                         </a>
 
@@ -1240,6 +1257,11 @@ $card_style = '';
                             <!-- NÚT CHIA SẺ GHI CHÚ (ICON-ONLY) -->
                             <button type="button" class="btn btn-action-icon btn-share" onclick="openShareNoteModal(<?= $note['note_id'] ?>)" title="Chia sẻ ghi chú">
                                 <i class="fas fa-share-alt"></i>
+                            </button>
+
+                            <!-- Mật khẩu chữ riêng cho từng ghi chú (đặt/đổi/gỡ) -->
+                            <button type="button" class="btn btn-action-icon <?= $note['has_password'] ? 'btn-password-active' : 'btn-password' ?>" onclick="openManagePasswordModal(<?= $note['note_id'] ?>, <?= $note['has_password'] ? 'true' : 'false' ?>)" title="<?= $note['has_password'] ? 'Đổi hoặc gỡ mật khẩu ghi chú' : 'Đặt mật khẩu riêng cho ghi chú' ?>">
+                                <i class="fas fa-key"></i>
                             </button>
 
                         <?php endif; ?>
@@ -1336,7 +1358,7 @@ $card_style = '';
                     <?php endif; ?>
                     <div class="note-actions mt-2 d-flex gap-2 flex-wrap">
                         <?php if ($note['permission'] == 'write'): ?>
-                            <a href="edit_note.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-sm btn-outline-success">
+                            <a href="themghichu.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-sm btn-outline-success">
                                 <i class="fas fa-edit me-1"></i> Chỉnh sửa
                             </a>
                         <?php endif; ?>
@@ -1451,7 +1473,7 @@ $card_style = '';
                         <?php endif; ?>
 
                         <!-- NÚT CHỈNH SỬA (ICON-ONLY) -->
-                        <a href="edit_note.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-action-icon btn-edit" title="Chỉnh sửa ghi chú">
+                        <a href="themghichu.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-action-icon btn-edit" title="Chỉnh sửa ghi chú">
                             <i class="fas fa-edit"></i>
                         </a>
 
@@ -1459,6 +1481,11 @@ $card_style = '';
                             <!-- NÚT CHIA SẺ GHI CHÚ (ICON-ONLY) -->
                             <button type="button" class="btn btn-action-icon btn-share" onclick="openShareNoteModal(<?= $note['note_id'] ?>)" title="Chia sẻ ghi chú">
                                 <i class="fas fa-share-alt"></i>
+                            </button>
+
+                            <!-- Mật khẩu chữ riêng cho từng ghi chú (đặt/đổi/gỡ) -->
+                            <button type="button" class="btn btn-action-icon <?= $note['has_password'] ? 'btn-password-active' : 'btn-password' ?>" onclick="openManagePasswordModal(<?= $note['note_id'] ?>, <?= $note['has_password'] ? 'true' : 'false' ?>)" title="<?= $note['has_password'] ? 'Đổi hoặc gỡ mật khẩu ghi chú' : 'Đặt mật khẩu riêng cho ghi chú' ?>">
+                                <i class="fas fa-key"></i>
                             </button>
 
                         <?php endif; ?>
@@ -1556,7 +1583,7 @@ $card_style = '';
                         <?php endif; ?>
                         <div class="note-actions mt-2 d-flex gap-2 flex-wrap">
                             <?php if ($note['permission'] == 'write'): ?>
-                                <a href="edit_note.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-sm btn-outline-success">
+                                <a href="themghichu.php?id=<?= urlencode($note['note_id']) ?>" class="btn btn-sm btn-outline-success">
                                     <i class="fas fa-edit me-1"></i> Chỉnh sửa
                                 </a>
                             <?php endif; ?>

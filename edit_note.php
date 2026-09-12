@@ -280,7 +280,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
     $content = trim($_POST['content'] ?? '');
     $labels_raw = trim($_POST['labels'] ?? '');
     $pinned = isset($_POST['pinned']) ? 1 : 0;
-    $password = '';
     $background_color = trim($_POST['background_color'] ?? '#ffffff');
     $text_color = trim($_POST['text_color'] ?? '#000000');
     $font_family = trim($_POST['font_family'] ?? 'Poppins');
@@ -290,14 +289,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
     } else {
         $conn->begin_transaction();
         try {
-            // PIN 6 số là cơ chế khóa duy nhất. Retire old per-note passwords.
-            $password_hash = null;
-            $sql_update = "UPDATE notes SET title = ?, content = ?, pinned = ?, password_hash = ?, background_color = ?, text_color = ?, font_family = ?, updated_at = NOW() WHERE note_id = ? AND (user_id = ? OR note_id IN (SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write'))";
+            // Password/PIN management is handled by the dedicated protected
+            // endpoints. A normal content edit must never silently remove an
+            // existing per-note password.
+            $sql_update = "UPDATE notes SET title = ?, content = ?, pinned = ?, background_color = ?, text_color = ?, font_family = ?, updated_at = NOW() WHERE note_id = ? AND (user_id = ? OR note_id IN (SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write'))";
             $stm_update = $conn->prepare($sql_update);
             if (!$stm_update) {
                 throw new Exception("Lỗi chuẩn bị truy vấn cập nhật: " . $conn->error);
             }
-            $stm_update->bind_param('ssissssiii', $title, $content, $pinned, $password_hash, $background_color, $text_color, $font_family, $note_id, $user_id, $user_id);
+            $stm_update->bind_param('ssisssiii', $title, $content, $pinned, $background_color, $text_color, $font_family, $note_id, $user_id, $user_id);
             if (!$stm_update->execute()) {
                 throw new Exception("Lỗi thực thi cập nhật: " . $stm_update->error);
             }
