@@ -1,6 +1,6 @@
 # Bảng chấm điểm Notezy theo rubric giảng viên
 
-Ngày kiểm thử: 12/09/2026 (Asia/Ho_Chi_Minh)
+Ngày kiểm thử cuối: 13/09/2026 (Asia/Ho_Chi_Minh)
 
 ## Kết quả tổng quan
 
@@ -9,8 +9,8 @@ Ngày kiểm thử: 12/09/2026 (Asia/Ho_Chi_Minh)
 | Account management | 2.00 | 2.00 | Đạt |
 | Simple note management | 3.50 | 3.50 | Đạt |
 | Advanced note management | 2.50 | 2.50 | Đạt |
-| UI/UX, responsive, offline, deployment | 2.00 | 1.75 | Chờ xác nhận URL Codespaces mới |
-| **Tổng** | **10.00** | **9.75** | **Mục tiêu 10.00 sau khi URL công khai trả health 200** |
+| UI/UX, responsive, offline, deployment | 2.00 | 2.00 | Đạt |
+| **Tổng** | **10.00** | **10.00** | **Đạt theo tự chấm, có bằng chứng kiểm thử** |
 
 ## Chi tiết 32 tiêu chí
 
@@ -47,7 +47,7 @@ Ngày kiểm thử: 12/09/2026 (Asia/Ho_Chi_Minh)
 | 29 | UI and UX | 0.50/0.50 | Landing/dashboard hiện đại, feedback/loading/error/empty state, modal và icon có tooltip. |
 | 30 | Responsive | 0.50/0.50 | Đo trực tiếp: mobile 375px, tablet 753px, desktop 1425px đều không tràn ngang; grid lần lượt 1/2/4 cột. |
 | 31 | Offline capabilities | 0.50/0.50 | Service Worker + IndexedDB notes/labels/sync queue; create/update/delete offline và conflict message. |
-| 32 | Online deployment | 0.25/0.50 | Docker Compose chạy đủ health; Codespaces mới đã được cấu hình lại nhưng phải rebuild và kiểm tra URL HTTPS công khai trước khi chấm đủ. |
+| 32 | Online deployment | 0.50/0.50 | GitHub Codespaces/Docker đã chạy toàn bộ service healthy. Web public trả HTTP 200 với `database: connected`; WebSocket public `/health` trả HTTP 200 `{"ok":true}`. |
 
 ## Các lỗi/rủi ro đã phát hiện và xử lý
 
@@ -58,6 +58,9 @@ Ngày kiểm thử: 12/09/2026 (Asia/Ho_Chi_Minh)
 5. **AI live bị treo do container chạy mã cũ/provider ngoài:** đã sửa live test dùng biến môi trường, khởi động lại riêng service; endpoint hiện trả HTTP 200.
 6. **Docker Desktop không khởi động do socket runtime hỏng và ổ C gần đầy:** dọn 2,53 GB npm cache; chuyển thư mục socket lỗi sang bản sao lưu `run.stale-20260912-1230`; engine và toàn bộ container đã healthy trở lại. Không xóa volume/database.
 7. **Codespaces cũ không có workspace/port:** thay compose-devcontainer bằng workspace chuẩn + Docker-in-Docker; forward đúng 8080, 8081, 8088, 8765, 8766.
+8. **Bootstrap collaboration thiếu bảng presence:** thêm migration `note_collab_presence` trước bước GRANT, để provisioner kết thúc thành công trên volume mới và cũ.
+9. **Codespaces Docker-in-Docker timeout tới MySQL:** thêm fallback nội bộ `host.docker.internal:host-gateway` chỉ do bootstrap Codespaces bật; Docker thường vẫn dùng bridge `db` mặc định. Toàn bộ microservice và web đã chuyển `healthy` sau rebuild.
+10. **Bind mount Windows làm entrypoint mất executable bit:** Compose chạy entrypoint qua Bash, ngăn web container lặp `Restarting (126)`.
 
 ## Bằng chứng kiểm thử cuối
 
@@ -70,5 +73,7 @@ Ngày kiểm thử: 12/09/2026 (Asia/Ho_Chi_Minh)
 - Frontend Vite/PWA build: đạt; `npm audit`: 0 vulnerabilities.
 - Docker: web, database, AI, WebSocket và mọi microservice có health; phpMyAdmin HTTP 200.
 - XAMPP PHP 8.0.30: parse toàn bộ PHP và chạy web/health với MySQL Docker thành công.
+- Codespaces public web: `https://bookish-space-pancake-694qjqpxg5xpc7gr-8080.app.github.dev/health.php` — HTTP 200, `{"status":"ok","database":"connected"}`.
+- Codespaces public realtime: `https://bookish-space-pancake-694qjqpxg5xpc7gr-8766.app.github.dev/health` — HTTP 200, `{"ok":true}`.
 
-> Điểm 10/10 chỉ được chốt sau khi commit mới chạy trên Codespaces và URL HTTPS public trả HTTP 200 trong phiên kiểm thử cuối.
+> 10/10 là kết quả tự chấm theo rubric và bằng chứng kỹ thuật; điểm chính thức do giảng viên quyết định. GitHub Codespace phải còn chạy khi mở URL demo.
