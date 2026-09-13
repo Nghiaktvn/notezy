@@ -30,3 +30,20 @@ if [[ ! -f .env ]]; then
     "COLLAB_WS_PUBLIC_URL=${websocket_url}" \
     'LLM_PROVIDER=mock' > .env
 fi
+
+# Codespaces runs Docker inside the development container. On some rebuilds
+# its nested bridge network accepts MySQL only through the engine host gateway.
+# Keep the application on the normal Compose network everywhere else, while
+# making this Codespaces-only fallback deterministic and idempotent.
+if [[ -n "${CODESPACE_NAME:-}" ]]; then
+  set_env_value() {
+    local key="$1" value="$2"
+    if grep -q "^${key}=" .env; then
+      sed -i "s|^${key}=.*|${key}=${value}|" .env
+    else
+      printf '%s=%s\n' "$key" "$value" >> .env
+    fi
+  }
+  set_env_value SERVICE_DB_HOST host.docker.internal
+  set_env_value SERVICE_DB_PORT 3307
+fi

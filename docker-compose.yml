@@ -13,8 +13,8 @@ services:
       - uploads_data:/var/www/html/uploads
       - storage_data:/var/www/html/storage
     environment:
-      DB_HOST: db
-      DB_PORT: "3306"
+      DB_HOST: ${SERVICE_DB_HOST:-db}
+      DB_PORT: ${SERVICE_DB_PORT:-3306}
       DB_NAME: ${DB_NAME:-notezy}
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root_password}
@@ -31,6 +31,8 @@ services:
       AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}
       APP_ENV: ${APP_ENV:-local}
       APP_URL: ${APP_URL:-http://localhost:8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy

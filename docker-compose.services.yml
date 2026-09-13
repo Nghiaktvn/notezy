@@ -1,6 +1,8 @@
 x-php-environment: &php_environment
-  DB_HOST: db
-  DB_PORT: "3306"
+  # SERVICE_DB_HOST/PORT are only overridden by the Codespaces bootstrap.
+  # The defaults preserve the normal isolated Compose network for local Docker.
+  DB_HOST: ${SERVICE_DB_HOST:-db}
+  DB_PORT: ${SERVICE_DB_PORT:-3306}
   DB_NAME: ${DB_NAME:-notezy}
   DB_USER: root
   DB_PASSWORD: ${SERVICE_DB_PASSWORD:-${DB_PASSWORD:?Set DB_PASSWORD in .env}}
@@ -82,6 +84,11 @@ services:
         db_provisioner:
           condition: service_completed_successfully
       restart: unless-stopped
+      # Docker-in-Docker can intermittently isolate bridge traffic during a
+      # Codespaces rebuild. host-gateway gives the bootstrap an explicit,
+      # opt-in fallback to the database's published localhost port.
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
     environment:
       <<: *php_environment
       DB_USER: notezy_auth
