@@ -2,6 +2,10 @@ services:
   web:
     build: .
     restart: unless-stopped
+    # The bind mount below replaces the image copy of entrypoint.sh. Git on
+    # Windows does not retain its executable bit, so invoke it through Bash
+    # rather than depending on a host filesystem permission.
+    command: ["/bin/bash", "/var/www/html/entrypoint.sh"]
     ports:
       - "8080:80"
     volumes:
