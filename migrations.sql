@@ -168,6 +168,17 @@ CREATE TABLE IF NOT EXISTS `note_attachments` (
   CONSTRAINT `fk_note_attachments_user` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Collaboration service permissions are granted during database provisioning.
+-- Keep this table in the baseline schema so GRANT statements never depend on
+-- a request reaching the PHP collaboration endpoints first.
+CREATE TABLE IF NOT EXISTS `note_collab_presence` (
+    `note_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
+    `is_typing` TINYINT(1) NOT NULL DEFAULT 0,
+    `last_seen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`note_id`, `user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── 8. users — Activation OTP fields ──────────────────────────────────────
 -- FIX: these were plain "ADD COLUMN" with no existence check. That's fine
 -- the very first time the script runs, but Docker only executes files in
