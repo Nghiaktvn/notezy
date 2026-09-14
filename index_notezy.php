@@ -405,6 +405,17 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             white-space: pre-wrap;
             overflow-wrap: anywhere;
         }
+        .tooltip .tooltip-inner {
+            background: #3b1a55;
+            color: #ffffff;
+            border-radius: 9px;
+            box-shadow: 0 8px 18px rgba(59, 26, 85, .2);
+            font-size: .78rem;
+            font-weight: 650;
+            padding: 7px 10px;
+        }
+        .bs-tooltip-top .tooltip-arrow::before { border-top-color: #3b1a55; }
+        .bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #3b1a55; }
         .note-item h5 {
             font-size: 1.2rem;
             font-weight: bold;
@@ -2286,6 +2297,33 @@ $card_style = '';
             gridViewBtn.classList.remove('active');
             localStorage.setItem('notezy_view_mode', 'list');
         });
+
+        // Explain every icon-only notebook action on hover and keyboard focus.
+        // This avoids forcing users to memorize icons while keeping cards compact.
+        (function addActionTooltips() {
+            const labels = [
+                ['.btn-timetable', 'Thêm vào thời khóa biểu'],
+                ['.btn-view', 'Xem chi tiết sổ'],
+                ['.btn-edit', 'Sửa nội dung sổ'],
+                ['.btn-share', 'Chia sẻ sổ'],
+                ['.btn-password, .btn-password-active', 'Đặt hoặc đổi mật khẩu'],
+                ['.btn-pin, .btn-pin-active', 'Cài đặt mã bảo mật 6 số'],
+                ['.btn-unlock', 'Mở khóa sổ'],
+                ['.btn-pin-toggle', 'Ghim hoặc bỏ ghim sổ'],
+                ['.btn-archive', 'Lưu trữ sổ'],
+                ['.btn-delete', 'Xóa sổ']
+            ];
+            labels.forEach(([selector, label]) => {
+                document.querySelectorAll(`.note-actions ${selector}`).forEach((element) => {
+                    element.setAttribute('aria-label', label);
+                    element.setAttribute('data-bs-toggle', 'tooltip');
+                    element.setAttribute('data-bs-placement', 'top');
+                    element.setAttribute('data-bs-title', label);
+                    element.removeAttribute('title');
+                    if (window.bootstrap?.Tooltip) bootstrap.Tooltip.getOrCreateInstance(element);
+                });
+            });
+        })();
 
         // Open a notebook from its cover. Controls inside the card keep their
         // original behavior, while locked notebooks still require verification.
