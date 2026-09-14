@@ -51,6 +51,52 @@ function ai_response_references(?array $toolResults): array {
     return array_values($references);
 }
 
+/**
+ * Keep the assistant useful when the optional Python service is restarting or
+ * temporarily unavailable.  This fallback only reads the already-authorized
+ * context assembled for the current user; it never creates, changes, shares,
+ * or deletes a note.
+ */
+function ai_local_fallback_response(array $context, string $message): array {
+    $notes = is_array($context['recent_notes'] ?? null) ? $context['recent_notes'] : [];
+    if (!$notes) {
+        return [
+            'type' => 'message',
+            'content' => 'Trợ lý AI đang chuyển sang chế độ nội bộ. Bạn chưa có ghi chú nào để tóm tắt; hãy tạo một ghi chú rồi thử lại.',
+            'requires_confirmation' => false,
+            'references' => [],
+        ];
+    }
+
+    $note = $notes[0];
+    $title = trim((string) ($note['title'] ?? 'Ghi chú gần đây'));
+    $body = trim(preg_replace('/\s+/u', ' ', (string) ($note['content'] ?? '')));
+    $sentences = preg_split('/(?<=[.!?。])\s+/u', $body, 3) ?: [];
+    $points = array_values(array_filter(array_map('trim', $sentences)));
+    if (!$points && $body !== '') {
+        $points = [mb_substr($body, 0, 260, 'UTF-8')];
+    }
+    if (!$points) {
+        $points = ['Ghi chú chưa có nội dung để phân tích.'];
+    }
+
+    $content = "Trợ lý AI đang dùng chế độ nội bộ do dịch vụ AI tạm thời chưa sẵn sàng.\n\n"
+        . "Tóm tắt « {$title} »:\n"
+        . implode("\n", array_map(static fn(string $point, int $index): string => '- ' . ($index + 1) . '. ' . $point, $points, array_keys($points)));
+
+    $noteId = (int) ($note['note_id'] ?? 0);
+    return [
+        'type' => 'message',
+        'content' => $content,
+        'requires_confirmation' => false,
+        'references' => $noteId > 0 ? [[
+            'note_id' => $noteId,
+            'title' => $title,
+            'url' => 'notepass.php?id=' . $noteId,
+        ]] : [],
+    ];
+}
+
 for ($i = 0; $i < $max_loops; $i++) {
     $agent = ai_call_agent([
         'messages' => $llm_messages,
@@ -58,10 +104,8 @@ for ($i = 0; $i < $max_loops; $i++) {
         'tool_results' => $tool_results,
     ]);
     if (empty($agent['ok'])) {
-        $err = $agent['error'] ?? 'AI request failed';
-        $code = (int) ($agent['status'] ?? 502);
-        $conversations->addMessage($conversation_id, 'assistant', $err, ['type' => 'error']);
-        ai_json($code, ['status' => 'error', 'message' => $err, 'conversation_id' => $conversation_id]);
+        $final_response = ai_local_fallback_response($context, $message);
+        break;
     }
     $payload = $agent['data'] ?? [];
     $tool_calls = $payload['tool_calls'] ?? [];
