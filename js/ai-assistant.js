@@ -16,7 +16,10 @@
   root.innerHTML = `
     <div class="notezy-ai-panel" id="notezyAiPanel" role="dialog" aria-label="Notezy AI">
       <div class="notezy-ai-header">
-        <span>Notezy AI</span>
+        <div class="notezy-ai-brand">
+          <img src="assets/notezy-ai-orb.png" alt="" aria-hidden="true">
+          <span>Notezy AI<small>Trợ lý ghi chú của bạn</small></span>
+        </div>
         <button type="button" id="notezyAiClose" aria-label="Đóng">✕</button>
       </div>
       <div class="notezy-ai-messages" id="notezyAiMessages"></div>
@@ -25,7 +28,9 @@
         <button type="button" id="notezyAiSend">Gửi</button>
       </div>
     </div>
-    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Notezy AI">✦</button>
+    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Notezy AI">
+      <img src="assets/notezy-ai-orb.png" alt="" aria-hidden="true">
+    </button>
   `;
 
   const panel = document.getElementById('notezyAiPanel');
