@@ -285,6 +285,32 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             font-weight: bold;
             color: #000000;
         }
+        /* The Notezy mark is the single navigation control.  It remains the
+           familiar purple-pink icon and expands the menu on narrow screens. */
+        .notezy-menu-button {
+            appearance: none;
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            margin: 0 8px 0 0;
+            padding: 0;
+            border: 0;
+            border-radius: 14px;
+            background: transparent;
+            cursor: pointer;
+        }
+        .notezy-menu-button img {
+            display: block;
+            width: 50px;
+            height: 50px;
+        }
+        .notezy-menu-button:focus-visible {
+            outline: 3px solid rgba(124, 63, 188, .45);
+            outline-offset: 3px;
+        }
         .nav-link {
             color: #333333;
             font-weight: 500;
@@ -1148,7 +1174,11 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 <header>
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <img src="logo.svg" alt="Notezy" width="50" height="50" class="me-2" />
+            <button class="notezy-menu-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Mở hoặc đóng menu điều hướng"
+                    title="Mở hoặc đóng menu điều hướng">
+                <img src="logo.svg" alt="" width="50" height="50" />
+            </button>
             <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
