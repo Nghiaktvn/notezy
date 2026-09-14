@@ -16,7 +16,6 @@
 }
 .notezy-ai-fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 14px 32px rgba(122, 63, 190, .48); }
 .notezy-ai-fab img { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(255,255,255,.25)); }
-}
 .notezy-ai-panel {
   position: fixed;
   right: 20px;
@@ -121,6 +120,32 @@
   color: #5c277d;
 }
 .notezy-ai-actions button.danger { background: #b42318; border-color: #b42318; }
+.notezy-ai-quick-actions {
+  display: flex;
+  gap: 7px;
+  padding: 9px 10px 0;
+  overflow-x: auto;
+  background: #fefcff;
+  scrollbar-width: thin;
+}
+.notezy-ai-quick-actions button {
+  flex: 0 0 auto;
+  border: 1px solid #dec6ef;
+  border-radius: 999px;
+  background: #fff;
+  color: #64277d;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background .16s ease, transform .16s ease;
+}
+.notezy-ai-quick-actions button:hover,
+.notezy-ai-quick-actions button:focus-visible {
+  background: #f3e8ff;
+  transform: translateY(-1px);
+}
+.notezy-ai-quick-actions button:disabled { cursor: wait; opacity: .6; }
 .notezy-ai-input {
   display: flex;
   gap: 8px;

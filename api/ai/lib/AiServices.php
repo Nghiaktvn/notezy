@@ -212,7 +212,19 @@ class AiNoteTools {
     private function getNoteForAi(array $args, string $tool): array {
         $note_id = (int) ($args['note_id'] ?? 0);
         if ($note_id <= 0) {
-            return ['ok' => false, 'error' => 'Invalid note_id'];
+            // Natural-language requests such as “tạo quiz từ ghi chú gần đây”
+            // may omit an ID. Pick the newest accessible note so the study tools
+            // remain useful while preserving ownership and lock checks.
+            $recent = $this->getRecentNotes(['limit' => 10]);
+            foreach ($recent['notes'] ?? [] as $candidate) {
+                if (empty($candidate['password_protected']) && trim((string)($candidate['content'] ?? '')) !== '') {
+                    $note_id = (int)$candidate['note_id'];
+                    break;
+                }
+            }
+            if ($note_id <= 0) {
+                return ['ok' => false, 'error' => 'Không có ghi chú phù hợp để xử lý'];
+            }
         }
         $got = $this->getNote(['note_id' => $note_id]);
         if (!$got['ok']) return $got;

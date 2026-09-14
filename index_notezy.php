@@ -175,6 +175,47 @@ try {
         return $note['archived'] == 1;
     });
 
+    // Tổng quan học tập theo giờ Việt Nam. Ưu tiên deadline, nếu chưa có thì
+    // dùng thời điểm nhắc để người dùng nhìn thấy đúng việc cần làm hôm nay.
+    $dashboard_timezone = new DateTimeZone('Asia/Ho_Chi_Minh');
+    $dashboard_today = new DateTimeImmutable('today', $dashboard_timezone);
+    $dashboard_week_end = $dashboard_today->modify('+7 days')->setTime(23, 59, 59);
+    $dashboard_stats = [
+        'total' => count($own_notes),
+        'completed' => 0,
+        'today' => 0,
+        'upcoming' => 0,
+        'overdue' => 0,
+    ];
+
+    foreach ($own_notes as $dashboard_note) {
+        $is_completed = ($dashboard_note['status'] ?? 'todo') === 'done';
+        if ($is_completed) {
+            $dashboard_stats['completed']++;
+        }
+
+        $target_value = $dashboard_note['deadline'] ?: $dashboard_note['reminder_at'];
+        if ($is_completed || empty($target_value)) {
+            continue;
+        }
+
+        try {
+            $target_time = new DateTimeImmutable((string)$target_value, $dashboard_timezone);
+            if ($target_time->format('Y-m-d') === $dashboard_today->format('Y-m-d')) {
+                $dashboard_stats['today']++;
+            } elseif ($target_time < $dashboard_today) {
+                $dashboard_stats['overdue']++;
+            } elseif ($target_time <= $dashboard_week_end) {
+                $dashboard_stats['upcoming']++;
+            }
+        } catch (Exception $ignored) {
+            // Bỏ qua dữ liệu ngày cũ không hợp lệ thay vì làm hỏng trang chủ.
+        }
+    }
+    $dashboard_progress = $dashboard_stats['total'] > 0
+        ? (int)round(($dashboard_stats['completed'] / $dashboard_stats['total']) * 100)
+        : 0;
+
     // Distinct labels across own + shared (non-archived) notes, for the filter chip bar
     $all_labels_set = [];
     foreach (array_merge($own_notes, $shared_notes) as $n) {
@@ -268,6 +309,45 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         .main-content {
             padding: 40px 0;
             padding-top: 50px;
+        }
+        .today-overview {
+            background: linear-gradient(125deg, rgba(250, 232, 255, .95), rgba(255, 237, 247, .96));
+            border: 1px solid rgba(168, 85, 247, .16);
+            border-radius: 22px;
+            box-shadow: 0 14px 36px rgba(126, 61, 151, .1);
+            padding: 20px;
+            margin-bottom: 22px;
+        }
+        .today-overview__heading { color: #542064; }
+        .today-overview__date { color: #7c5a85; font-size: .9rem; }
+        .today-stat {
+            height: 100%;
+            background: rgba(255, 255, 255, .82);
+            border: 1px solid rgba(168, 85, 247, .12);
+            border-radius: 16px;
+            padding: 14px;
+        }
+        .today-stat__icon {
+            width: 38px;
+            height: 38px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 12px;
+            color: #7e22ce;
+            background: #f3e8ff;
+        }
+        .today-stat strong { display: block; color: #3f174d; font-size: 1.35rem; margin-top: 7px; }
+        .today-stat small { color: #765f7c; }
+        .today-progress {
+            height: 9px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, .72);
+            border-radius: 999px;
+        }
+        .today-progress__bar {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #7c3aed, #ec4899);
         }
         .section-title {
             position: relative;
@@ -1137,6 +1217,57 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         <div class="alert alert-success" role="alert"><i class="fas fa-check-circle me-1"></i>Tài khoản đã được kích hoạt thành công.</div>
     <?php endif; ?>
     <h2 class="text-center mb-4"><?= htmlspecialchars($t['note_list']) ?></h2>
+
+    <section class="today-overview" aria-labelledby="todayOverviewTitle">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
+            <div>
+                <h3 class="today-overview__heading h5 fw-bold mb-1" id="todayOverviewTitle">
+                    <i class="fas fa-sparkles me-2" aria-hidden="true"></i>Hôm nay của bạn
+                </h3>
+                <div class="today-overview__date">Giờ Việt Nam · <?= $dashboard_today->format('d/m/Y') ?></div>
+            </div>
+            <a class="btn btn-sm btn-light border rounded-pill px-3" href="thoikhoabieu.php">
+                <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Mở thời khóa biểu
+            </a>
+        </div>
+        <div class="row g-2">
+            <div class="col-6 col-lg-3">
+                <div class="today-stat">
+                    <span class="today-stat__icon"><i class="fas fa-bullseye" aria-hidden="true"></i></span>
+                    <strong><?= $dashboard_stats['today'] ?></strong>
+                    <small>Việc đến hạn hôm nay</small>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="today-stat">
+                    <span class="today-stat__icon"><i class="fas fa-calendar-week" aria-hidden="true"></i></span>
+                    <strong><?= $dashboard_stats['upcoming'] ?></strong>
+                    <small>Sắp tới trong 7 ngày</small>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="today-stat">
+                    <span class="today-stat__icon"><i class="fas fa-circle-check" aria-hidden="true"></i></span>
+                    <strong><?= $dashboard_stats['completed'] ?>/<?= $dashboard_stats['total'] ?></strong>
+                    <small>Sổ đã hoàn thành</small>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="today-stat">
+                    <span class="today-stat__icon"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i></span>
+                    <strong><?= $dashboard_stats['overdue'] ?></strong>
+                    <small>Việc đang quá hạn</small>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-1 small">
+            <span class="fw-semibold text-dark">Tiến độ tổng thể</span>
+            <span class="fw-bold" style="color:#7e22ce"><?= $dashboard_progress ?>%</span>
+        </div>
+        <div class="today-progress" role="progressbar" aria-label="Tiến độ hoàn thành" aria-valuenow="<?= $dashboard_progress ?>" aria-valuemin="0" aria-valuemax="100">
+            <div class="today-progress__bar" style="width: <?= $dashboard_progress ?>%"></div>
+        </div>
+    </section>
     
     <div class="view-controls d-flex justify-content-end flex-wrap gap-2">
         <a href="thoikhoabieu.php" class="btn btn-primary">
@@ -3735,8 +3866,16 @@ document.getElementById('formAddToTimetable')?.addEventListener('submit', async 
         }
     </script>
     <?php
-$notezy_ai_page = 'notes_list';
+    $notezy_ai_page = 'notes_list';
     $notezy_ai_note_id = 0;
+    $notezy_ai_quick_note_id = 0;
+    foreach ($own_notes as $ai_candidate) {
+        if (empty($ai_candidate['is_pin_locked']) && empty($ai_candidate['is_password_locked'])
+            && trim((string)($ai_candidate['content'] ?? '')) !== '') {
+            $notezy_ai_quick_note_id = (int)$ai_candidate['note_id'];
+            break;
+        }
+    }
     include __DIR__ . '/includes/ai_widget.php';
     ?>
 </body>

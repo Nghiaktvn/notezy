@@ -1,6 +1,8 @@
 (function () {
   const cfg = window.NOTEZY_AI || {};
   const apiBase = cfg.apiBase || 'api/ai';
+  const quickNoteId = Number(cfg.quickNoteId || cfg.currentNoteId || 0);
+  const quickNoteHint = quickNoteId > 0 ? ` có ID ${quickNoteId}` : ' gần đây nhất';
   const root = document.getElementById('notezy-ai-root');
   if (!root) return;
 
@@ -23,6 +25,12 @@
         <button type="button" id="notezyAiClose" aria-label="Đóng">✕</button>
       </div>
       <div class="notezy-ai-messages" id="notezyAiMessages"></div>
+      <div class="notezy-ai-quick-actions" aria-label="Gợi ý thao tác AI">
+        <button type="button" data-ai-prompt="Tóm tắt các ghi chú gần đây của tôi thành các ý chính ngắn gọn.">Tóm tắt</button>
+        <button type="button" data-ai-prompt="Tạo checklist học tập từ các ghi chú gần đây của tôi.">Checklist</button>
+        <button type="button" data-ai-prompt="Tạo 5 flashcard ôn tập từ ghi chú${quickNoteHint} của tôi.">Flashcard</button>
+        <button type="button" data-ai-prompt="Tạo một bài quiz 5 câu từ ghi chú${quickNoteHint} của tôi.">Quiz</button>
+      </div>
       <div class="notezy-ai-input">
         <textarea id="notezyAiInput" rows="1" placeholder="Nhắn với AI..."></textarea>
         <button type="button" id="notezyAiSend">Gửi</button>
@@ -96,6 +104,9 @@
       wait.textContent = 'Đang suy nghĩ...';
       messagesEl.appendChild(wait);
     }
+    root.querySelectorAll('.notezy-ai-quick-actions button').forEach((button) => {
+      button.disabled = state.loading;
+    });
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
@@ -243,6 +254,11 @@
       if (contentEl) edits.content = contentEl.value;
       confirm(idx, edits);
     }
+  });
+  root.querySelector('.notezy-ai-quick-actions').addEventListener('click', (e) => {
+    const action = e.target.closest('[data-ai-prompt]');
+    if (!action || state.loading) return;
+    send(action.getAttribute('data-ai-prompt') || '');
   });
 
   render();

@@ -15,7 +15,8 @@ from ai_agent.agent import AiAgent, handle_request
 
 # Verify tool count
 tools = tool_definitions()
-print(f'[OK] Tool count: {len(tools)} (expected 17)')
+assert len(tools) == 18, f'Expected 18 AI tools, got {len(tools)}'
+print(f'[OK] Tool count: {len(tools)} (expected 18)')
 print(f'[OK] ALL_TOOLS set: {len(ALL_TOOLS)} tools')
 
 # List all tools
