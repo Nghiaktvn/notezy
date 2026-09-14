@@ -80,8 +80,19 @@ function ai_local_fallback_response(array $context, string $message): array {
         $points = ['Ghi chú chưa có nội dung để phân tích.'];
     }
 
+    $normalizedMessage = mb_strtolower(trim($message), 'UTF-8');
+    $isQuestion = str_contains($message, '?')
+        || str_contains($normalizedMessage, 'cần làm gì')
+        || str_contains($normalizedMessage, 'làm gì')
+        || str_contains($normalizedMessage, 'việc gì')
+        || str_contains($normalizedMessage, 'mục tiêu')
+        || str_contains($normalizedMessage, 'kế hoạch');
+
+    $intro = $isQuestion
+        ? "Theo ghi chú « {$title} », bạn cần:\n"
+        : "Tóm tắt « {$title} »:\n";
     $content = "Trợ lý AI đang dùng chế độ nội bộ do dịch vụ AI tạm thời chưa sẵn sàng.\n\n"
-        . "Tóm tắt « {$title} »:\n"
+        . $intro
         . implode("\n", array_map(static fn(string $point, int $index): string => '- ' . ($index + 1) . '. ' . $point, $points, array_keys($points)));
 
     $noteId = (int) ($note['note_id'] ?? 0);
