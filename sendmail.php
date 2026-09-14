@@ -37,7 +37,10 @@ function notezy_mailer(): PHPMailer {
 
     $user = trim((string) (getenv('MAIL_USERNAME') ?: ''));
     $pass = (string) (getenv('MAIL_PASSWORD') ?: '');
-    $from = notezy_valid_email(getenv('MAIL_FROM'))
+    // MAIL_FROM_ADDRESS is the documented application setting. MAIL_FROM is
+    // retained for Docker Compose/backward compatibility.
+    $from = notezy_valid_email(getenv('MAIL_FROM_ADDRESS'))
+         ?? notezy_valid_email(getenv('MAIL_FROM'))
          ?? notezy_valid_email($user)
          ?? 'noreply@notezy.local';
     $fromName = trim((string) (getenv('MAIL_FROM_NAME') ?: 'Notezy'), " \t\"'");
@@ -59,6 +62,20 @@ function notezy_mailer(): PHPMailer {
 }
 
 /**
+ * Convert SMTP exceptions into an actionable, non-sensitive message for users.
+ * SMTP credentials and server debug output must never be shown in the UI.
+ */
+function notezy_mail_error_message(Throwable $e): string {
+    $message = (string) $e->getMessage();
+    if (stripos($message, 'Username and Password not accepted') !== false
+        || stripos($message, 'SMTP Error: Could not authenticate') !== false) {
+        return 'Lỗi gửi email: Gmail từ chối xác thực SMTP. Kiểm tra Mật khẩu ứng dụng của tài khoản gửi.';
+    }
+
+    return 'Lỗi gửi email: không thể gửi email lúc này. Vui lòng thử lại sau.';
+}
+
+/**
  * Gửi email OTP kích hoạt tài khoản.
  * @return true|string   true nếu gửi thành công, string lỗi nếu thất bại
  */
@@ -67,13 +84,6 @@ function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLin
     if ($email === null) {
         return 'Lỗi gửi email: địa chỉ nhận không hợp lệ';
     }
-    // Ghi nhận log OTP phục vụ kiểm tra và demo
-    $logDir = __DIR__ . '/uploads';
-    if (!is_dir($logDir)) {
-        @mkdir($logDir, 0777, true);
-    }
-    @file_put_contents($logDir . '/mail_log.txt', date('[Y-m-d H:i:s] ') . "ACTIVATION OTP for {$email} ({$toName}): {$otp} (Hiệu lực: 5 phút)\n", FILE_APPEND);
-
     try {
         $mail = notezy_mailer();
         $mail->addAddress($email, $toName);
@@ -94,8 +104,8 @@ function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLin
         $mail->AltBody = ($safeLink !== '' ? "Kích hoạt tài khoản: $safeLink\n" : '') . "Mã OTP kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
         $mail->send();
         return true;
-    } catch (Exception $e) {
-        return 'Lỗi gửi email: ' . ($e->getMessage() ?: 'không gửi được');
+    } catch (Throwable $e) {
+        return notezy_mail_error_message($e);
     }
 }
 
@@ -122,8 +132,8 @@ function sendResetPasswordEmail($email, $otp = '', $toName = 'User') {
         $mail->AltBody = "Mã OTP đặt lại mật khẩu: $otp (hiệu lực 15 phút)";
         $mail->send();
         return true;
-    } catch (Exception $e) {
-        return 'Lỗi gửi email: ' . ($e->getMessage() ?: 'không gửi được');
+    } catch (Throwable $e) {
+        return notezy_mail_error_message($e);
     }
 }
 ?>

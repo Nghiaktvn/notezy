@@ -9,6 +9,15 @@
 require_once __DIR__ . '/../env.php';
 require_once __DIR__ . '/diagnostic.php';
 
+// One timezone for web requests, CLI jobs, reminders and timetable alarms.
+// Vietnam has no daylight-saving transitions, so Asia/Ho_Chi_Minh maps
+// consistently to UTC+07:00 while still keeping the human-readable region.
+$notezyTimezone = getenv('APP_TIMEZONE') ?: 'Asia/Ho_Chi_Minh';
+if (!in_array($notezyTimezone, timezone_identifiers_list(), true)) {
+    $notezyTimezone = 'Asia/Ho_Chi_Minh';
+}
+date_default_timezone_set($notezyTimezone);
+
 // PHP >= 8.1 makes mysqli throw mysqli_sql_exception on connect/query failure by
 // default. This codebase checks $conn->connect_error instead, so keep reporting off
 // — otherwise an unreachable DB becomes an uncaught fatal instead of a 503.

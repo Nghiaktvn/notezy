@@ -35,6 +35,22 @@ $tool_results = null;
 $final_response = null;
 $max_loops = 4;
 
+function ai_response_references(?array $toolResults): array {
+    $references = [];
+    foreach ($toolResults ?? [] as $entry) {
+        $result = is_array($entry['result'] ?? null) ? $entry['result'] : [];
+        $candidates = is_array($result['notes'] ?? null) ? $result['notes'] : [$result];
+        foreach ($candidates as $note) {
+            $noteId = (int) ($note['note_id'] ?? 0);
+            $title = trim((string) ($note['title'] ?? ''));
+            if ($noteId <= 0 || $title === '') continue;
+            $references[$noteId] = ['note_id' => $noteId, 'title' => $title, 'url' => 'notepass.php?id=' . $noteId];
+            if (count($references) >= 5) break 2;
+        }
+    }
+    return array_values($references);
+}
+
 for ($i = 0; $i < $max_loops; $i++) {
     $agent = ai_call_agent([
         'messages' => $llm_messages,
@@ -56,6 +72,7 @@ for ($i = 0; $i < $max_loops; $i++) {
             'type' => 'message',
             'content' => $content !== '' ? $content : 'Tôi có thể giúp tìm, tóm tắt hoặc tạo ghi chú.',
             'requires_confirmation' => false,
+            'references' => ai_response_references($tool_results),
         ];
         break;
     }

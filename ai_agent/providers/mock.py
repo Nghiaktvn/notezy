@@ -18,6 +18,58 @@ class MockProvider(LlmProvider):
                 break
         lower = last_user.lower()
 
+        # Complete the tool round-trip in local/demo mode. Previously the mock
+        # provider repeated the same tool call forever after PHP returned data.
+        tool_name, tool_result = _last_tool_result(messages)
+        if tool_name:
+            if not tool_result.get("ok"):
+                return {
+                    "role": "assistant",
+                    "content": "Không tìm thấy ghi chú phù hợp hoặc bạn không có quyền truy cập.",
+                    "tool_calls": [],
+                }
+            if tool_name in ("search_notes", "semantic_search", "find_related_notes"):
+                notes = tool_result.get("notes") or []
+                if not notes:
+                    return {"role": "assistant", "content": "Không tìm thấy ghi chú phù hợp.", "tool_calls": []}
+                if any(x in lower for x in ("tóm tắt", "summarize", "summary", "tom tat", "tom gon")):
+                    return {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [_fn("summarize_note", {"note_id": int(notes[0]["note_id"]), "style": "detailed"})],
+                    }
+                if any(x in lower for x in ("task", "công việc", "việc cần làm", "checklist", "viec can lam", "cong viec")):
+                    return {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [_fn("extract_tasks", {"note_id": int(notes[0]["note_id"])})],
+                    }
+                snippets = []
+                for note in notes[:3]:
+                    content = _plain_text(str(note.get("content") or ""))
+                    snippets.append(f"• {note.get('title', 'Ghi chú')}: {_shorten(content, 180)}")
+                return {
+                    "role": "assistant",
+                    "content": "Dựa trên các ghi chú liên quan:\n" + "\n".join(snippets),
+                    "tool_calls": [],
+                }
+            if tool_name == "summarize_note":
+                content = _plain_text(str(tool_result.get("content") or ""))
+                sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", content) if s.strip()]
+                summary = " ".join(sentences[:3]) if sentences else "Ghi chú chưa có nội dung để tóm tắt."
+                return {
+                    "role": "assistant",
+                    "content": f"Tóm tắt «{tool_result.get('title', 'Ghi chú')}»: {_shorten(summary, 500)}",
+                    "tool_calls": [],
+                }
+            if tool_name == "extract_tasks":
+                content = _plain_text(str(tool_result.get("content") or ""))
+                items = [s.strip(" -•\t") for s in re.split(r"[\n.;]+", content) if s.strip()]
+                return {"role": "assistant", "content": "Việc cần làm:\n" + "\n".join(f"• {x}" for x in items[:6]), "tool_calls": []}
+            if tool_name in ("generate_quiz", "generate_flashcards", "suggest_labels"):
+                title = tool_result.get("title", "ghi chú")
+                return {"role": "assistant", "content": f"Đã phân tích «{title}». Nội dung đã sẵn sàng để tạo tài liệu học tập.", "tool_calls": []}
+
         # Prompt injection guard
         if any(x in lower for x in (
             "system prompt", "hướng dẫn hệ thống", "ignore previous",
@@ -41,10 +93,17 @@ class MockProvider(LlmProvider):
         if any(x in lower for x in (
             "tóm tắt", "summarize", "summary", "tom tat", "tom gon"
         )):
+            current_note = _context_note_id(messages)
+            if not current_note:
+                return {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [_fn("search_notes", {"query": _note_query(last_user), "limit": 5})],
+                }
             return {
                 "role": "assistant",
                 "content": "",
-                "tool_calls": [_fn("summarize_note", {"note_id": _context_note_id(messages) or 1, "style": "detailed"})],
+                "tool_calls": [_fn("summarize_note", {"note_id": current_note, "style": "detailed"})],
             }
 
         if any(x in lower for x in (
@@ -69,10 +128,17 @@ class MockProvider(LlmProvider):
             "task", "công việc", "việc cần làm", "checklist",
             "viec can lam", "cong viec"
         )):
+            current_note = _context_note_id(messages)
+            if not current_note:
+                return {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [_fn("search_notes", {"query": _named_note_query(last_user), "limit": 5})],
+                }
             return {
                 "role": "assistant",
                 "content": "",
-                "tool_calls": [_fn("extract_tasks", {"note_id": _context_note_id(messages) or 1})],
+                "tool_calls": [_fn("extract_tasks", {"note_id": current_note})],
             }
 
         if any(x in lower for x in (
@@ -179,8 +245,42 @@ def _fn(name: str, arguments: dict) -> dict:
 def _context_note_id(messages: list[dict]) -> int | None:
     for msg in messages:
         content = msg.get("content") or ""
-        if "current_note" in content and "note_id" in content:
-            m = re.search(r'"note_id"\s*:\s*(\d+)', content)
-            if m:
-                return int(m.group(1))
+        # Match only the note nested under current_note. The old broad search
+        # accidentally captured the first recent_notes item on list pages.
+        m = re.search(r'"current_note"\s*:\s*\{[^{}]*?"note_id"\s*:\s*(\d+)', content, flags=re.S)
+        if m:
+            return int(m.group(1))
     return None
+
+
+def _last_tool_result(messages: list[dict]) -> tuple[str, dict]:
+    for msg in reversed(messages):
+        if msg.get("role") != "tool":
+            continue
+        try:
+            result = json.loads(msg.get("content") or "{}")
+        except (TypeError, json.JSONDecodeError):
+            result = {}
+        return str(msg.get("name") or ""), result if isinstance(result, dict) else {}
+    return "", {}
+
+
+def _note_query(text: str) -> str:
+    query = re.sub(r"^(hãy\s+)?(tóm tắt|tom tat|summarize|summary)\s+(ghi chú|note)?\s*", "", text, flags=re.I).strip()
+    query = re.split(r"\s+(?:và|để|rồi)\s+", query, maxsplit=1, flags=re.I)[0]
+    return query.strip(" .,:;\"'") or text[:120]
+
+
+def _named_note_query(text: str) -> str:
+    match = re.search(r"(?:ghi chú|note)\s+(.+)", text, flags=re.I)
+    query = match.group(1) if match else text
+    query = re.split(r"[,.;?]|\s+(?:có|gồm|và|thì)\s+", query, maxsplit=1, flags=re.I)[0]
+    return query.strip(" .,:;?!\"'") or text[:120]
+
+
+def _plain_text(value: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", value)).strip()
+
+
+def _shorten(value: str, limit: int) -> str:
+    return value if len(value) <= limit else value[: limit - 1].rstrip() + "…"

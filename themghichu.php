@@ -62,7 +62,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $title = trim($_POST['noteTitle'] ?? '');
     $content = trim($_POST['noteContent'] ?? '');
-    $isPinned = isset($_POST['pinNote']) ? 1 : 0;
+    $pinValue = strtolower(trim((string) ($_POST['pinNote'] ?? '')));
+    $isPinned = in_array($pinValue, ['1', 'true', 'on', 'yes'], true) ? 1 : 0;
     // Labels từ checkbox (array) hoặc text (autoSave)
     if (isset($_POST['noteLabels']) && is_array($_POST['noteLabels'])) {
         $labels_raw = implode(',', array_map('trim', $_POST['noteLabels']));
@@ -371,6 +372,30 @@ if ($lstmt) {
         .btn-primary:hover {
             background-color: #333333;
         }
+        .label-dropdown-toggle {
+            cursor: pointer;
+            min-height: 42px;
+            text-align: left;
+        }
+        .label-dropdown-chevron {
+            align-items: center;
+            background: #000000;
+            border-radius: 4px;
+            color: #ffffff;
+            display: inline-flex;
+            height: 28px;
+            justify-content: center;
+            margin-left: 12px;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            width: 32px;
+        }
+        .label-dropdown-toggle:hover .label-dropdown-chevron,
+        .label-dropdown-toggle:focus-visible .label-dropdown-chevron {
+            background: #333333;
+        }
+        .label-dropdown-toggle[aria-expanded="true"] .label-dropdown-chevron {
+            transform: rotate(180deg);
+        }
         .color-picker-group {
             display: flex;
             gap: 15px;
@@ -457,10 +482,10 @@ if ($lstmt) {
                     </select>
                 </div>
                 <div class="label-dropdown-wrapper" style="position:relative;">
-                    <div id="labelDropdownToggle" class="form-control d-flex align-items-center justify-content-between" style="cursor:pointer; min-height:42px;">
+                    <button type="button" id="labelDropdownToggle" class="form-control label-dropdown-toggle d-flex align-items-center justify-content-between" aria-expanded="false" aria-controls="labelDropdownPanel">
                         <span id="labelDropdownText" class="text-muted">-- Chọn nhãn --</span>
-                        <i class="fas fa-chevron-down ms-2" style="font-size:0.75rem;"></i>
-                    </div>
+                        <span class="label-dropdown-chevron" aria-hidden="true"><i class="fas fa-chevron-down" style="font-size:0.75rem;"></i></span>
+                    </button>
                     <div id="labelDropdownPanel" class="border rounded bg-white shadow-sm" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:999; max-height:220px; overflow-y:auto; padding:8px;">
                         <?php if (!empty($user_labels)): ?>
                             <?php foreach ($user_labels as $lbl): ?>
@@ -530,7 +555,10 @@ if ($lstmt) {
                     <span class="text-muted small">Đang tải tệp đính kèm…</span>
                 </div>
             <?php endif; ?>
-            <button type="submit" class="btn btn-primary" id="saveBtn">Lưu ghi chú</button>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge text-bg-light border text-secondary"><i class="fas fa-cloud-arrow-up me-1"></i>Tiêu đề và nội dung được tự động lưu</span>
+                <button type="submit" class="btn btn-primary" id="saveBtn" style="display:none;">Tải tệp đính kèm</button>
+            </div>
         </form>
         <div id="autoSaveStatus">Đang lưu...</div>
     </div>
@@ -585,11 +613,13 @@ if ($lstmt) {
             labelToggle.addEventListener('click', (e) => {
                 const isOpen = labelPanel.style.display !== 'none';
                 labelPanel.style.display = isOpen ? 'none' : 'block';
+                labelToggle.setAttribute('aria-expanded', String(!isOpen));
             });
             // Close panel when clicking outside
             document.addEventListener('click', (e) => {
                 if (!labelToggle.closest('.label-dropdown-wrapper').contains(e.target)) {
                     labelPanel.style.display = 'none';
+                    labelToggle.setAttribute('aria-expanded', 'false');
                 }
             });
         }
@@ -726,6 +756,11 @@ if ($lstmt) {
             } else {
                 document.getElementById('imagePreviewContainer').style.display = 'none';
             }
+            document.getElementById('saveBtn').style.display = this.files.length ? 'inline-block' : 'none';
+        });
+
+        document.getElementById('noteAttachments').addEventListener('change', function() {
+            document.getElementById('saveBtn').style.display = (this.files.length || document.getElementById('noteImage').files.length) ? 'inline-block' : 'none';
         });
 
         // ── Form submit (single-step: image now handled server-side) ──────────
@@ -761,7 +796,7 @@ if ($lstmt) {
             } catch (error) {
                 Swal.fire({ title: 'Lỗi!', text: error.message, icon: 'error', timer: 3000 });
                 btn.disabled = false;
-                btn.textContent = 'Lưu ghi chú';
+                btn.textContent = 'Tải tệp đính kèm';
             }
         });
     </script>

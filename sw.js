@@ -18,7 +18,7 @@ const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const PRECACHE_URLS = [
     'offline.html',
     'manifest.json',
-    'logo.png',
+    'logo.svg',
     'js/offline-store.js',
     'CSS/main.css',
     'CSS/index.css',

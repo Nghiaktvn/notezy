@@ -11,5 +11,5 @@ window.NOTEZY_AI = {
   currentNoteId: <?php echo $noteId; ?>
 };
 </script>
-<script src="js/ai-assistant.js" defer></script>
+<script src="js/ai-assistant.js?v=3" defer></script>
 <script src="js/reminders.js" defer></script>

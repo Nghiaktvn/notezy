@@ -47,7 +47,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
     <header>
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <img src="logo.png" alt="Notezy" width="50" height="50" class="me-2" />
+            <img src="logo.svg" alt="Notezy" width="50" height="50" class="me-2" />
             <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>

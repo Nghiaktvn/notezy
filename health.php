@@ -8,7 +8,7 @@ $response = [
     'status' => 'ok',
     'database' => 'connected',
     'app_env' => getenv('APP_ENV') ?: 'local',
-    'time' => gmdate('c'),
+    'time' => date('c'),
 ];
 
 try {
@@ -30,7 +30,7 @@ try {
         'status' => 'error',
         'database' => 'unavailable',
         'message' => 'Health check failed',
-        'time' => gmdate('c'),
+        'time' => date('c'),
     ], JSON_UNESCAPED_SLASHES);
 }
 ?>

@@ -71,6 +71,14 @@ class GeminiProvider(LlmProvider):
             with urllib.request.urlopen(req, timeout=min(self.timeout, 12)) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             return _from_gemini_response(data)
+        except urllib.error.HTTPError as exc:
+            try:
+                detail = exc.read().decode("utf-8", "replace")[:1200]
+            except Exception:
+                detail = ""
+            sys.stderr.write(f"[notezy-ai] Gemini API unavailable (HTTP {exc.code}: {detail}), fallback to MockProvider\n")
+            from .mock import MockProvider
+            return MockProvider().complete(messages, tools)
         except Exception as exc:
             # When external network fails/times out, seamlessly fallback to MockProvider
             # so Notezy AI assistant works reliably under all network conditions.
@@ -200,11 +208,19 @@ def _to_gemini_tools(tools: list[dict]) -> list[dict]:
 def _strip_unsupported_schema_keys(schema: Any) -> Any:
     """Gemini's function schema is a JSON-Schema subset; drop keys it rejects."""
     if isinstance(schema, dict):
-        return {
+        normalized = {
             k: _strip_unsupported_schema_keys(v)
             for k, v in schema.items()
             if k not in ("additionalProperties",)
         }
+        # Gemini accepts enum values only as strings in function declarations.
+        # Convert numeric option sets (e.g. reminder minutes) while keeping the
+        # receiving PHP code compatible because it already casts these fields.
+        enum = normalized.get("enum")
+        if isinstance(enum, list) and any(isinstance(value, (int, float)) for value in enum):
+            normalized["enum"] = [str(value) for value in enum]
+            normalized["type"] = "string"
+        return normalized
     if isinstance(schema, list):
         return [_strip_unsupported_schema_keys(v) for v in schema]
     return schema

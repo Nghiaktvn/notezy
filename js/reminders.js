@@ -89,7 +89,7 @@
             try {
                 const n = new Notification('⏰ Nhắc nhở Notezy', {
                     body: item.title,
-                    icon: 'logo.png',
+                    icon: 'logo.svg',
                     tag: 'notezy-reminder-' + item.note_id,
                 });
                 n.onclick = () => { window.focus(); window.location.href = 'themghichu.php?id=' + item.note_id; };

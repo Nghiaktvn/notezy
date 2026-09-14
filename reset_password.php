@@ -65,7 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $mailResult = sendResetPasswordEmail($input_email, $otp, $user['firstname']);
                 if ($mailResult !== true) {
-                    // Mail failed — don't expose email existence, but revert step
+                    // Mail failed — invalidate the server-side OTP too. Keeping a
+                    // hash after a delivery failure leaves a confusing, unusable
+                    // reset window and makes retry behavior harder to reason about.
+                    $clearOtp = $conn->prepare('UPDATE users SET reset_otp_hash = NULL, reset_otp_expires_at = NULL, reset_otp_attempts = 0 WHERE id = ?');
+                    $clearOtp->bind_param('i', $user['id']);
+                    $clearOtp->execute();
+                    $clearOtp->close();
                     $step = 1;
                     unset($_SESSION['reset_otp_email'],
                           $_SESSION['reset_otp_time'],

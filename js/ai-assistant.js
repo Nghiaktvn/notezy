@@ -40,6 +40,14 @@
       .replace(/"/g, '&quot;');
   }
 
+  function formatAiText(value) {
+    // Escape first, then support only the two harmless display affordances
+    // emitted by the assistant: bold fragments and line breaks.
+    return esc(value)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  }
+
   function render() {
     panel.classList.toggle('open', state.open);
     messagesEl.innerHTML = '';
@@ -58,7 +66,23 @@
       }
       const div = document.createElement('div');
       div.className = 'notezy-ai-bubble ' + (msg.role === 'user' ? 'user' : 'assistant');
-      div.textContent = msg.content || '';
+      div.innerHTML = msg.role === 'assistant' ? formatAiText(msg.content || '') : esc(msg.content || '');
+      if (msg.role === 'assistant' && msg.response && Array.isArray(msg.response.references) && msg.response.references.length) {
+        const refs = document.createElement('div');
+        refs.className = 'notezy-ai-references';
+        const label = document.createElement('strong');
+        label.textContent = 'Nguồn ghi chú: ';
+        refs.appendChild(label);
+        msg.response.references.forEach((ref, refIndex) => {
+          const link = document.createElement('a');
+          link.href = ref.url;
+          link.textContent = ref.title;
+          link.className = 'notezy-ai-reference-link';
+          if (refIndex) refs.appendChild(document.createTextNode(' · '));
+          refs.appendChild(link);
+        });
+        div.appendChild(refs);
+      }
       messagesEl.appendChild(div);
     });
     if (state.loading) {

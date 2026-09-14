@@ -174,7 +174,7 @@
                 try {
                     const n = new Notification(title, {
                         body: message,
-                        icon: 'logo.png',
+                        icon: 'logo.svg',
                         tag: 'tkb-alarm-' + item.id
                     });
                     n.onclick = () => {

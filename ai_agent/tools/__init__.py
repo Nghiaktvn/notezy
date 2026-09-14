@@ -23,16 +23,18 @@ READ_TOOLS = {
     "find_related_notes",
     "get_deadlines",
     "get_note_statistics",
-}
-WRITE_TOOLS = {
-    "create_note",
-    "update_note",
-    "create_label",
+    # These tools retrieve a note and return derived text only. They do not
+    # persist a mutation, so the agent may safely complete their tool roundtrip.
     "suggest_labels",
     "extract_tasks",
     "summarize_note",
     "generate_flashcards",   # plural — matches tool schema in analytics.py
     "generate_quiz",
+}
+WRITE_TOOLS = {
+    "create_note",
+    "update_note",
+    "create_label",
     "create_schedule",
 }
 DESTRUCTIVE_TOOLS = {"delete_note"}

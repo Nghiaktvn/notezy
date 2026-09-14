@@ -94,6 +94,7 @@ try {
     $sql = "
         SELECT n.note_id, n.title, n.content, n.pinned, n.created_at, n.user_id, n.password_hash, n.archived, n.image_path, n.updated_at,
                n.pin_hash, n.background_color, n.text_color, n.font_family, n.reminder_at, n.status, n.deadline,
+               EXISTS(SELECT 1 FROM note_shares owner_share WHERE owner_share.note_id = n.note_id) AS has_shares,
                GROUP_CONCAT(l.name SEPARATOR ',') AS labels,
                CASE WHEN n.user_id = ? THEN 'own' ELSE 'shared' END AS ownership,
                u.username AS shared_by_username,
@@ -849,7 +850,71 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
         }
 
-        /* Navbar Theme Toggle Button */
+        /* Dreamy purple-pink product shell — one consistent appearance. */
+        body, body.theme-light, body.theme-dark, body:not(.theme-dark) {
+            background: radial-gradient(circle at 12% 8%, #ffe4f4 0, transparent 32%), linear-gradient(135deg, #f8edff 0%, #f1e5ff 50%, #ffeaf7 100%) !important;
+            color: #34234d !important;
+        }
+        .workspace-menu-trigger {
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            border: 0;
+            border-radius: 10px;
+            background: #050505;
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 7px 18px rgba(68, 28, 85, .18);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .workspace-menu-trigger:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(68, 28, 85, .25); }
+        .workspace-menu-trigger:focus-visible { outline: 3px solid rgba(223, 92, 167, .35); outline-offset: 2px; }
+        .workspace-menu-icon { width: 25px; display: grid; gap: 4px; }
+        .workspace-menu-icon span { display: flex; align-items: center; gap: 4px; }
+        .workspace-menu-icon i { width: 4px; height: 4px; border-radius: 50%; background: #ffb347; display: block; }
+        .workspace-menu-icon b { height: 3px; flex: 1; border-radius: 999px; background: #ffffff; display: block; }
+        .workspace-offcanvas { background: linear-gradient(155deg, #fff8ff, #f6e8ff 55%, #ffe7f6); color: #34234d; }
+        .workspace-offcanvas .offcanvas-title { color: #702f8c; font-weight: 800; }
+        .workspace-menu-link { display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:6px; border-radius:12px; color:#51305f; text-decoration:none; font-weight:650; }
+        .workspace-menu-link:hover { color:#7c3fbc; background:rgba(255,255,255,.8); }
+        .workspace-menu-link i { width:22px; text-align:center; color:#d94f9d; }
+        .workspace-menu-final { border-top:1px solid rgba(124,63,188,.14); margin-top:12px; padding-top:12px; }
+        .navbar, body.theme-light .navbar, body.theme-dark .navbar, body:not(.theme-dark) .navbar {
+            background: rgba(255, 250, 255, .92) !important;
+            border-bottom: 1px solid rgba(177, 88, 191, .22) !important;
+            box-shadow: 0 6px 24px rgba(126, 58, 145, .10) !important;
+        }
+        .navbar-brand.logo, .nav-link, body.theme-dark .navbar-brand.logo, body.theme-dark .nav-link {
+            color: #6d287f !important;
+        }
+        .nav-link:hover, body.theme-dark .nav-link:hover { color: #df4d9a !important; }
+        .note-item, body.theme-light .note-item, body.theme-dark .note-item, body:not(.theme-dark) .note-item,
+        .note-form, .view-controls, .modal-content {
+            background: rgba(255,255,255,.88) !important;
+            color: #34234d !important;
+            border-color: rgba(177, 88, 191, .18) !important;
+            box-shadow: 0 10px 28px rgba(126, 58, 145, .10) !important;
+        }
+        .note-item:hover, body.theme-light .note-item:hover, body.theme-dark .note-item:hover {
+            border-color: #d85ca9 !important;
+            box-shadow: 0 14px 32px rgba(216, 92, 169, .18) !important;
+        }
+        .btn-primary, body.theme-dark .btn-primary {
+            background: linear-gradient(135deg, #7c3fbc, #df5ca7) !important;
+            border-color: transparent !important;
+            box-shadow: 0 6px 14px rgba(177, 72, 160, .24) !important;
+        }
+        .btn-primary:hover, body.theme-dark .btn-primary:hover { background: linear-gradient(135deg, #64319b, #c9438d) !important; }
+        .btn-action-icon.btn-timetable, body.theme-dark .btn-action-icon.btn-timetable {
+            background: #f7e6ff !important; color: #8c3fb0 !important; border-color: #e2b8f1 !important;
+        }
+        .btn-action-icon.btn-timetable:hover, body.theme-dark .btn-action-icon.btn-timetable:hover {
+            background: #8c3fb0 !important; color: #fff !important;
+        }
+
+        /* Legacy theme-toggle styles retained only for older cached markup. */
         .btn-inside-theme-toggle {
             border-radius: 9999px;
             padding: 5px 14px;
@@ -1002,17 +1067,17 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         }
     </style>
 </head>
-<body class="theme-light">
+<body>
 
 <!-- HEADER/NAVBAR -->
 <header>
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <img src="logo.png" alt="Notezy" width="50" height="50" class="me-2" />
-            <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+            <button class="workspace-menu-trigger me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#workspaceMenu" aria-controls="workspaceMenu" aria-label="Mở menu Notezy">
+                <span class="workspace-menu-icon" aria-hidden="true"><span><i></i><b></b></span><span><i></i><b></b></span><span><i></i><b></b></span></span>
             </button>
+            <img src="logo.svg" alt="Notezy" width="50" height="50" class="me-2" />
+            <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                       <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
@@ -1051,13 +1116,6 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                             </li>
                         </ul>
                     </li>
-                    <li class="nav-item ms-2 d-flex align-items-center">
-                        <button type="button" id="btnThemeToggleInside" class="btn-inside-theme-toggle" onclick="toggleInsideTheme()" title="Chuyển chế độ: Sáng (Trắng & Xanh) | Tối (Đen & Đỏ)">
-                            <i class="fas fa-sun" id="themeToggleIcon"></i>
-                            <span id="themeToggleText" class="d-none d-md-inline ms-1">Sáng (Trắng & Xanh)</span>
-                            <span class="theme-pulse-dot ms-1"></span>
-                        </button>
-                    </li>
                     <li class="nav-item dropdown avatar-container ms-2">
                         <a class="nav-link dropdown-toggle p-0" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="<?=$avatar?>" alt="Avatar" class="avatar">
@@ -1076,6 +1134,24 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
     </nav>
 </header>
 
+<aside class="offcanvas offcanvas-start workspace-offcanvas" tabindex="-1" id="workspaceMenu" aria-labelledby="workspaceMenuLabel">
+    <div class="offcanvas-header px-4 pt-4">
+        <h5 class="offcanvas-title" id="workspaceMenuLabel"><i class="fas fa-layer-group me-2"></i>Không gian Notezy</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng menu"></button>
+    </div>
+    <div class="offcanvas-body px-3">
+        <a class="workspace-menu-link" href="index_notezy.php"><i class="fas fa-house"></i>Trang ghi chú</a>
+        <a class="workspace-menu-link" href="themghichu.php"><i class="fas fa-pen-to-square"></i>Tạo ghi chú</a>
+        <a class="workspace-menu-link" href="labels.php"><i class="fas fa-tags"></i>Quản lý nhãn</a>
+        <a class="workspace-menu-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal" data-bs-dismiss="offcanvas"><i class="fas fa-magnifying-glass"></i>Tìm kiếm</a>
+        <a class="workspace-menu-link" href="account.php"><i class="fas fa-user"></i>Tài khoản</a>
+        <div class="workspace-menu-final">
+            <a class="workspace-menu-link" href="mindmap.php"><i class="fas fa-brain"></i>Sơ đồ tư duy</a>
+            <a class="workspace-menu-link" href="thoikhoabieu.php"><i class="fas fa-table-cells-large"></i>Thời khóa biểu</a>
+        </div>
+    </div>
+</aside>
+
 <!-- MAIN CONTENT -->
 <main class="main-content">
     <?php if (!empty($error) && (int)($user_info['activated'] ?? 1) === 0): ?>
@@ -1090,7 +1166,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
     
     <div class="view-controls d-flex justify-content-end flex-wrap gap-2">
         <a href="thoikhoabieu.php" class="btn btn-primary">
-            <i class="fas fa-calendar-alt me-1"></i> Thời khóa biểu & Lịch
+            <i class="fas fa-calendar-alt me-1"></i> Thời khóa biểu
         </a>
         <button class="btn btn-outline-secondary" id="manageLabelsBtn" type="button">
             <i class="fas fa-tags me-1"></i> <?= htmlspecialchars($t['manage_labels']) ?>
@@ -1153,6 +1229,9 @@ $card_style = '';
                             <?php endif; ?>
                             <?php if ($note['password_hash']): ?>
                                 <span class="badge bg-secondary" title="Bảo vệ bằng mật khẩu"><i class="fas fa-key me-1"></i>Pass</span>
+                            <?php endif; ?>
+                            <?php if (!empty($note['has_shares'])): ?>
+                                <span class="badge bg-info text-dark" title="Ghi chú đang được chia sẻ"><i class="fas fa-user-group me-1"></i>Đang chia sẻ</span>
                             <?php endif; ?>
                         </div>
                         <small class="text-muted" style="font-size: 0.75rem;">
@@ -1342,6 +1421,7 @@ $card_style = '';
                     <?php endif; ?>
                     <p class="text-muted small">
                         Chia sẻ bởi: <strong><?= htmlspecialchars($note['shared_by_username']) ?></strong> | 
+                        Lúc: <?= date('H:i d/m/Y', strtotime($note['shared_at'])) ?> |
                         Quyền: 
                         <?php if ($note['permission'] == 'write'): ?>
                             <span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Editor (Chỉnh sửa)</span>
@@ -1399,6 +1479,9 @@ $card_style = '';
                                 <?php else: ?>
                                     <span class="badge bg-success pin-badge-<?= $note['note_id'] ?>"><i class="fas fa-lock-open me-1"></i>Đã mở khóa</span>
                                 <?php endif; ?>
+                            <?php endif; ?>
+                            <?php if (!empty($note['has_shares'])): ?>
+                                <span class="badge bg-info text-dark"><i class="fas fa-user-group me-1"></i>Đang chia sẻ</span>
                             <?php endif; ?>
                         </div>
                         <small class="text-muted"><i class="far fa-clock me-1"></i><?= date('d/m/Y H:i', strtotime($note['created_at'])) ?></small>
@@ -1563,6 +1646,7 @@ $card_style = '';
                         <?php endif; ?>
                         <p class="text-muted small">
                             Chia sẻ bởi: <strong><?= htmlspecialchars($note['shared_by_username']) ?></strong> | 
+                            Lúc: <?= date('H:i d/m/Y', strtotime($note['shared_at'])) ?> |
                             Quyền: 
                             <?php if ($note['permission'] == 'write'): ?>
                                 <span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Editor (Chỉnh sửa)</span>
@@ -1977,6 +2061,15 @@ $card_style = '';
                         </div>
 
                         <div class="row g-2 mb-3">
+                            <div class="col-12">
+                                <label for="tt_time_slot" class="form-label small fw-bold">Khung giờ học:</label>
+                                <select id="tt_time_slot" class="form-select" aria-describedby="ttSlotHelp">
+                                    <option value="morning">Sáng · 07:00 – 12:00</option>
+                                    <option value="afternoon">Chiều · 12:30 – 17:30</option>
+                                    <option value="evening">Tối · 18:00 – 21:30</option>
+                                </select>
+                                <small id="ttSlotHelp" class="text-muted">Chọn khung giờ sẽ tự điền giờ bắt đầu và kết thúc; bạn vẫn có thể điều chỉnh.</small>
+                            </div>
                             <div class="col-6">
                                 <label for="tt_start_time" class="form-label small fw-bold">Giờ bắt đầu:</label>
                                 <input type="time" id="tt_start_time" name="start_time" class="form-control fw-semibold" required value="08:00">
@@ -3386,37 +3479,19 @@ document.getElementById('directAddNoteForm')?.addEventListener('submit', async f
     }
 });
 
-// ── 1. ĐỒNG BỘ 2 CHẾ ĐỘ MÀU (SÁNG: TRẮNG-XANH, TỐI: ĐEN-ĐỎ) ──
-function initInsideTheme() {
-    const saved = localStorage.getItem('notezy_theme') || 'light';
-    applyInsideTheme(saved);
+// ── 1. Chia sẻ note vào ba khung giờ của thời khóa biểu ──
+const TIMETABLE_SLOTS = {
+    morning: ['07:00', '12:00'],
+    afternoon: ['12:30', '17:30'],
+    evening: ['18:00', '21:30']
+};
+function applyTimetableSlot(slot) {
+    const times = TIMETABLE_SLOTS[slot];
+    if (!times) return;
+    document.getElementById('tt_start_time').value = times[0];
+    document.getElementById('tt_end_time').value = times[1];
 }
-
-function applyInsideTheme(theme) {
-    const isDark = theme === 'dark';
-    if (isDark) {
-        document.body.classList.add('theme-dark');
-        document.body.classList.remove('theme-light');
-    } else {
-        document.body.classList.remove('theme-dark');
-        document.body.classList.add('theme-light');
-    }
-    localStorage.setItem('notezy_theme', theme);
-
-    const icon = document.getElementById('themeToggleIcon');
-    const text = document.getElementById('themeToggleText');
-    if (icon) icon.className = isDark ? 'fas fa-moon text-danger' : 'fas fa-sun text-success';
-    if (text) text.textContent = isDark ? 'Tối (Đen & Đỏ)' : 'Sáng (Trắng & Xanh)';
-}
-
-function toggleInsideTheme() {
-    const current = localStorage.getItem('notezy_theme') || 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyInsideTheme(next);
-}
-
-// Khởi chạy đồng bộ theme ngay khi trang tải xong
-document.addEventListener('DOMContentLoaded', initInsideTheme);
+document.getElementById('tt_time_slot')?.addEventListener('change', (event) => applyTimetableSlot(event.target.value));
 
 // ── 2. CHỨC NĂNG THÊM SỔ GHI CHÚ VÀO THỜI KHÓA BIỂU ──
 function openAddToTimetableModal(noteId, noteTitle, noteSnippet) {
@@ -3428,8 +3503,10 @@ function openAddToTimetableModal(noteId, noteTitle, noteSnippet) {
     const todayDay = new Date().getDay();
     const daySelect = document.getElementById('tt_day_of_week');
     if (daySelect) {
-        daySelect.value = todayDay;
+        daySelect.value = todayDay === 0 ? 7 : todayDay;
     }
+    document.getElementById('tt_time_slot').value = 'morning';
+    applyTimetableSlot('morning');
 
     const modalEl = document.getElementById('modalAddToTimetable');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);

@@ -37,8 +37,8 @@ if ($note_stmt) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notezy - Thời Khóa Biểu & Lịch Calendar</title>
-    <link rel="icon" type="image/x-icon" href="logo.png">
+    <title>Notezy - Thời Khóa Biểu</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
     <!-- Bootstrap 5.3.3 & FontAwesome 6 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -47,45 +47,27 @@ if ($note_stmt) {
 
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-soft: rgba(79, 70, 229, 0.1);
-            --bg-page: #f3f0ff;
+            --primary: #8b3db5;
+            --primary-hover: #d94f9d;
+            --primary-soft: rgba(176, 74, 162, 0.12);
+            --bg-page: #fcf0fb;
             --card-bg: #ffffff;
             --card-border: #e2e8f0;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --header-bg: rgba(255, 255, 255, 0.95);
-            --today-highlight: #ecfdf5;
-            --today-border: #10b981;
-        }
-
-        body.dark-mode {
-            --primary: #6366f1;
-            --primary-hover: #818cf8;
-            --primary-soft: rgba(99, 102, 241, 0.15);
-            --bg-page: #171426;
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --header-bg: rgba(15, 23, 42, 0.95);
-            --today-highlight: rgba(16, 185, 129, 0.1);
-            --today-border: #10b981;
+            --today-highlight: #f8e7fb;
+            --today-border: #d94f9d;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-page);
-            background-image: linear-gradient(135deg, #f8f7ff 0%, #f3f0ff 48%, #eef2ff 100%);
+            background-image: radial-gradient(circle at 12% 8%, #ffe3f4 0, transparent 30%), linear-gradient(135deg, #f9edff 0%, #f3e8ff 48%, #ffeaf7 100%);
             color: var(--text-main);
             min-height: 100vh;
             padding-top: 80px;
             transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode {
-            background-image: linear-gradient(135deg, #171426 0%, #171b35 48%, #1e1b3a 100%);
         }
 
         /* Navbar */
@@ -376,13 +358,13 @@ if ($note_stmt) {
         }
     </style>
 </head>
-<body class="<?= $theme === 'dark' ? 'dark-mode' : '' ?>">
+<body>
 
 <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg fixed-top">
     <div class="container">
         <a class="navbar-brand" href="index_notezy.php">
-            <img src="logo.png" alt="Notezy" width="40" height="40">
+            <img src="logo.svg" alt="Notezy" width="40" height="40">
             Notezy
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
@@ -398,7 +380,7 @@ if ($note_stmt) {
                 </li>
                 <li class="nav-item">
                     <a class="nav-link active" href="thoikhoabieu.php">
-                        <i class="fas fa-calendar-alt me-1"></i> Thời khóa biểu & Lịch
+                        <i class="fas fa-calendar-alt me-1"></i> Thời khóa biểu
                     </a>
                 </li>
                 <li class="nav-item">
@@ -443,7 +425,7 @@ if ($note_stmt) {
         <div class="row align-items-center">
             <div class="col-md-7 mb-3 mb-md-0">
                 <h2 class="fw-bold mb-1">
-                    <i class="fas fa-calendar-check text-primary me-2"></i>Thời Khóa Biểu & Lịch Học
+                    <i class="fas fa-calendar-check text-primary me-2"></i>Thời Khóa Biểu
                 </h2>
                 <p class="text-muted mb-0">
                     Theo dõi lịch học, công việc hàng ngày với hệ thống <strong>báo giờ & chuông nhắc nhở</strong> thông minh.
@@ -465,15 +447,7 @@ if ($note_stmt) {
 
     <!-- ACTION & VIEW CONTROLS -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <!-- View Switcher -->
-        <div class="view-switcher-pill">
-            <button class="view-switcher-btn active" id="btnWeeklyView" onclick="switchView('weekly');">
-                <i class="fas fa-table me-1"></i> Thời khóa biểu tuần
-            </button>
-            <button class="view-switcher-btn" id="btnMonthlyView" onclick="switchView('monthly');">
-                <i class="fas fa-calendar-day me-1"></i> Lịch tháng
-            </button>
-        </div>
+        <div class="view-switcher-pill"><span class="view-switcher-btn active"><i class="fas fa-table me-1"></i> Ba khung giờ · Sáng / Chiều / Tối</span></div>
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2">
@@ -551,8 +525,8 @@ if ($note_stmt) {
         </table>
     </div>
 
-    <!-- VIEW 2: MONTHLY CALENDAR -->
-    <div id="monthlyViewContainer" class="calendar-container" style="display: none;">
+    <!-- Legacy calendar remains unavailable: all planning is organized in the three-slot timetable. -->
+    <div id="monthlyViewContainer" class="calendar-container" style="display: none !important;" aria-hidden="true">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h4 class="fw-bold mb-0" id="calendarMonthTitle">Tháng 9, 2026</h4>
             <div class="d-flex gap-2">
@@ -615,6 +589,16 @@ if ($note_stmt) {
                             <label class="form-label fw-semibold">Hoặc ngày cụ thể (Lịch)</label>
                             <input type="date" class="form-control" id="schSpecificDate" name="specific_date">
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="schTimeSlot">Khung giờ</label>
+                        <select class="form-select" id="schTimeSlot">
+                            <option value="morning">Sáng · 07:00 – 12:00</option>
+                            <option value="afternoon">Chiều · 12:30 – 17:30</option>
+                            <option value="evening">Tối · 18:00 – 21:30</option>
+                        </select>
+                        <small class="text-muted">Chọn khung giờ để tự điền thời gian; có thể chỉnh sửa chính xác bên dưới.</small>
                     </div>
 
                     <!-- Giờ bắt đầu & Giờ kết thúc -->
@@ -719,6 +703,23 @@ if ($note_stmt) {
 <script>
     let scheduleList = [];
     let scheduleModal = null;
+    const TIMETABLE_SLOTS = {
+        morning: ['07:00', '12:00'],
+        afternoon: ['12:30', '17:30'],
+        evening: ['18:00', '21:30']
+    };
+
+    function slotForStartTime(startTime) {
+        const hour = Number(String(startTime || '00:00').slice(0, 2));
+        return hour >= 18 ? 'evening' : (hour >= 12 ? 'afternoon' : 'morning');
+    }
+
+    function applyScheduleSlot(slot) {
+        const range = TIMETABLE_SLOTS[slot];
+        if (!range) return;
+        document.getElementById('schStartTime').value = range[0];
+        document.getElementById('schEndTime').value = range[1];
+    }
     let currentCalendarDate = new Date();
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -730,6 +731,7 @@ if ($note_stmt) {
 
         // Form submit
         document.getElementById('scheduleForm').addEventListener('submit', handleScheduleSubmit);
+        document.getElementById('schTimeSlot').addEventListener('change', (event) => applyScheduleSlot(event.target.value));
     });
 
     // ── Đồng hồ thời gian thực ──────────────────────────────────────
@@ -961,6 +963,8 @@ if ($note_stmt) {
     function openAddModal() {
         document.getElementById('scheduleForm').reset();
         document.getElementById('schId').value = '';
+        document.getElementById('schTimeSlot').value = 'morning';
+        applyScheduleSlot('morning');
         document.getElementById('scheduleModalTitle').innerHTML = '<i class="fas fa-book-reader text-primary me-2"></i>Thêm Môn Học / Lịch Học';
         selectColor(document.querySelector('.color-dot-radio[data-color="#4f46e5"]'));
         scheduleModal.show();
@@ -976,6 +980,7 @@ if ($note_stmt) {
         document.getElementById('schSpecificDate').value = item.specific_date || '';
         document.getElementById('schStartTime').value = item.start_time;
         document.getElementById('schEndTime').value = item.end_time;
+        document.getElementById('schTimeSlot').value = slotForStartTime(item.start_time);
         document.getElementById('schLocation').value = item.location;
         document.getElementById('schTeacher').value = item.teacher;
         document.getElementById('schReminderMinutes').value = item.reminder_minutes;

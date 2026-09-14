@@ -29,7 +29,7 @@ $checks = [
     ['js/collaboration-ws.js', "endsWith('.app.github.dev')", 'Realtime collaboration supports GitHub Codespaces HTTPS tunnels'],
     ['.devcontainer/initialize.sh', 'openssl rand -hex 32', 'Codespaces generates secrets outside source control'],
     ['.devcontainer/devcontainer.json', 'docker-in-docker:2', 'Codespaces uses an isolated Docker runtime with a real workspace'],
-    ['.devcontainer/devcontainer.json', '"forwardPorts": [8080, 8081, 8765, 8766, 8088]', 'Codespaces forwards the actual Compose host ports'],
+    ['.devcontainer/devcontainer.json', '"forwardPorts": [8080, 8081, 8765, 8766]', 'Codespaces forwards the actual Compose host ports'],
     ['docker-compose.services.yml', 'AI_AGENT_SHARED_SECRET:?Set', 'Docker requires a configured service token secret'],
 ];
 

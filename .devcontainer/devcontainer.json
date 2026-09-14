@@ -9,15 +9,14 @@
     }
   },
   "initializeCommand": "bash .devcontainer/initialize.sh",
-  "postCreateCommand": "docker compose -f docker-compose.yml -f docker-compose.services.yml --profile tools up -d",
-  "postStartCommand": "docker compose -f docker-compose.yml -f docker-compose.services.yml --profile tools up -d",
-  "forwardPorts": [8080, 8081, 8765, 8766, 8088],
+  "postCreateCommand": "docker compose --profile tools up -d",
+  "postStartCommand": "docker compose --profile tools up -d",
+  "forwardPorts": [8080, 8081, 8765, 8766],
   "portsAttributes": {
     "8080": { "label": "Notezy Web", "onAutoForward": "openBrowser" },
     "8081": { "label": "Notezy phpMyAdmin", "onAutoForward": "notify" },
     "8765": { "label": "Notezy AI health", "onAutoForward": "silent" },
-    "8766": { "label": "Notezy realtime WebSocket", "onAutoForward": "notify" },
-    "8088": { "label": "Notezy API gateway", "onAutoForward": "silent" }
+    "8766": { "label": "Notezy realtime WebSocket", "onAutoForward": "notify" }
   },
   "hostRequirements": {
     "cpus": 4,

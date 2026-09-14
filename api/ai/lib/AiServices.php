@@ -15,11 +15,14 @@ function ai_risk_for(string $tool): string {
         'create_note'        => 'write',
         'update_note'        => 'write',
         'create_label'       => 'write',
-        'suggest_labels'     => 'write',
-        'extract_tasks'      => 'write',
-        'summarize_note'     => 'write',
-        'generate_flashcards'=> 'write',
-        'generate_quiz'      => 'write',
+        // These operations only read a note and generate derived content.
+        // Treating them as writes made the chat loop request the same tool
+        // repeatedly and eventually return "chưa hoàn tất".
+        'suggest_labels'     => 'read',
+        'extract_tasks'      => 'read',
+        'summarize_note'     => 'read',
+        'generate_flashcards'=> 'read',
+        'generate_quiz'      => 'read',
         'create_schedule'    => 'write',
         // ── Destructive ──────────────────────────────────────────────────────
         'delete_note'        => 'destructive',

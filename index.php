@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Notezy - Your Thoughts, Organized & Intelligent | AI Notepad</title>
     <meta name="description" content="Ghi chú thông minh thế hệ mới kết hợp trợ lý AI, bảo mật ghi chú bằng mã PIN 6 số và tùy chỉnh giao diện Sáng/Tối." />
-    <link rel="icon" href="logo.png" type="image/png" />
+    <link rel="icon" href="logo.svg" type="image/svg+xml" />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,6 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             transition: background-color 0.3s ease, color 0.3s ease;
+            background: radial-gradient(circle at 12% 8%, #ffe1f2 0, transparent 30%), linear-gradient(135deg, #faf0ff 0%, #f2e5ff 52%, #ffeaf7 100%) !important;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
@@ -149,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         }
     </style>
 </head>
-<body class="bg-white text-gray-900 antialiased dark:bg-[#050505] dark:text-gray-100">
+<body class="text-gray-900 antialiased">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -158,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         // ── Notezy Wave Logo Component ──────────────────────────────────────────
         function NotezyLogo({ className = "h-8 w-8" }) {
             return (
-                <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-tr from-green-600 to-emerald-400 p-2 text-white shadow-md shadow-green-600/20 dark:from-red-600 dark:to-rose-500 dark:shadow-red-600/30 ${className}`}>
+                <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 to-pink-400 p-2 text-white shadow-md shadow-purple-600/20 ${className}`}>
                     <i className="fas fa-layer-group text-sm"></i>
                 </div>
             );
@@ -166,10 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
 
         // ── Main App Component ──────────────────────────────────────────────────
         function App() {
-            // Theme state: 'light' (White + Green) vs 'dark' (Black + Red)
-            const [theme, setTheme] = useState(() => {
-                return localStorage.getItem('notezy_theme') || 'light';
-            });
+            // A single purple-pink appearance keeps the landing page consistent.
+            const theme = 'light';
 
             // Active Tab in App Mockup ('ai' | 'search' | 'notes')
             const [mockupTab, setMockupTab] = useState('ai');
@@ -207,22 +206,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                     setIsAuthModalOpen(true);
                 }
             }, []);
-
-            // Apply theme to <html> root
-            useEffect(() => {
-                const root = document.documentElement;
-                if (theme === 'dark') {
-                    root.classList.add('dark');
-                } else {
-                    root.classList.remove('dark');
-                }
-                localStorage.setItem('notezy_theme', theme);
-            }, [theme]);
-
-            // Toggle theme function
-            const toggleTheme = () => {
-                setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-            };
 
             // Demo video runner
             useEffect(() => {
@@ -378,28 +361,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 <a href="#pricing" className="text-xs font-semibold tracking-wide text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors">Bảng giá</a>
                             </div>
 
-                            {/* Right actions: Theme Toggle + Login + Start */}
+                            {/* Right actions: Login + Start */}
                             <div className="flex items-center gap-1 sm:gap-3">
-                                {/* Button 2 chế độ: Sáng (Trắng - Xanh) & Tối (Đen - Đỏ) */}
-                                <button
-                                    type="button"
-                                    onClick={toggleTheme}
-                                    title={isDark ? 'Chế độ Tối: Đen & Đỏ (Bấm để đổi sang Sáng: Trắng & Xanh)' : 'Chế độ Sáng: Trắng & Xanh (Bấm để đổi sang Tối: Đen & Đỏ)'}
-                                    className={`group flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-300 ${
-                                        isDark
-                                            ? 'border-red-600/40 bg-red-950/40 text-red-400 hover:border-red-500 hover:bg-red-900/50'
-                                            : 'border-green-600/30 bg-green-50 text-green-700 hover:border-green-500 hover:bg-green-100'
-                                    }`}
-                                >
-                                    <i className={`fas ${isDark ? 'fa-moon text-red-500' : 'fa-sun text-green-600'}`}></i>
-                                    <span className="hidden sm:inline">
-                                        {isDark ? 'Tối (Đen & Đỏ)' : 'Sáng (Trắng & Xanh)'}
-                                    </span>
-                                    <span className={`inline-block h-2 w-2 rounded-full animate-pulse ${
-                                        isDark ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]'
-                                    }`}></span>
-                                </button>
-
                                 {/* Đăng nhập */}
                                 <button
                                     type="button"
@@ -433,7 +396,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                             className={`pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[640px] transition-all duration-700 ${
                                 isDark
                                     ? 'bg-[radial-gradient(ellipse_75%_65%_at_50%_0%,rgba(220,38,38,0.22),transparent)]'
-                                    : 'bg-[radial-gradient(ellipse_75%_65%_at_50%_0%,rgba(16,185,129,0.18),transparent)]'
+                                    : 'bg-[radial-gradient(ellipse_75%_65%_at_50%_0%,rgba(217,79,157,0.22),transparent)]'
                             }`}
                         />
 
