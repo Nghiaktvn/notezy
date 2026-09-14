@@ -395,6 +395,16 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
         }
+        /* Open a notebook from its cover while preserving the action controls. */
+        .note-openable { cursor: pointer; }
+        .note-openable:focus-visible {
+            outline: 3px solid rgba(156, 82, 214, 0.7);
+            outline-offset: 3px;
+        }
+        .note-detail-preview {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
         .note-item h5 {
             font-size: 1.2rem;
             font-weight: bold;
@@ -1213,7 +1223,7 @@ $card_style = '';
                     $card_style .= 'font-family: ' . htmlspecialchars($note['font_family']) . ' !important; ';
                 }
                 ?>
-                <div class="note-item position-relative note-card-<?= $note['note_id'] ?>" data-note-id="<?= $note['note_id'] ?>" data-labels="<?= htmlspecialchars(implode(',', $note['labels'])) ?>" style="<?= $card_style ?>">
+                <div class="note-item note-openable position-relative note-card-<?= $note['note_id'] ?>" data-note-id="<?= $note['note_id'] ?>" data-labels="<?= htmlspecialchars(implode(',', $note['labels'])) ?>" role="button" tabindex="0" aria-label="Mở sổ <?= htmlspecialchars($note['title']) ?>" style="<?= $card_style ?>">
                     <?php if ($note['pinned']): ?>
                         <span class="pin-icon" title="Ghi chú đã ghim"><i class="fas fa-thumbtack text-warning"></i></span>
                     <?php endif; ?>
@@ -1386,7 +1396,7 @@ $card_style = '';
         <h3><?= htmlspecialchars($t['shared_notes']) ?></h3>
         <?php if (!empty($shared_notes)): ?>
             <?php foreach ($shared_notes as $note): ?>
-                <div class="note-item position-relative" data-labels="<?= htmlspecialchars(implode(',', $note['labels'])) ?>">
+                <div class="note-item note-openable position-relative" data-labels="<?= htmlspecialchars(implode(',', $note['labels'])) ?>" role="button" tabindex="0" aria-label="Mở sổ được chia sẻ <?= htmlspecialchars($note['title']) ?>">
                     <?php if ($note['pinned']): ?>
                         <span class="pin-icon" title="Ghi chú đã ghim"><i class="fas fa-thumbtack text-warning"></i></span>
                     <?php endif; ?>
@@ -1466,7 +1476,7 @@ $card_style = '';
         </div>
         <?php if (!empty($own_notes)): ?>
             <?php foreach ($own_notes as $note): ?>
-                <li class="note-item flex-column align-items-stretch note-card-<?= $note['note_id'] ?>" data-note-id="<?= $note['note_id'] ?>" data-labels="<?= htmlspecialchars(implode(',', $note['labels'])) ?>">
+                <li class="note-item note-openable flex-column align-items-stretch note-card-<?= $note['note_id'] ?>" data-note-id="<?= $note['note_id'] ?>" data-labels="<?= htmlspecialchars(implode(',', $note['labels'])) ?>" role="button" tabindex="0" aria-label="Mở sổ <?= htmlspecialchars($note['title']) ?>">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <h5 class="mb-0 fw-bold"><?= htmlspecialchars($note['title']) ?></h5>
@@ -1737,6 +1747,25 @@ $card_style = '';
                     <div id="manageLabelsList">
                         <p class="text-muted text-center mb-0">Đang tải...</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notebook detail: opened directly from a notebook cover on the dashboard -->
+    <div class="modal fade" id="noteDetailModal" tabindex="-1" aria-labelledby="noteDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 18px;">
+                <div class="modal-header border-bottom">
+                    <div>
+                        <div class="text-uppercase small text-muted fw-semibold mb-1"><i class="fas fa-book-open me-1"></i>Sổ ghi chú</div>
+                        <h5 class="modal-title fw-bold" id="noteDetailModalLabel">Chi tiết sổ ghi chú</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body p-4" id="noteDetailModalBody"></div>
+                <div class="modal-footer border-top" id="noteDetailModalFooter">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
         </div>
@@ -2304,6 +2333,105 @@ $card_style = '';
             gridViewBtn.classList.remove('active');
             localStorage.setItem('notezy_view_mode', 'list');
         });
+
+        // Open a notebook from its cover. Controls inside the card keep their
+        // original behavior, while locked notebooks still require verification.
+        (function setupNotebookCoverDetails() {
+            const modalEl = document.getElementById('noteDetailModal');
+            const titleEl = document.getElementById('noteDetailModalLabel');
+            const bodyEl = document.getElementById('noteDetailModalBody');
+            const footerEl = document.getElementById('noteDetailModalFooter');
+            if (!modalEl || !titleEl || !bodyEl || !footerEl) return;
+
+            const isControl = (element) => element.closest('a, button, input, select, textarea, label, .note-actions, [data-bs-toggle]');
+            const cleanClone = (element) => {
+                const clone = element.cloneNode(true);
+                clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+                return clone;
+            };
+
+            function openNotebookDetail(card) {
+                const lockedCover = card.querySelector('.locked-note-cover');
+                if (lockedCover) {
+                    // Never expose protected content from the dashboard modal.
+                    lockedCover.querySelector('button')?.click();
+                    return;
+                }
+
+                const title = card.querySelector('h5')?.textContent.trim() || 'Sổ ghi chú';
+                titleEl.textContent = title;
+                bodyEl.replaceChildren();
+                footerEl.replaceChildren();
+
+                const meta = card.querySelector('.text-muted');
+                if (meta) {
+                    const metaCopy = cleanClone(meta);
+                    metaCopy.classList.add('d-block', 'mb-3');
+                    bodyEl.append(metaCopy);
+                }
+
+                const reminder = card.querySelector('[title="Sự kiện của sổ"]');
+                if (reminder) {
+                    const reminderCopy = cleanClone(reminder);
+                    reminderCopy.classList.add('d-inline-block', 'mb-3');
+                    bodyEl.append(reminderCopy);
+                }
+
+                const image = card.querySelector('img');
+                if (image) {
+                    const imageCopy = cleanClone(image);
+                    imageCopy.classList.add('img-fluid', 'rounded-4', 'shadow-sm', 'mb-3');
+                    imageCopy.style.maxHeight = '360px';
+                    bodyEl.append(imageCopy);
+                }
+
+                const content = card.querySelector('.note-body-text, .unlocked-pwd-content p, .unlocked-note-content p');
+                if (content) {
+                    const contentCopy = cleanClone(content);
+                    contentCopy.classList.add('note-detail-preview', 'fs-6', 'lh-lg', 'mb-3');
+                    bodyEl.append(contentCopy);
+                } else {
+                    const empty = document.createElement('p');
+                    empty.className = 'text-muted mb-0';
+                    empty.textContent = 'Sổ này chưa có nội dung.';
+                    bodyEl.append(empty);
+                }
+
+                const labels = card.querySelector('.note-labels');
+                if (labels) bodyEl.append(cleanClone(labels));
+
+                const detailLink = card.querySelector('a[href*="notepass.php"]');
+                if (detailLink) {
+                    const openFullPage = document.createElement('a');
+                    openFullPage.href = detailLink.href;
+                    openFullPage.className = 'btn btn-outline-primary rounded-pill px-3';
+                    openFullPage.innerHTML = '<i class="fas fa-expand me-1"></i>Mở trang chi tiết';
+                    footerEl.append(openFullPage);
+                }
+                const closeButton = document.createElement('button');
+                closeButton.type = 'button';
+                closeButton.className = 'btn btn-primary rounded-pill px-4';
+                closeButton.dataset.bsDismiss = 'modal';
+                closeButton.textContent = 'Xong';
+                footerEl.append(closeButton);
+
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+
+            document.addEventListener('click', (event) => {
+                const card = event.target.closest('.note-openable');
+                if (!card || isControl(event.target)) return;
+                openNotebookDetail(card);
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                const card = event.target.closest?.('.note-openable');
+                if (!card || isControl(event.target)) return;
+                event.preventDefault();
+                openNotebookDetail(card);
+            });
+        })();
 
         // ── Label filter chips: client-side filter across all 4 note areas ──
         (function () {
