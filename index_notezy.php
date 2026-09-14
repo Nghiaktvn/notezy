@@ -865,32 +865,6 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             background: radial-gradient(circle at 12% 8%, #ffe4f4 0, transparent 32%), linear-gradient(135deg, #f8edff 0%, #f1e5ff 50%, #ffeaf7 100%) !important;
             color: #34234d !important;
         }
-        .workspace-menu-trigger {
-            width: 44px;
-            height: 44px;
-            flex: 0 0 44px;
-            border: 0;
-            border-radius: 10px;
-            background: #050505;
-            color: #ffffff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 7px 18px rgba(68, 28, 85, .18);
-            transition: transform .2s ease, box-shadow .2s ease;
-        }
-        .workspace-menu-trigger:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(68, 28, 85, .25); }
-        .workspace-menu-trigger:focus-visible { outline: 3px solid rgba(223, 92, 167, .35); outline-offset: 2px; }
-        .workspace-menu-icon { width: 25px; display: grid; gap: 4px; }
-        .workspace-menu-icon span { display: flex; align-items: center; gap: 4px; }
-        .workspace-menu-icon i { width: 4px; height: 4px; border-radius: 50%; background: #ffb347; display: block; }
-        .workspace-menu-icon b { height: 3px; flex: 1; border-radius: 999px; background: #ffffff; display: block; }
-        .workspace-offcanvas { background: linear-gradient(155deg, #fff8ff, #f6e8ff 55%, #ffe7f6); color: #34234d; }
-        .workspace-offcanvas .offcanvas-title { color: #702f8c; font-weight: 800; }
-        .workspace-menu-link { display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:6px; border-radius:12px; color:#51305f; text-decoration:none; font-weight:650; }
-        .workspace-menu-link:hover { color:#7c3fbc; background:rgba(255,255,255,.8); }
-        .workspace-menu-link i { width:22px; text-align:center; color:#d94f9d; }
-        .workspace-menu-final { border-top:1px solid rgba(124,63,188,.14); margin-top:12px; padding-top:12px; }
         .navbar, body.theme-light .navbar, body.theme-dark .navbar, body:not(.theme-dark) .navbar {
             background: rgba(255, 250, 255, .92) !important;
             border-bottom: 1px solid rgba(177, 88, 191, .22) !important;
@@ -1083,9 +1057,6 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 <header>
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <button class="workspace-menu-trigger me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#workspaceMenu" aria-controls="workspaceMenu" aria-label="Mở menu Notezy">
-                <span class="workspace-menu-icon" aria-hidden="true"><span><i></i><b></b></span><span><i></i><b></b></span><span><i></i><b></b></span></span>
-            </button>
             <img src="logo.svg" alt="Notezy" width="50" height="50" class="me-2" />
             <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -1143,24 +1114,6 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         </div>
     </nav>
 </header>
-
-<aside class="offcanvas offcanvas-start workspace-offcanvas" tabindex="-1" id="workspaceMenu" aria-labelledby="workspaceMenuLabel">
-    <div class="offcanvas-header px-4 pt-4">
-        <h5 class="offcanvas-title" id="workspaceMenuLabel"><i class="fas fa-layer-group me-2"></i>Không gian Notezy</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng menu"></button>
-    </div>
-    <div class="offcanvas-body px-3">
-        <a class="workspace-menu-link" href="index_notezy.php"><i class="fas fa-house"></i>Trang ghi chú</a>
-        <a class="workspace-menu-link" href="themghichu.php"><i class="fas fa-pen-to-square"></i>Tạo ghi chú</a>
-        <a class="workspace-menu-link" href="labels.php"><i class="fas fa-tags"></i>Quản lý nhãn</a>
-        <a class="workspace-menu-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal" data-bs-dismiss="offcanvas"><i class="fas fa-magnifying-glass"></i>Tìm kiếm</a>
-        <a class="workspace-menu-link" href="account.php"><i class="fas fa-user"></i>Tài khoản</a>
-        <div class="workspace-menu-final">
-            <a class="workspace-menu-link" href="mindmap.php"><i class="fas fa-brain"></i>Sơ đồ tư duy</a>
-            <a class="workspace-menu-link" href="thoikhoabieu.php"><i class="fas fa-table-cells-large"></i>Thời khóa biểu</a>
-        </div>
-    </div>
-</aside>
 
 <!-- MAIN CONTENT -->
 <main class="main-content">
