@@ -331,17 +331,33 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             pointer-events: auto;
         }
         .notezy-header-dropdown {
-            min-width: 248px;
-            padding: 8px;
-            border: 1px solid rgba(177, 88, 191, .22);
-            border-radius: 16px;
-            box-shadow: 0 16px 36px rgba(126, 58, 145, .18);
-            background: rgba(255, 252, 255, .98);
-            overflow: hidden;
-            transform-origin: top left;
+            position: fixed !important;
+            top: 70px !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: min(330px, calc(100vw - 28px));
+            min-width: 0;
+            margin: 0 !important;
+            padding: 18px 14px 24px;
+            border: 1px solid rgba(177, 88, 191, .24);
+            border-radius: 0 22px 22px 0;
+            box-shadow: 18px 14px 42px rgba(81, 34, 98, .24);
+            background: linear-gradient(160deg, rgba(255, 253, 255, .99), rgba(252, 240, 255, .98));
+            overflow-y: auto;
+            z-index: 1030;
+        }
+        .notezy-header-dropdown::before {
+            display: block;
+            margin: 0 8px 14px;
+            color: #682c81;
+            font-size: .83rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            content: 'Không gian Notezy';
         }
         .notezy-header-dropdown.show {
-            animation: notezyDrawerIn .28s cubic-bezier(.2, .8, .2, 1) both;
+            animation: notezyDrawerIn .32s cubic-bezier(.22, .8, .2, 1) both;
         }
         .notezy-header-dropdown .dropdown-item {
             display: flex;
@@ -367,8 +383,8 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         .notezy-header-dropdown.show li:nth-child(5) .dropdown-item { animation-delay: .15s; }
         .notezy-header-dropdown.show li:nth-child(7) .dropdown-item { animation-delay: .18s; }
         @keyframes notezyDrawerIn {
-            from { opacity: 0; transform: translateY(-12px) scale(.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: .5; transform: translateX(-104%); }
+            to { opacity: 1; transform: translateX(0); }
         }
         @keyframes notezyDrawerItemIn {
             from { opacity: 0; transform: translateX(-12px); }
@@ -376,12 +392,11 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         }
         @media (max-width: 991.98px) {
             .notezy-header-dropdown {
-                position: fixed !important;
-                inset: 74px 12px auto 12px !important;
-                min-width: 0;
-                padding: 12px;
-                border-radius: 22px;
-                box-shadow: 0 20px 48px rgba(81, 34, 98, .26);
+                top: 70px !important;
+                width: min(320px, calc(100vw - 42px));
+                padding: 18px 12px 24px;
+                border-radius: 0 20px 20px 0;
+                box-shadow: 16px 14px 42px rgba(81, 34, 98, .26);
             }
             .notezy-header-dropdown .dropdown-item {
                 min-height: 48px;
