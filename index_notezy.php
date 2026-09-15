@@ -311,12 +311,37 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             outline-offset: 3px;
         }
         .notezy-menu-button::after { display: none !important; }
+        .notezy-menu-button img { transition: transform .24s ease, filter .24s ease; }
+        .notezy-menu-button[aria-expanded="true"] img {
+            transform: rotate(-7deg) scale(1.06);
+            filter: drop-shadow(0 7px 12px rgba(152, 59, 170, .35));
+        }
+        #notezyMenuBackdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 1020;
+            opacity: 0;
+            pointer-events: none;
+            background: rgba(62, 27, 79, .20);
+            backdrop-filter: blur(2px);
+            transition: opacity .2s ease;
+        }
+        body.notezy-menu-open #notezyMenuBackdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
         .notezy-header-dropdown {
             min-width: 248px;
             padding: 8px;
             border: 1px solid rgba(177, 88, 191, .22);
             border-radius: 16px;
             box-shadow: 0 16px 36px rgba(126, 58, 145, .18);
+            background: rgba(255, 252, 255, .98);
+            overflow: hidden;
+            transform-origin: top left;
+        }
+        .notezy-header-dropdown.show {
+            animation: notezyDrawerIn .28s cubic-bezier(.2, .8, .2, 1) both;
         }
         .notezy-header-dropdown .dropdown-item {
             display: flex;
@@ -331,6 +356,41 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         .notezy-header-dropdown .dropdown-item:focus {
             color: #ffffff;
             background: linear-gradient(135deg, #7c3fbc, #df5ca7);
+        }
+        .notezy-header-dropdown.show .dropdown-item {
+            animation: notezyDrawerItemIn .26s ease both;
+        }
+        .notezy-header-dropdown.show li:nth-child(1) .dropdown-item { animation-delay: .03s; }
+        .notezy-header-dropdown.show li:nth-child(2) .dropdown-item { animation-delay: .06s; }
+        .notezy-header-dropdown.show li:nth-child(3) .dropdown-item { animation-delay: .09s; }
+        .notezy-header-dropdown.show li:nth-child(4) .dropdown-item { animation-delay: .12s; }
+        .notezy-header-dropdown.show li:nth-child(5) .dropdown-item { animation-delay: .15s; }
+        .notezy-header-dropdown.show li:nth-child(7) .dropdown-item { animation-delay: .18s; }
+        @keyframes notezyDrawerIn {
+            from { opacity: 0; transform: translateY(-12px) scale(.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes notezyDrawerItemIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @media (max-width: 991.98px) {
+            .notezy-header-dropdown {
+                position: fixed !important;
+                inset: 74px 12px auto 12px !important;
+                min-width: 0;
+                padding: 12px;
+                border-radius: 22px;
+                box-shadow: 0 20px 48px rgba(81, 34, 98, .26);
+            }
+            .notezy-header-dropdown .dropdown-item {
+                min-height: 48px;
+                font-size: 1rem;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .notezy-menu-button img, #notezyMenuBackdrop { transition: none; }
+            .notezy-header-dropdown.show, .notezy-header-dropdown.show .dropdown-item { animation: none; }
         }
         .nav-link {
             color: #333333;
@@ -1267,6 +1327,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         </div>
     </nav>
 </header>
+<div id="notezyMenuBackdrop" aria-hidden="true"></div>
 
 <!-- MAIN CONTENT -->
 <main class="main-content">
@@ -2474,6 +2535,26 @@ $card_style = '';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuButton = document.getElementById('notezyHeaderMenu');
+            const backdrop = document.getElementById('notezyMenuBackdrop');
+
+            if (!menuButton || !backdrop || !window.bootstrap) return;
+
+            menuButton.addEventListener('shown.bs.dropdown', function () {
+                document.body.classList.add('notezy-menu-open');
+            });
+
+            menuButton.addEventListener('hidden.bs.dropdown', function () {
+                document.body.classList.remove('notezy-menu-open');
+            });
+
+            backdrop.addEventListener('click', function () {
+                bootstrap.Dropdown.getOrCreateInstance(menuButton).hide();
+            });
+        });
+    </script>
     <script>
         // Toggle between Grid and List View
         const ownNotesGrid = document.getElementById('ownNotesGrid');
