@@ -70,7 +70,23 @@ if ($method === 'POST') {
         echo json_encode(['status' => 'error', 'message' => 'Không thể chia sẻ lịch lúc này.']);
         exit();
     }
-    echo json_encode(['status' => 'success', 'message' => 'Đã chia sẻ lịch học.', 'permission' => $permission]);
+    // A linked note holds the lesson plan details. Give the calendar recipient
+    // matching access, so the timetable never exposes a link they cannot open.
+    $linked = $conn->prepare('SELECT note_id FROM timetable WHERE id = ? AND user_id = ? LIMIT 1');
+    $linked->bind_param('ii', $timetableId, $userId);
+    $linked->execute();
+    $linkedRow = $linked->get_result()->fetch_assoc();
+    $linked->close();
+    $linkedNoteId = (int) ($linkedRow['note_id'] ?? 0);
+    if ($linkedNoteId > 0) {
+        $noteShare = $conn->prepare('INSERT INTO note_shares (note_id, shared_with_user_id, permission, shared_by_user_id) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE permission = VALUES(permission), shared_by_user_id = VALUES(shared_by_user_id)');
+        if ($noteShare) {
+            $noteShare->bind_param('iisi', $linkedNoteId, $recipientId, $permission, $userId);
+            $noteShare->execute();
+            $noteShare->close();
+        }
+    }
+    echo json_encode(['status' => 'success', 'message' => $linkedNoteId > 0 ? 'Đã chia sẻ lịch học và ghi chú chi tiết.' : 'Đã chia sẻ lịch học.', 'permission' => $permission, 'linked_note_id' => $linkedNoteId ?: null]);
     exit();
 }
 

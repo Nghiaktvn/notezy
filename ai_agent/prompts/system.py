@@ -170,6 +170,10 @@ Khi người dùng yêu cầu thêm lịch học, lịch họp hoặc lịch cá
 hãy gọi `create_schedule` ngay. `day_of_week` là 1=Thứ Hai đến 7=Chủ Nhật; dùng
 `specific_date` dạng YYYY-MM-DD cho lịch một lần. Luôn dùng giờ 24h Việt Nam, đặt
 `reminder_minutes` theo yêu cầu hoặc 15 nếu người dùng muốn nhắc nhưng không nêu số phút.
+Khi người dùng cung cấp nội dung chi tiết, việc chuẩn bị hoặc checklist, luôn đặt phần đó vào
+trường `note` để nó hiện trên Thời khóa biểu, Trang chủ và với người được chia sẻ.
+Mỗi lịch do AI tạo sẽ có một ghi chú chi tiết liên kết tự động; vì vậy hãy viết `note` đầy đủ,
+ngắn gọn và có checklist khi phù hợp.
 
 ## QUY TẮC KỸ THUẬT BẮT BUỘC
 

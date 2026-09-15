@@ -842,7 +842,8 @@ if ($note_stmt) {
             </div>
             ${item.location ? `<div class="card-info"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.location)}</div>` : ''}
             ${item.teacher ? `<div class="card-info"><i class="fas fa-user-graduate"></i> ${escapeHtml(item.teacher)}</div>` : ''}
-            ${item.note_id && !item.is_shared ? `<button type="button" class="card-act-btn mt-2" data-note-id="${item.note_id}" title="Mở ghi chú liên kết"><i class="fas fa-sticky-note"></i> ${escapeHtml(item.linked_note_title || 'Mở ghi chú')}</button>` : ''}
+            ${item.note ? `<div class="card-info mt-2"><i class="fas fa-align-left"></i> ${escapeHtml(item.note)}</div>` : ''}
+            ${item.note_id ? `<button type="button" class="card-act-btn mt-2" data-note-id="${item.note_id}" title="Mở ghi chú chi tiết"><i class="fas fa-sticky-note"></i> ${escapeHtml(item.linked_note_title || 'Mở ghi chú chi tiết')}</button>` : ''}
             <div class="schedule-card-actions">
                 ${!item.is_shared ? `<button class="card-act-btn" data-share-id="${item.id}" title="Chia sẻ"><i class="fas fa-user-plus"></i></button><button class="card-act-btn" onclick="event.stopPropagation(); editSchedule(${item.id});" title="Sửa"><i class="fas fa-pen"></i></button><button class="card-act-btn text-danger" onclick="event.stopPropagation(); deleteSchedule(${item.id});" title="Xóa"><i class="fas fa-trash"></i></button>` : '<span class="badge text-bg-light">Được chia sẻ</span>'}
             </div>
@@ -864,7 +865,12 @@ if ($note_stmt) {
             });
         }
 
-        card.onclick = () => { if (!item.is_shared) editSchedule(item.id); };
+        card.onclick = () => {
+            if (!item.is_shared) return editSchedule(item.id);
+            const detail = [item.note, item.location && `Địa điểm: ${item.location}`, item.teacher && `Giảng viên: ${item.teacher}`]
+                .filter(Boolean).map(escapeHtml).join('<br>');
+            Swal.fire({ title: escapeHtml(item.title), html: detail || 'Lịch học được chia sẻ với bạn.', icon: 'info' });
+        };
         return card;
     }
 

@@ -424,12 +424,34 @@ class AiNoteTools {
         $location = ai_truncate(trim((string) ($args['location'] ?? '')), 255);
         $teacher = ai_truncate(trim((string) ($args['teacher'] ?? '')), 255);
         $note = ai_truncate(trim((string) ($args['note'] ?? '')), 3000);
+        $dateLabel = $date ?: ('Thứ ' . ($day + 1) . ' hằng tuần');
+        $detail = $note !== '' ? $note : "**Lịch học**\n- Thời gian: {$dateLabel}, {$start}–{$end}\n- Chuẩn bị: xem lại nội dung trước buổi học.";
         $color = '#2563eb';
-        $stmt = $this->conn->prepare('INSERT INTO timetable (user_id, title, day_of_week, start_time, end_time, location, teacher, color, note, reminder_minutes, specific_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        if (!$stmt) return ['ok' => false, 'error' => 'Không thể tạo lịch học'];
-        $stmt->bind_param('isissssssis', $this->user_id, $title, $day, $start, $end, $location, $teacher, $color, $note, $reminder, $date);
-        if (!$stmt->execute()) return ['ok' => false, 'error' => 'Không thể lưu lịch học'];
-        return ['ok' => true, 'schedule_id' => (int) $stmt->insert_id, 'title' => $title, 'start_time' => $start, 'end_time' => $end, 'reminder_minutes' => $reminder, 'specific_date' => $date, 'day_of_week' => $day];
+        $this->conn->begin_transaction();
+        try {
+            // Every AI-created schedule gets a first-class note.  The link is
+            // what lets Home, Timetable and a shared recipient show the same
+            // detailed study plan rather than a schedule title alone.
+            $noteTitle = 'Lịch học: ' . $title;
+            $noteStmt = $this->conn->prepare('INSERT INTO notes (user_id, title, content, note_type, background_color, text_color, reminder_sent) VALUES (?, ?, ?, \'task\', \'#E6F4EA\', \'#1B5E20\', 0)');
+            if (!$noteStmt) throw new RuntimeException('Không thể tạo ghi chú lịch học');
+            $noteStmt->bind_param('iss', $this->user_id, $noteTitle, $detail);
+            if (!$noteStmt->execute()) throw new RuntimeException('Không thể lưu ghi chú lịch học');
+            $noteId = (int) $noteStmt->insert_id;
+            $noteStmt->close();
+
+            $stmt = $this->conn->prepare('INSERT INTO timetable (user_id, title, day_of_week, start_time, end_time, location, teacher, color, note, reminder_minutes, specific_date, note_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            if (!$stmt) throw new RuntimeException('Không thể tạo lịch học');
+            $stmt->bind_param('isissssssisi', $this->user_id, $title, $day, $start, $end, $location, $teacher, $color, $detail, $reminder, $date, $noteId);
+            if (!$stmt->execute()) throw new RuntimeException('Không thể lưu lịch học');
+            $scheduleId = (int) $stmt->insert_id;
+            $stmt->close();
+            $this->conn->commit();
+        } catch (Throwable $e) {
+            $this->conn->rollback();
+            return ['ok' => false, 'error' => 'Không thể tạo lịch học'];
+        }
+        return ['ok' => true, 'schedule_id' => $scheduleId, 'note_id' => $noteId, 'title' => $title, 'start_time' => $start, 'end_time' => $end, 'reminder_minutes' => $reminder, 'specific_date' => $date, 'day_of_week' => $day];
     }
 
     private function createNote(array $args): array {

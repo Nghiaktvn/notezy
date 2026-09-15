@@ -53,6 +53,41 @@ function processLabels($conn, $note_id, $labels_raw, $user_id) {
     }
 }
 
+/** Đồng bộ một hẹn giờ của ghi chú thành sự kiện một lần trong thời khóa biểu. */
+function syncNoteReminderToTimetable(mysqli $conn, int $noteId, int $userId, string $title, string $reminderAt): void {
+    $when = DateTimeImmutable::createFromFormat('Y-m-d H:i', substr(str_replace('T', ' ', $reminderAt), 0, 16));
+    if (!$when) throw new Exception('Thời gian báo thức không hợp lệ.');
+
+    $date = $when->format('Y-m-d');
+    $day = (int) $when->format('N');
+    $start = $when->format('H:i:s');
+    $end = $when->modify('+1 hour')->format('H:i:s');
+    $eventTitle = '⏰ ' . $title;
+    $eventNote = 'Sự kiện tự động đồng bộ từ ghi chú #' . $noteId . '.';
+    $lookup = $conn->prepare('SELECT id FROM timetable WHERE user_id = ? AND note_id = ? AND specific_date = ? LIMIT 1');
+    if (!$lookup) throw new Exception('Không thể kiểm tra thời khóa biểu.');
+    $lookup->bind_param('iis', $userId, $noteId, $date);
+    $lookup->execute();
+    $existing = $lookup->get_result()->fetch_assoc();
+    $lookup->close();
+
+    if ($existing) {
+        $update = $conn->prepare('UPDATE timetable SET title = ?, day_of_week = ?, start_time = ?, end_time = ?, note = ?, reminder_minutes = 0 WHERE id = ? AND user_id = ?');
+        if (!$update) throw new Exception('Không thể cập nhật thời khóa biểu.');
+        $eventId = (int) $existing['id'];
+        $update->bind_param('sisssii', $eventTitle, $day, $start, $end, $eventNote, $eventId, $userId);
+        $update->execute();
+        $update->close();
+    } else {
+        $insert = $conn->prepare('INSERT INTO timetable (user_id, title, day_of_week, start_time, end_time, color, note, reminder_minutes, specific_date, note_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)');
+        if (!$insert) throw new Exception('Không thể tạo sự kiện trong thời khóa biểu.');
+        $color = '#d97706';
+        $insert->bind_param('isisssssi', $userId, $eventTitle, $day, $start, $end, $color, $eventNote, $date, $noteId);
+        $insert->execute();
+        $insert->close();
+    }
+}
+
 // Xử lý khi form được gửi hoặc lưu tự động
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $is_ajax = isset($_POST['autoSave'])
@@ -160,27 +195,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $note_id = $stm_insert->insert_id;
             }
 
-            // Nếu có mã PIN, tự động mở khóa cho phiên này
+            // Đặt/đổi PIN không tự mở khóa: phải xác thực lại đủ 6 số để sửa.
             if ($pin_hash !== null) {
-                if (!isset($_SESSION['pin_unlocked_notes'])) {
-                    $_SESSION['pin_unlocked_notes'] = [];
-                }
-                $_SESSION['pin_unlocked_notes'][$note_id] = true;
-                $ins_pin = $conn->prepare("INSERT INTO note_pin_unlocks (note_id, user_id, session_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = NOW()");
+                unset($_SESSION['pin_unlocked_notes'][$note_id]);
+                $clear_pin = $conn->prepare('DELETE FROM note_pin_unlocks WHERE note_id = ? AND user_id = ? AND session_id = ?');
                 $curr_sess = session_id();
-                $ins_pin->bind_param("iis", $note_id, $user_id, $curr_sess);
-                $ins_pin->execute();
-                $ins_pin->close();
+                if ($clear_pin) {
+                    $clear_pin->bind_param('iis', $note_id, $user_id, $curr_sess);
+                    $clear_pin->execute();
+                    $clear_pin->close();
+                }
             }
 
             // Xử lý báo thời / hẹn giờ nhắc nhở (nếu có)
             $reminder_at = !empty($_POST['reminder_at']) ? trim($_POST['reminder_at']) : null;
             if ($reminder_at) {
+                $reminder_at = str_replace('T', ' ', $reminder_at);
                 $upd_rem = $conn->prepare("UPDATE notes SET reminder_at = ?, reminder_sent = 0 WHERE note_id = ? AND user_id = ?");
                 if ($upd_rem) {
                     $upd_rem->bind_param("sii", $reminder_at, $note_id, $user_id);
                     $upd_rem->execute();
                     $upd_rem->close();
+                }
+                if (!empty($_POST['sync_timetable'])) {
+                    syncNoteReminderToTimetable($conn, $note_id, $user_id, $title, $reminder_at);
                 }
             }
 
@@ -462,6 +500,15 @@ if ($lstmt) {
                 <label for="noteContent" class="form-label">Nội dung</label>
                 <textarea class="form-control" id="noteContent" name="noteContent" rows="5" required><?= htmlspecialchars((string)($editing_note['content'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
             </div>
+            <div class="mb-3 p-3 border rounded bg-light">
+                <label for="reminder_at" class="form-label fw-bold text-dark mb-1"><i class="fas fa-bell text-warning me-1"></i>Báo thức sự kiện</label>
+                <input type="datetime-local" class="form-control" id="reminder_at" name="reminder_at" value="<?= !empty($editing_note['reminder_at']) ? htmlspecialchars(date('Y-m-d\\TH:i', strtotime($editing_note['reminder_at'])), ENT_QUOTES, 'UTF-8') : '' ?>">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="sync_timetable" name="sync_timetable" checked>
+                    <label class="form-check-label" for="sync_timetable">Tự động lưu sự kiện này vào Thời khóa biểu và reo chuông đúng giờ</label>
+                </div>
+                <small class="text-muted d-block mt-1">Ví dụ chọn 20:00 tối nay: sự kiện được lưu ở khung Tối, thông báo đúng 20:00.</small>
+            </div>
             <div class="mb-3">
                 <label class="form-label d-flex justify-content-between align-items-center">
                     <span>Nhãn (Select Label)</span>
@@ -676,9 +723,12 @@ if ($lstmt) {
                 noteContent:      document.getElementById('noteContent').value,
                 noteLabels:       checked.join(','),
                 pinNote:          document.getElementById('pinNote').checked,
+                note_pin:         document.getElementById('note_pin').value,
                 background_color: document.getElementById('background_color').value,
                 text_color:       document.getElementById('text_color').value,
-                font_family:      document.getElementById('font_family').value
+                font_family:      document.getElementById('font_family').value,
+                reminder_at:      document.getElementById('reminder_at').value,
+                sync_timetable:   document.getElementById('sync_timetable').checked ? '1' : ''
             };
         }
 
@@ -735,6 +785,10 @@ if ($lstmt) {
                 clearTimeout(window.autoSaveTimeout);
                 window.autoSaveTimeout = setTimeout(autoSave, 3000);
             });
+        });
+        document.getElementById('sync_timetable').addEventListener('change', () => {
+            clearTimeout(window.autoSaveTimeout);
+            window.autoSaveTimeout = setTimeout(autoSave, 300);
         });
 
         // ── Image preview ─────────────────────────────────────────────────────

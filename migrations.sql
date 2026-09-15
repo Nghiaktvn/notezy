@@ -474,3 +474,19 @@ CREATE TABLE IF NOT EXISTS `quiz_results` (
   KEY `idx_qr_user` (`user_id`),
   CONSTRAINT `fk_qr_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- phpMyAdmin-friendly account audit. Passwords are deliberately shown only as
+-- bcrypt hashes: plaintext passwords must never be stored or displayed.
+CREATE OR REPLACE VIEW `account_security_overview` AS
+SELECT
+  id,
+  username,
+  firstname,
+  lastname,
+  email,
+  activated,
+  role,
+  CASE WHEN password_hash IS NULL OR password_hash = '' THEN 'missing' ELSE 'bcrypt hash present' END AS password_status,
+  password_hash,
+  last_seen_at
+FROM users;

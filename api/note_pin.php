@@ -162,17 +162,17 @@ switch ($action) {
         }
         $stmt->close();
 
-        // Đánh dấu đã mở khóa cho phiên làm việc hiện tại
-        $_SESSION['pin_unlocked_notes'][$note_id] = true;
-        $ins = $conn->prepare(
-            "INSERT INTO note_pin_unlocks (note_id, user_id, session_id) VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE unlocked_at = NOW()"
-        );
-        $ins->bind_param("iis", $note_id, $user_id, $session_id);
-        $ins->execute();
-        $ins->close();
+        // Thiết lập/đổi PIN không đồng nghĩa với mở khóa. Người dùng phải xác
+        // thực lại đủ 6 số qua action=verify trước khi xem hoặc chỉnh sửa sổ.
+        unset($_SESSION['pin_unlocked_notes'][$note_id]);
+        $clear = $conn->prepare('DELETE FROM note_pin_unlocks WHERE note_id = ? AND user_id = ? AND session_id = ?');
+        if ($clear) {
+            $clear->bind_param("iis", $note_id, $user_id, $session_id);
+            $clear->execute();
+            $clear->close();
+        }
 
-        respond(true, "Đã bật bảo mật 6 số cho sổ ghi chú thành công!");
+        respond(true, "Đã bật bảo mật 6 số. Hãy nhập lại đúng PIN để mở và chỉnh sửa sổ.");
         break;
 
     case 'verify':

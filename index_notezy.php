@@ -216,6 +216,24 @@ try {
         ? (int)round(($dashboard_stats['completed'] / $dashboard_stats['total']) * 100)
         : 0;
 
+    // Show owned and shared lessons next to notes on Home, using the same
+    // timezone-aware schedule data as the timetable page.
+    $dashboard_schedules = [];
+    $schedule_stmt = $conn->prepare(
+        "SELECT t.id, t.title, TIME_FORMAT(t.start_time, '%H:%i') AS start_time, TIME_FORMAT(t.end_time, '%H:%i') AS end_time,\n"
+        . "t.specific_date, t.location, t.teacher, t.note, t.reminder_minutes, t.note_id, n.title AS linked_note_title,\n"
+        . "CASE WHEN t.user_id = ? THEN 0 ELSE 1 END AS is_shared\n"
+        . "FROM timetable t LEFT JOIN timetable_shares ts ON ts.timetable_id = t.id AND ts.shared_with_user_id = ?\n"
+        . "LEFT JOIN notes n ON n.note_id = t.note_id WHERE t.user_id = ? OR ts.id IS NOT NULL\n"
+        . "ORDER BY CASE WHEN t.specific_date IS NULL THEN 1 ELSE 0 END, t.specific_date ASC, t.start_time ASC LIMIT 8"
+    );
+    if ($schedule_stmt) {
+        $schedule_stmt->bind_param('iii', $user_id, $user_id, $user_id);
+        $schedule_stmt->execute();
+        $dashboard_schedules = $schedule_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $schedule_stmt->close();
+    }
+
     // Distinct labels across own + shared (non-archived) notes, for the filter chip bar
     $all_labels_set = [];
     foreach (array_merge($own_notes, $shared_notes) as $n) {
@@ -1419,6 +1437,27 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         </div>
         <div class="today-progress" role="progressbar" aria-label="Tiến độ hoàn thành" aria-valuenow="<?= $dashboard_progress ?>" aria-valuemin="0" aria-valuemax="100">
             <div class="today-progress__bar" style="width: <?= $dashboard_progress ?>%"></div>
+        </div>
+        <div class="mt-4 pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                <strong><i class="fas fa-bell text-warning me-1"></i>Lịch học & báo thức sắp tới</strong>
+                <a class="small fw-semibold" href="thoikhoabieu.php">Xem toàn bộ</a>
+            </div>
+            <?php if (!empty($dashboard_schedules)): ?>
+                <div class="row g-2">
+                    <?php foreach ($dashboard_schedules as $schedule): ?>
+                        <div class="col-12 col-lg-6"><div class="border rounded-3 p-3 bg-white h-100">
+                            <div class="d-flex justify-content-between gap-2"><strong><?= htmlspecialchars($schedule['title']) ?></strong><?php if ((int)$schedule['is_shared'] === 1): ?><span class="badge text-bg-light">Được chia sẻ</span><?php endif; ?></div>
+                            <div class="small text-muted mt-1"><i class="far fa-clock me-1"></i><?= htmlspecialchars($schedule['start_time']) ?>–<?= htmlspecialchars($schedule['end_time']) ?><?= !empty($schedule['specific_date']) ? ' · ' . htmlspecialchars(date('d/m/Y', strtotime($schedule['specific_date']))) : '' ?></div>
+                            <?php if ((int)$schedule['reminder_minutes'] >= 0): ?><div class="small text-warning mt-1"><i class="fas fa-bell me-1"></i>Báo trước <?= (int)$schedule['reminder_minutes'] ?> phút</div><?php endif; ?>
+                            <?php if (!empty($schedule['note'])): ?><div class="small mt-2"><?= nl2br(htmlspecialchars(mb_strimwidth($schedule['note'], 0, 180, '…', 'UTF-8'))) ?></div><?php endif; ?>
+                            <?php if (!empty($schedule['note_id'])): ?><a class="btn btn-sm btn-outline-primary mt-2" href="themghichu.php?id=<?= (int)$schedule['note_id'] ?>"><i class="fas fa-sticky-note me-1"></i><?= htmlspecialchars($schedule['linked_note_title'] ?: 'Mở ghi chú chi tiết') ?></a><?php endif; ?>
+                        </div></div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="small text-muted">Chưa có lịch học nào. Tạo lịch tại <a href="thoikhoabieu.php">Thời khóa biểu</a> hoặc gửi một ghi chú vào lịch.</div>
+            <?php endif; ?>
         </div>
     </section>
     
