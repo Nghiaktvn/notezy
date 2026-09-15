@@ -285,8 +285,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             font-weight: bold;
             color: #000000;
         }
-        /* The Notezy mark is the single navigation control.  It remains the
-           familiar purple-pink icon and expands the menu on narrow screens. */
+        /* The Notezy mark is the single header menu control. */
         .notezy-menu-button {
             appearance: none;
             display: inline-flex;
@@ -310,6 +309,28 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         .notezy-menu-button:focus-visible {
             outline: 3px solid rgba(124, 63, 188, .45);
             outline-offset: 3px;
+        }
+        .notezy-menu-button::after { display: none !important; }
+        .notezy-header-dropdown {
+            min-width: 248px;
+            padding: 8px;
+            border: 1px solid rgba(177, 88, 191, .22);
+            border-radius: 16px;
+            box-shadow: 0 16px 36px rgba(126, 58, 145, .18);
+        }
+        .notezy-header-dropdown .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #512262;
+            font-weight: 600;
+        }
+        .notezy-header-dropdown .dropdown-item:hover,
+        .notezy-header-dropdown .dropdown-item:focus {
+            color: #ffffff;
+            background: linear-gradient(135deg, #7c3fbc, #df5ca7);
         }
         .nav-link {
             color: #333333;
@@ -1174,11 +1195,22 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 <header>
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <button class="notezy-menu-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Mở hoặc đóng menu điều hướng"
-                    title="Mở hoặc đóng menu điều hướng">
-                <img src="logo.svg" alt="" width="50" height="50" />
-            </button>
+            <div class="dropdown">
+                <button class="notezy-menu-button dropdown-toggle" type="button" id="notezyHeaderMenu"
+                        data-bs-toggle="dropdown" aria-expanded="false" aria-label="Mở menu chức năng Notezy"
+                        title="Mở menu chức năng">
+                    <img src="logo.svg" alt="" width="50" height="50" />
+                </button>
+                <ul class="dropdown-menu notezy-header-dropdown" aria-labelledby="notezyHeaderMenu">
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalAddNote"><i class="fas fa-plus-circle"></i>Tạo ghi chú mới</button></li>
+                    <li><button type="button" class="dropdown-item" onclick="openHeaderSharePicker()"><i class="fas fa-user-plus"></i>Chia sẻ với người khác</button></li>
+                    <li><a class="dropdown-item" href="thoikhoabieu.php"><i class="fas fa-calendar-plus"></i>Thêm vào thời khóa biểu</a></li>
+                    <li><a class="dropdown-item" href="labels.php"><i class="fas fa-tags"></i>Quản lý nhãn</a></li>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i>Tìm kiếm ghi chú</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button type="button" class="dropdown-item" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles"></i>Trợ lý AI</button></li>
+                </ul>
+            </div>
             <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
@@ -2079,6 +2111,36 @@ $card_style = '';
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header share picker: select a notebook before opening the existing permission flow. -->
+    <div class="modal fade" id="headerSharePickerModal" tabindex="-1" aria-labelledby="headerSharePickerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 18px;">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="headerSharePickerModalLabel"><i class="fas fa-user-plus me-2 text-primary"></i>Chia sẻ sổ ghi chú</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <form id="headerSharePickerForm">
+                    <div class="modal-body">
+                        <label for="headerShareNoteSelect" class="form-label fw-semibold">Chọn sổ muốn chia sẻ</label>
+                        <select class="form-select" id="headerShareNoteSelect" required>
+                            <option value="">-- Chọn sổ ghi chú --</option>
+                            <?php foreach ($own_notes as $header_note): ?>
+                                <option value="<?= (int)$header_note['note_id'] ?>" data-title="<?= htmlspecialchars($header_note['title'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars($header_note['title']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">Bước tiếp theo, bạn nhập email hoặc tên người dùng và chọn quyền xem hoặc chỉnh sửa.</div>
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="fas fa-arrow-right me-1"></i>Tiếp tục</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -3133,6 +3195,29 @@ $card_style = '';
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
+
+        function openHeaderSharePicker() {
+            const select = document.getElementById('headerShareNoteSelect');
+            if (!select || select.options.length <= 1) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Chưa có sổ để chia sẻ',
+                    text: 'Hãy tạo ít nhất một sổ ghi chú trước khi chia sẻ với người khác.'
+                });
+                return;
+            }
+            select.value = '';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('headerSharePickerModal')).show();
+        }
+
+        document.getElementById('headerSharePickerForm')?.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const select = document.getElementById('headerShareNoteSelect');
+            const noteId = Number(select?.value || 0);
+            if (!noteId) return;
+            bootstrap.Modal.getInstance(document.getElementById('headerSharePickerModal'))?.hide();
+            openShareNoteModal(noteId);
+        });
 
         // Open Share Note Modal & Load Collaborators
         async function openShareNoteModal(noteId) {
