@@ -333,40 +333,50 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         .notezy-header-dropdown {
             position: fixed !important;
             top: 70px !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            width: min(330px, calc(100vw - 28px));
+            bottom: auto !important;
+            left: 12px !important;
+            width: min(320px, calc(100vw - 28px));
             min-width: 0;
             margin: 0 !important;
-            padding: 18px 14px 24px;
+            padding: 10px;
             border: 1px solid rgba(177, 88, 191, .24);
-            border-radius: 0 22px 22px 0;
-            box-shadow: 18px 14px 42px rgba(81, 34, 98, .24);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 12px 18px 40px rgba(81, 34, 98, .22);
             background: linear-gradient(160deg, rgba(255, 253, 255, .99), rgba(252, 240, 255, .98));
-            overflow-y: auto;
+            overflow: hidden;
             z-index: 1030;
+            transform: none !important;
         }
         .notezy-header-dropdown::before {
-            display: block;
-            margin: 0 8px 14px;
-            color: #682c81;
-            font-size: .83rem;
-            font-weight: 800;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            content: 'Không gian Notezy';
+            display: none;
         }
         .notezy-header-dropdown.show {
-            animation: notezyDrawerIn .32s cubic-bezier(.22, .8, .2, 1) both;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 6px;
+            animation: notezyHeaderActionsIn .32s cubic-bezier(.22, .8, .2, 1) both;
+        }
+        .notezy-header-dropdown.show li {
+            flex: 0 0 auto;
+            max-width: none;
+        }
+        .notezy-header-dropdown.show li:nth-child(6) {
+            display: none;
         }
         .notezy-header-dropdown .dropdown-item {
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             gap: 10px;
+            min-height: 46px;
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: 12px;
             color: #512262;
             font-weight: 600;
+            text-align: left;
         }
         .notezy-header-dropdown .dropdown-item:hover,
         .notezy-header-dropdown .dropdown-item:focus {
@@ -376,15 +386,15 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         .notezy-header-dropdown.show .dropdown-item {
             animation: notezyDrawerItemIn .26s ease both;
         }
-        .notezy-header-dropdown.show li:nth-child(1) .dropdown-item { animation-delay: .03s; }
-        .notezy-header-dropdown.show li:nth-child(2) .dropdown-item { animation-delay: .06s; }
-        .notezy-header-dropdown.show li:nth-child(3) .dropdown-item { animation-delay: .09s; }
-        .notezy-header-dropdown.show li:nth-child(4) .dropdown-item { animation-delay: .12s; }
-        .notezy-header-dropdown.show li:nth-child(5) .dropdown-item { animation-delay: .15s; }
-        .notezy-header-dropdown.show li:nth-child(7) .dropdown-item { animation-delay: .18s; }
-        @keyframes notezyDrawerIn {
-            from { opacity: .5; transform: translateX(-104%); }
-            to { opacity: 1; transform: translateX(0); }
+        .notezy-header-dropdown.show li:nth-child(1) .dropdown-item { animation-delay: .02s; }
+        .notezy-header-dropdown.show li:nth-child(2) .dropdown-item { animation-delay: .05s; }
+        .notezy-header-dropdown.show li:nth-child(3) .dropdown-item { animation-delay: .08s; }
+        .notezy-header-dropdown.show li:nth-child(4) .dropdown-item { animation-delay: .11s; }
+        .notezy-header-dropdown.show li:nth-child(5) .dropdown-item { animation-delay: .14s; }
+        .notezy-header-dropdown.show li:nth-child(7) .dropdown-item { animation-delay: .17s; }
+        @keyframes notezyHeaderActionsIn {
+            from { opacity: .2; transform: translateX(-54px) scaleX(.84); }
+            to { opacity: 1; transform: translateX(0) scaleX(1); }
         }
         @keyframes notezyDrawerItemIn {
             from { opacity: 0; transform: translateX(-12px); }
@@ -393,14 +403,19 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         @media (max-width: 991.98px) {
             .notezy-header-dropdown {
                 top: 70px !important;
-                width: min(320px, calc(100vw - 42px));
-                padding: 18px 12px 24px;
-                border-radius: 0 20px 20px 0;
-                box-shadow: 16px 14px 42px rgba(81, 34, 98, .26);
+                left: 8px !important;
+                width: min(320px, calc(100vw - 24px));
+                padding: 8px;
+                border-radius: 0 0 18px 18px;
+                box-shadow: 10px 16px 38px rgba(81, 34, 98, .26);
+            }
+            .notezy-header-dropdown.show li {
+                flex: 0 0 auto;
+                max-width: none;
             }
             .notezy-header-dropdown .dropdown-item {
-                min-height: 48px;
-                font-size: 1rem;
+                min-height: 44px;
+                font-size: .9rem;
             }
         }
         @media (prefers-reduced-motion: reduce) {
@@ -2556,6 +2571,17 @@ $card_style = '';
             const backdrop = document.getElementById('notezyMenuBackdrop');
 
             if (!menuButton || !backdrop || !window.bootstrap) return;
+
+            // The single Notezy mark is the home control away from the dashboard.
+            // On this dashboard it reveals the app's quick-action header strip.
+            menuButton.addEventListener('click', function (event) {
+                const currentPath = window.location.pathname.replace(/\/+$/, '');
+                if (!currentPath.endsWith('/index_notezy.php')) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    window.location.href = 'index_notezy.php';
+                }
+            }, true);
 
             menuButton.addEventListener('shown.bs.dropdown', function () {
                 document.body.classList.add('notezy-menu-open');
