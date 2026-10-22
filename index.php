@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         }
     </style>
     <link rel="stylesheet" href="CSS/landing-refresh.css?v=1" />
-    <link rel="stylesheet" href="CSS/landing-rebuild.css?v=2" />
+    <link rel="stylesheet" href="CSS/landing-rebuild.css?v=3" />
 </head>
 <body class="landing-refresh text-gray-900 antialiased">
     <div id="root"></div>

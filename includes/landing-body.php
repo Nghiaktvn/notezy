@@ -1,6 +1,9 @@
                     <main className="nz2-main">
                         <section id="home" className="nz2-hero" aria-label="Giới thiệu Notezy">
                             <div className="nz2-hero-copy">
+                                <video className="nz2-hero-motion" autoPlay muted loop playsInline preload="metadata" poster="assets/notezy-magic-hero-2026.png" aria-hidden="true" tabIndex="-1">
+                                    <source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />
+                                </video>
                                 <span className="nz2-kicker">✦ NOTEZY · YOUR MAGICAL NOTEBOOK</span>
                                 <h1>Mỗi ý tưởng xứng đáng có <em>một nơi thật diệu kỳ.</em></h1>
                                 <p>Viết tự do, sắp xếp dễ dàng và tìm lại mọi điều quan trọng trong thế giới sổ tay đầy màu sắc của bạn.</p>
@@ -9,14 +12,9 @@
                                 </div>
                                 <div className="nz2-hero-points"><span>✦ Ghi chú thông minh</span><span>✦ Không gian riêng</span><span>✦ Cộng tác dễ dàng</span></div>
                             </div>
-                            <div className="nz2-stage" aria-label="Video giới thiệu Notezy 20 giây">
+                            <div className="nz2-stage">
                                 <div className="nz2-stage-glow" aria-hidden="true" />
-                                <div className="nz2-video-frame">
-                                    <video autoPlay muted loop playsInline controls preload="auto" poster="assets/notezy-video-poster.png" aria-label="Video giới thiệu Notezy dài 20 giây">
-                                        <source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />
-                                        Trình duyệt của bạn không hỗ trợ video.
-                                    </video>
-                                </div>
+                                <img src="assets/notezy-video-poster.png" alt="Cuốn sổ Notezy hoạt hình cầm bút" loading="eager" decoding="async" />
                             </div>
                         </section>
 
