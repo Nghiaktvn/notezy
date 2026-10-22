@@ -11,7 +11,12 @@
                             </div>
                             <div className="nz2-stage" aria-label="Video giới thiệu Notezy 20 giây">
                                 <div className="nz2-stage-glow" aria-hidden="true" />
-                                <video autoPlay muted loop playsInline controls preload="metadata" poster="assets/notezy-magic-hero-2026.png" aria-label="Video giới thiệu Notezy dài 20 giây"><source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />Trình duyệt của bạn không hỗ trợ video.</video>
+                                <div className="nz2-video-frame">
+                                    <video autoPlay muted loop playsInline controls preload="auto" poster="assets/notezy-video-poster.png" aria-label="Video giới thiệu Notezy dài 20 giây">
+                                        <source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />
+                                        Trình duyệt của bạn không hỗ trợ video.
+                                    </video>
+                                </div>
                             </div>
                         </section>
 
