@@ -1,9 +1,9 @@
                     <main className="nz2-main">
                         <section id="home" className="nz2-hero" aria-label="Giới thiệu Notezy">
+                            <video className="nz2-hero-motion" autoPlay muted loop playsInline preload="auto" poster="assets/notezy-magic-hero-2026.png" aria-hidden="true" tabIndex={-1}>
+                                <source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />
+                            </video>
                             <div className="nz2-hero-copy">
-                                <video className="nz2-hero-motion" autoPlay muted loop playsInline preload="metadata" poster="assets/notezy-magic-hero-2026.png" aria-hidden="true" tabIndex="-1">
-                                    <source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />
-                                </video>
                                 <span className="nz2-kicker">✦ NOTEZY · YOUR MAGICAL NOTEBOOK</span>
                                 <h1>Mỗi ý tưởng xứng đáng có <em>một nơi thật diệu kỳ.</em></h1>
                                 <p>Viết tự do, sắp xếp dễ dàng và tìm lại mọi điều quan trọng trong thế giới sổ tay đầy màu sắc của bạn.</p>
