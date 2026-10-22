@@ -5,14 +5,13 @@ import {
   ArrowPathIcon,
   SparklesIcon,
   LockClosedIcon,
-  DocumentTextIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 
 export default function VideoDemo() {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 100%
-  const [step, setStep] = useState(1); // 1: Note, 2: 4-digit PIN, 3: AI Copilot
+  const [step, setStep] = useState(1); // 1: Note, 2: 6-digit PIN, 3: AI Copilot
 
   useEffect(() => {
     let timer;
@@ -29,7 +28,7 @@ export default function VideoDemo() {
           else setStep(3);
           return next;
         });
-      }, 500);
+      }, 1125);
     }
     return () => clearInterval(timer);
   }, [playing]);
@@ -41,16 +40,16 @@ export default function VideoDemo() {
   };
 
   return (
-    <section id="demo" className="py-20 sm:py-28 bg-white dark:bg-black transition-colors duration-300">
+    <section id="demo" className="notezy-demo-section py-20 sm:py-28 bg-white dark:bg-black transition-colors duration-300">
       <div className="mx-auto max-w-5xl px-5 text-center sm:px-8">
         <span className="text-xs font-bold uppercase tracking-widest text-green-700 bg-green-100 px-3 py-1 rounded-full dark:text-red-400 dark:bg-red-950/60 border border-green-200 dark:border-red-900/60">
           Demo trực quan
         </span>
         <h2 className="mt-4 font-[var(--font-display)] text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-950 dark:text-white uppercase">
-          See Notezy in action
+          Notezy trong một phút
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm sm:text-base text-gray-600 dark:text-gray-400">
-          Trải nghiệm mô phỏng cách ghi chú, bảo mật mã 4 số và trợ lý AI phối hợp trong 30–60 giây.
+          Trải nghiệm mô phỏng cách ghi chú, bảo mật mã 6 số và trợ lý AI phối hợp trong khoảng 45 giây.
         </p>
 
         {/* Video Frame */}
@@ -82,7 +81,7 @@ export default function VideoDemo() {
                   <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-300">
                     {step === 1 && 'Bước 1/3: Ghi chú nhanh & Nhãn màu'}
-                    {step === 2 && 'Bước 2/3: Khóa bảo mật sổ bằng mã 4 số'}
+                    {step === 2 && 'Bước 2/3: Khóa bảo mật sổ bằng mã 6 số'}
                     {step === 3 && 'Bước 3/3: Trợ lý AI tóm tắt & lập danh sách việc'}
                   </span>
                 </div>
@@ -105,7 +104,7 @@ export default function VideoDemo() {
                     </div>
                     <h4 className="text-sm font-bold text-white">Họp chiến lược Quý 4</h4>
                     <p className="text-xs text-gray-300 mt-2 leading-relaxed">
-                      "Thảo luận về nâng cấp hệ sinh thái Notezy với chế độ Sáng (Trắng-Xanh) và Tối (Đen-Đỏ), kết hợp khóa bảo mật số an toàn..."
+                      "Thảo luận về nâng cấp không gian ghi chú Notezy với sắc kem, tím dịu và khả năng bảo vệ sổ bằng PIN 6 số..."
                     </p>
                   </div>
                 )}
@@ -115,7 +114,7 @@ export default function VideoDemo() {
                     <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-400">
                       <LockClosedIcon className="h-5 w-5" />
                     </div>
-                    <h4 className="text-sm font-bold text-white">Đã kích hoạt bảo mật 4 số</h4>
+                    <h4 className="text-sm font-bold text-white">Đã kích hoạt bảo mật 6 số</h4>
                     <div className="my-3 flex justify-center gap-2">
                       {['2', '0', '2', '6'].map((num, i) => (
                         <span key={i} className="h-8 w-8 rounded-lg bg-black border border-white/20 flex items-center justify-center font-bold text-base text-green-400 dark:text-red-400">
@@ -124,7 +123,7 @@ export default function VideoDemo() {
                       ))}
                     </div>
                     <p className="text-xs text-gray-400">
-                      Nội dung được che chắn an toàn. Nhập đúng 4 số để xem và tùy chỉnh sự kiện.
+                      Nội dung được che chắn an toàn. Nhập đúng PIN 6 số để xem và tùy chỉnh sự kiện.
                     </p>
                   </div>
                 )}
@@ -142,7 +141,7 @@ export default function VideoDemo() {
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircleIcon className="h-4 w-4 text-green-500 dark:text-red-500" />
-                        <span>Kích hoạt nút Bảo mật 4 số trên toàn bộ sổ</span>
+                        <span>Kích hoạt bảo mật PIN 6 số cho sổ cần giữ riêng tư</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircleIcon className="h-4 w-4 text-green-500 dark:text-red-500" />

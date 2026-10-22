@@ -3,37 +3,41 @@
   right: 20px;
   bottom: 20px;
   z-index: 1080;
-  width: 56px;
-  height: 56px;
+  width: 66px;
+  height: 66px;
   border: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7136c9, #db55b8);
-  box-shadow: 0 10px 28px rgba(122, 63, 190, .38);
+  background: #f5f0ed;
+  border: 1px solid #dcd2e1;
+  box-shadow: 0 10px 28px rgba(91, 79, 112, .24);
   cursor: pointer;
   display: grid;
   place-items: center;
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.notezy-ai-fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 14px 32px rgba(122, 63, 190, .48); }
-.notezy-ai-fab img { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(255,255,255,.25)); }
+.notezy-ai-fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 32px rgba(91, 79, 112, .34); }
+.notezy-ai-fab img { width: 61px; height: 61px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(91,79,112,.15)); animation: notezy-ai-float 5s ease-in-out infinite; }
+.notezy-ai-fab:focus-visible { outline: 3px solid #756c91; outline-offset: 4px; }
+@keyframes notezy-ai-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .notezy-ai-fab img { animation: none; } }
 .notezy-ai-panel {
   position: fixed;
   right: 20px;
-  bottom: 88px;
+  bottom: 98px;
   z-index: 1080;
   width: min(420px, calc(100vw - 24px));
   height: min(640px, calc(100vh - 120px));
   background: #fff;
-  border: 1px solid rgba(155, 84, 210, .22);
+  border: 1px solid #e4dce9;
   border-radius: 20px;
-  box-shadow: 0 20px 52px rgba(94, 49, 150, .24);
+  box-shadow: 0 20px 52px rgba(62, 54, 78, .24);
   display: none;
   flex-direction: column;
   overflow: hidden;
 }
 .notezy-ai-panel.open { display: flex; }
 .notezy-ai-header {
-  background: linear-gradient(125deg, #652cb2, #c445b3 72%, #f192bf);
+  background: linear-gradient(125deg, #625a7e, #847798);
   color: #fff;
   padding: 12px 16px;
   display: flex;
@@ -56,7 +60,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 12px;
-  background: radial-gradient(circle at top right, #fdeffd, #faf8ff 48%, #f6f1ff);
+  background: radial-gradient(circle at top right, #f0eaf2, #faf8f6 54%, #f5f4ef);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -72,18 +76,18 @@
 }
 .notezy-ai-bubble.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, #7136c9, #d757b4);
+  background: #756c91;
   color: #fff;
 }
 .notezy-ai-bubble.assistant {
   align-self: flex-start;
   background: #fff;
-  border: 1px solid #ead8fa;
+  border: 1px solid #e6dfeb;
 }
 .notezy-ai-card {
   align-self: stretch;
   background: #fff;
-  border: 1px solid #ead8fa;
+  border: 1px solid #e6dfeb;
   border-radius: 12px;
   padding: 12px;
 }
@@ -99,16 +103,16 @@
 }
 .notezy-ai-labels { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .notezy-ai-labels span {
-  background: #f1e5fa;
-  color: #5c277d;
+  background: #eee9f3;
+  color: #625a7e;
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 12px;
 }
 .notezy-ai-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .notezy-ai-actions button {
-  border: 1px solid #7136c9;
-  background: #7136c9;
+  border: 1px solid #756c91;
+  background: #756c91;
   color: #fff;
   border-radius: 8px;
   padding: 6px 10px;
@@ -117,7 +121,7 @@
 }
 .notezy-ai-actions button.secondary {
   background: #fff;
-  color: #5c277d;
+  color: #625a7e;
 }
 .notezy-ai-actions button.danger { background: #b42318; border-color: #b42318; }
 .notezy-ai-quick-actions {
@@ -125,15 +129,15 @@
   gap: 7px;
   padding: 9px 10px 0;
   overflow-x: auto;
-  background: #fefcff;
+  background: #faf8f6;
   scrollbar-width: thin;
 }
 .notezy-ai-quick-actions button {
   flex: 0 0 auto;
-  border: 1px solid #dec6ef;
+  border: 1px solid #ded5e4;
   border-radius: 999px;
   background: #fff;
-  color: #64277d;
+  color: #625a7e;
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 650;
@@ -142,7 +146,7 @@
 }
 .notezy-ai-quick-actions button:hover,
 .notezy-ai-quick-actions button:focus-visible {
-  background: #f3e8ff;
+  background: #eee9f3;
   transform: translateY(-1px);
 }
 .notezy-ai-quick-actions button:disabled { cursor: wait; opacity: .6; }
@@ -151,7 +155,7 @@
   gap: 8px;
   padding: 10px;
   border-top: 1px solid #eee;
-  background: #fefcff;
+  background: #faf8f6;
 }
 .notezy-ai-input textarea {
   flex: 1;
@@ -164,7 +168,7 @@
   font: inherit;
 }
 .notezy-ai-input button {
-  background: linear-gradient(135deg, #7136c9, #d757b4);
+  background: #756c91;
   color: #fff;
   border: 0;
   border-radius: 10px;
@@ -178,7 +182,32 @@
     right: 8px;
     left: 8px;
     width: auto;
-    bottom: 80px;
+    bottom: 90px;
     height: min(70vh, 620px);
   }
 }
+
+/* The notebook mascot is the chat invitation; only paint/transform animate. */
+.notezy-ai-fab { isolation: isolate; overflow: visible; background: linear-gradient(145deg,#fff8ff,#efe4fb); border: 2px solid #c9a9e8; box-shadow: 0 9px 0 #ddc9eb,0 19px 35px #73518b35; }
+.notezy-ai-fab::before { content:""; position:absolute; inset:-9px; border:2px solid #d4b9e8; border-radius:50%; opacity:.55; animation:notezy-ai-pulse 3.5s ease-out infinite; pointer-events:none; }
+.notezy-ai-fab img { position:relative; z-index:1; width:68px; height:68px; animation:notezy-ai-wave 4.8s ease-in-out infinite; transform-origin:50% 82%; }
+.notezy-ai-fab:hover img { animation-duration:1.8s; }
+.notezy-ai-fab[aria-expanded="true"]::before { animation:none; opacity:0; }
+.notezy-ai-fab__prompt { position:absolute; right:64px; bottom:39px; width:max-content; max-width:150px; padding:9px 14px; border-radius:16px 16px 4px 16px; background:#fff; color:#674b82; font-size:12px; font-weight:800; box-shadow:0 8px 24px #6948812e; border:1px solid #e8d8f0; animation:notezy-ai-nudge 5s ease-in-out infinite; }
+.notezy-ai-fab[aria-expanded="true"] .notezy-ai-fab__prompt { opacity:0; pointer-events:none; }
+.notezy-ai-panel { border-radius:25px; border-color:#e8d6f1; box-shadow:0 25px 65px #48345a38; transform-origin:bottom right; }
+.notezy-ai-panel.open { animation:notezy-ai-pop .3s cubic-bezier(.2,.8,.2,1) both; }
+.notezy-ai-header { background:linear-gradient(120deg,#70508f,#a475c2 60%,#c798be); padding:12px 16px; }
+.notezy-ai-brand img { width:46px; height:46px; filter:drop-shadow(0 5px 7px #4f326e65); animation:notezy-ai-wave 5s ease-in-out infinite; }
+.notezy-ai-panel.is-thinking .notezy-ai-brand img { animation:notezy-ai-think .85s ease-in-out infinite; }
+.notezy-ai-bubble.assistant { border-radius:6px 18px 18px 18px; box-shadow:0 5px 15px #6551710e; }
+.notezy-ai-bubble.user { border-radius:18px 6px 18px 18px; background:#8d67b5; }
+.notezy-ai-input textarea:focus-visible { outline:3px solid #c9ade2; outline-offset:1px; border-color:#9771bb; }
+.notezy-ai-input button:hover,.notezy-ai-actions button:hover { filter:brightness(1.08); transform:translateY(-1px); }
+@keyframes notezy-ai-pulse { 0% { transform:scale(.9); opacity:.5; } 70%,100% { transform:scale(1.35); opacity:0; } }
+@keyframes notezy-ai-wave { 0%,100% { transform:translateY(0) rotate(-3deg); } 25% { transform:translateY(-5px) rotate(3deg); } 50% { transform:translateY(-8px) rotate(-2deg); } 75% { transform:translateY(-3px) rotate(2deg); } }
+@keyframes notezy-ai-nudge { 0%,70%,100% { transform:translateY(0); } 80% { transform:translateY(-6px); } 90% { transform:translateY(0); } }
+@keyframes notezy-ai-think { 50% { transform:rotate(5deg) translateY(-4px); } }
+@keyframes notezy-ai-pop { from { opacity:0; transform:translateY(15px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media (max-width:576px) { .notezy-ai-fab__prompt { display:none; } }
+@media (prefers-reduced-motion:reduce) { .notezy-ai-fab::before,.notezy-ai-fab img,.notezy-ai-fab__prompt,.notezy-ai-brand img,.notezy-ai-panel.open,.notezy-ai-panel.is-thinking .notezy-ai-brand img { animation:none !important; } }

@@ -173,8 +173,16 @@ class MockProvider(LlmProvider):
 
         if any(x in lower for x in (
             "tìm", "find", "search", "related", "liên quan",
-            "tim kiem", "lien quan"
+            "tim kiem", "lien quan", "nội dung gì", "ghi nội dung gì",
+            "ghi gì", "nói gì về", "what is in", "what does",
+            "dẫn nguồn", "dan nguon"
         )):
+            if any(x in lower for x in ("nội dung gì", "ghi gì", "dẫn nguồn", "what is in")):
+                return {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [_fn("search_notes", {"query": _named_note_query(last_user), "limit": 5})],
+                }
             return {
                 "role": "assistant",
                 "content": "",
@@ -272,6 +280,9 @@ def _note_query(text: str) -> str:
 
 
 def _named_note_query(text: str) -> str:
+    named_book = re.search(r"(?:sổ|ghi chú|note)\s+(.+?)\s+(?:ghi\s+)?(?:nội dung gì|gì\?|nói gì)", text, flags=re.I)
+    if named_book:
+        return named_book.group(1).strip(" .,:;?!\"'")
     match = re.search(r"(?:ghi chú|note)\s+(.+)", text, flags=re.I)
     query = match.group(1) if match else text
     query = re.split(r"[,.;?]|\s+(?:có|gồm|và|thì)\s+", query, maxsplit=1, flags=re.I)[0]

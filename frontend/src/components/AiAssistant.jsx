@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { chat, confirmAction } from '../api/ai.js'
+import { getAppUrl } from '../api/auth.js'
 
 const welcome = {
   role: 'assistant',
@@ -65,10 +66,10 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {open && (
-        <div className="bg-white w-[min(420px,calc(100vw-24px))] h-[min(640px,70vh)] rounded-2xl shadow-2xl border border-gray-200 mb-4 overflow-hidden flex flex-col dark:bg-neutral-950 dark:border-white/10">
-          <div className="bg-green-600 text-white p-3 font-semibold flex justify-between items-center dark:bg-red-600">
-            <span>Notezy AI</span>
-            <button onClick={() => setOpen(false)} className="text-white">✕</button>
+        <div className="notezy-react-ai-panel bg-white w-[min(420px,calc(100vw-24px))] h-[min(640px,70vh)] rounded-2xl shadow-2xl border border-gray-200 mb-4 overflow-hidden flex flex-col dark:bg-neutral-950 dark:border-white/10">
+          <div className="notezy-react-ai-header text-white p-3 font-semibold flex justify-between items-center">
+            <span className="flex items-center gap-2"><img src="/assets/notezy-mascot-2026.png" alt="" width="37" height="37" /> Notezy AI</span>
+            <button type="button" onClick={() => setOpen(false)} className="text-white" aria-label="Đóng trợ lý AI">✕</button>
           </div>
           <div ref={listRef} className="flex-1 p-3 overflow-y-auto bg-gray-50 flex flex-col gap-3 dark:bg-black">
             {messages.map((msg, idx) => (
@@ -103,7 +104,7 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
-            <button className="px-4 py-2 bg-green-600 text-white rounded-full text-sm transition-colors hover:bg-green-700 dark:bg-red-600 dark:hover:bg-red-500" disabled={loading}>
+            <button className="notezy-react-ai-send px-4 py-2 text-white rounded-full text-sm transition-colors" disabled={loading}>
               Gửi
             </button>
           </form>
@@ -111,10 +112,11 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
       )}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-14 h-14 bg-green-600 text-white rounded-full shadow-lg text-2xl transition-colors hover:bg-green-700 dark:bg-red-600 dark:hover:bg-red-500"
-        aria-label="Open Notezy AI"
+        className="notezy-react-ai-fab"
+        aria-label={open ? 'Đóng Notezy AI' : 'Mở Notezy AI'}
+        aria-expanded={open}
       >
-        ✦
+        <img src="/assets/notezy-mascot-2026.png" alt="" width="56" height="56" />
       </button>
     </div>
   )
@@ -140,7 +142,7 @@ function Message({ msg, onConfirm, onCancel }) {
             <span key={l} className="text-xs bg-black/10 px-2 py-1 rounded-full">{l}</span>
           ))}
         </div>
-        <a className="text-xs underline text-green-700 dark:text-red-400" href={`/edit_note.php?id=${resp.note_id}`}>Mở ghi chú</a>
+        <a className="text-xs underline text-[#625a7e]" href={getAppUrl(`edit_note.php?id=${encodeURIComponent(resp.note_id)}`)}>Mở ghi chú</a>
       </div>
     )
   }

@@ -1,5 +1,5 @@
 <?php
-function loadEnv($path) {
+function loadEnv($path, $override = false) {
     if (!file_exists($path)) {
         return;
     }
@@ -17,7 +17,7 @@ function loadEnv($path) {
         $value = trim($value, " \t\n\r\0\x0B\"'");
         $current = getenv($name);
         // Docker Compose often injects empty MAIL_* keys; fill those from .env
-        if ($current === false || $current === '') {
+        if ($override || $current === false || $current === '') {
             putenv(sprintf('%s=%s', $name, $value));
             $_ENV[$name] = $value;
             $_SERVER[$name] = $value;
@@ -26,4 +26,14 @@ function loadEnv($path) {
 }
 
 loadEnv(__DIR__ . '/.env');
+
+// Docker Compose injects its own DB_* variables and exposes /.dockerenv. On a
+// Windows/XAMPP host, load an ignored database-only override so local Apache and
+// CLI checks do not try to resolve Docker's internal hostname `db`. Mail and
+// other credentials remain sourced from the root .env unchanged.
+$notezyRuntime = getenv('NOTEZY_RUNTIME') ?: '';
+$notezyInDocker = file_exists('/.dockerenv') || $notezyRuntime === 'docker';
+if (!$notezyInDocker) {
+    loadEnv(__DIR__ . '/.env.xampp', true);
+}
 ?>

@@ -14,7 +14,8 @@ import sys
 
 
 def connect(token):
-    client = socket.create_connection(("127.0.0.1", 8766), timeout=5)
+    host = os.getenv("NOTEZY_WS_TEST_HOST", "127.0.0.1")
+    client = socket.create_connection((host, 8766), timeout=5)
     key = base64.b64encode(secrets.token_bytes(16)).decode()
     request = (
         f"GET /?token={token} HTTP/1.1\r\n"

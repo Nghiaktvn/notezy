@@ -15,9 +15,22 @@ require_once dirname(__DIR__) . '/includes/session.php';
  * (VAPID keys + a push subscription per device) wired into sw.js; that is
  * listed as a roadmap item rather than faked here.
  */
-require_once 'db.php';
+require_once __DIR__ . '/db.php';
 notezy_session_start();
 header('Content-Type: application/json');
+
+// Do not assume the compatibility include exported a usable global. Reconnect
+// explicitly so a transient XAMPP/Docker database restart produces JSON 503
+// instead of a fatal "query() on null" error in the polling loop.
+$conn = create_connect(false);
+if (!$conn || $conn->connect_error) {
+    http_response_code(503);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Database is temporarily unavailable',
+    ]);
+    exit();
+}
 
 // Fix múi giờ: đặt session timezone về +07:00 (giờ Việt Nam)
 // để NOW() trong MySQL khớp với giờ người dùng nhập vào

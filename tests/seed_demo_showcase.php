@@ -2,7 +2,27 @@
 require_once __DIR__ . '/../db.php';
 $conn = create_connect();
 
-$userId = 5; // user1
+$findUser = $conn->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
+$ownerUsername = 'user1';
+$findUser->bind_param('s', $ownerUsername);
+$findUser->execute();
+$ownerRow = $findUser->get_result()->fetch_assoc();
+$findUser->close();
+
+$findCollaborator = $conn->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
+$collaboratorUsername = 'user2';
+$findCollaborator->bind_param('s', $collaboratorUsername);
+$findCollaborator->execute();
+$collaboratorRow = $findCollaborator->get_result()->fetch_assoc();
+$findCollaborator->close();
+
+if (!$ownerRow || !$collaboratorRow) {
+    fwrite(STDERR, "Run tests/seed_demo_accounts.php before seeding the showcase.\n");
+    exit(1);
+}
+
+$userId = (int) $ownerRow['id'];
+$collaboratorId = (int) $collaboratorRow['id'];
 
 // Create demo labels for user1
 $labels = [
@@ -16,22 +36,48 @@ $labelIds = [];
 foreach ($labels as $name => $color) {
     $stmt = $conn->prepare("INSERT INTO labels (user_id, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = name");
     $stmt->bind_param("is", $userId, $name);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        throw new RuntimeException('Unable to create label: ' . $stmt->error);
+    }
+    $stmt->close();
     $stmt2 = $conn->prepare("SELECT label_id FROM labels WHERE user_id = ? AND name = ?");
     $stmt2->bind_param("is", $userId, $name);
     $stmt2->execute();
     $row = $stmt2->get_result()->fetch_assoc();
-    $labelIds[$name] = $row['label_id'];
+    $stmt2->close();
+    if (!$row) {
+        throw new RuntimeException('Unable to resolve label: ' . $name);
+    }
+    $labelIds[$name] = (int) $row['label_id'];
 }
 
 echo "Created labels: " . json_encode($labelIds) . PHP_EOL;
 
-// Clean existing test notes for user1
-$conn->query("DELETE FROM notes WHERE user_id = $userId");
+// Remove only previous showcase records; never erase unrelated user notes.
+$findDemo = $conn->prepare(
+    "SELECT note_id FROM notes
+     WHERE user_id = ? AND (
+       title LIKE '📌 [GHIM ĐẦU TRANG]%' OR
+       title LIKE '🖼️ Ghi chú có đính kèm%' OR
+       title LIKE '🔒 Ghi chú bảo mật%' OR
+       title LIKE '👥 Ghi chú Cộng tác%'
+     )"
+);
+$findDemo->bind_param('i', $userId);
+$findDemo->execute();
+$demoIds = array_column($findDemo->get_result()->fetch_all(MYSQLI_ASSOC), 'note_id');
+$findDemo->close();
+foreach ($demoIds as $demoId) {
+    $demoId = (int) $demoId;
+    $conn->query("DELETE FROM note_shares WHERE note_id = {$demoId}");
+    $conn->query("DELETE FROM note_labels WHERE note_id = {$demoId}");
+    $conn->query("DELETE FROM note_attachments WHERE note_id = {$demoId}");
+    $conn->query("DELETE FROM notes WHERE note_id = {$demoId} AND user_id = {$userId}");
+}
 
 // Note 1: Pinned Note
 $t1 = "📌 [GHIM ĐẦU TRANG] Kế hoạch kiểm thử Notezy trên Docker & MySQL";
-$c1 = "Hệ thống Notezy đang chạy trên nền tảng Docker hoàn chỉnh với 4 container:\n- Web: PHP 8.2 Apache\n- DB: MySQL 8.0\n- phpMyAdmin: Port 8081\n- AI Copilot: Python 3.12 Port 8765\n\nTất cả 24 tiêu chí trong Rubric đã được kiểm thử 100% tự động.";
+$c1 = "Hệ thống Notezy đang chạy ổn định trên XAMPP và Docker:\n- Web: PHP 8.2 Apache\n- DB: MySQL/MariaDB\n- phpMyAdmin: Port 8081\n- AI Copilot: Python 3.12 Port 8765\n\nToàn bộ 32 tiêu chí trong Rubric đã được chuẩn bị cho buổi demo.";
 $s1 = $conn->prepare("INSERT INTO notes (user_id, title, content, pinned, background_color, text_color, font_family, status, created_at, updated_at) VALUES (?, ?, ?, 1, '#fef08a', '#1e293b', 'Poppins', 'todo', NOW(), NOW())");
 $s1->bind_param("iss", $userId, $t1, $c1);
 $s1->execute();
@@ -62,9 +108,9 @@ $s4->bind_param("iss", $userId, $t4, $c4);
 $s4->execute();
 $n4 = $conn->insert_id;
 
-// Share note 4 with user2 (user ID 6)
-$sShare = $conn->prepare("INSERT INTO note_shares (note_id, shared_with_user_id, permission, shared_by_user_id) VALUES (?, 6, 'write', ?)");
-$sShare->bind_param("ii", $n4, $userId);
+// Share note 4 with the actual user2 account.
+$sShare = $conn->prepare("INSERT INTO note_shares (note_id, shared_with_user_id, permission, shared_by_user_id) VALUES (?, ?, 'write', ?)");
+$sShare->bind_param("iii", $n4, $collaboratorId, $userId);
 $sShare->execute();
 
 // Attach labels to notes
@@ -79,4 +125,4 @@ if (!empty($labelIds['Dự án Notezy'])) {
     $conn->query("INSERT IGNORE INTO note_labels (note_id, label_id) VALUES ($n4, {$labelIds['Dự án Notezy']})");
 }
 
-echo "✅ Seeded 4 showcase notes for user1 (ID 5) successfully!" . PHP_EOL;
+echo "✅ Seeded 4 showcase notes for user1 (ID {$userId}) and shared with user2 (ID {$collaboratorId}) successfully!" . PHP_EOL;

@@ -1296,6 +1296,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             border-top: 1px solid #27272a !important;
         }
     </style>
+    <link rel="stylesheet" href="CSS/dashboard-refresh.css?v=1">
 </head>
 <body>
 
@@ -1360,7 +1361,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </li>
                     <li class="nav-item dropdown avatar-container ms-2">
                         <a class="nav-link dropdown-toggle p-0" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="<?=$avatar?>" alt="Avatar" class="avatar">
+                            <img src="<?= htmlspecialchars($avatar) ?>" alt="Avatar" class="avatar" onerror="this.onerror=null;this.src='default.png'">
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                             <li><a class="dropdown-item" href="account.php"><i class="fas fa-user me-2"></i>Xem trang cá nhân</a></li>
@@ -1387,7 +1388,19 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
     <?php elseif (isset($_GET['activated'])): ?>
         <div class="alert alert-success" role="alert"><i class="fas fa-check-circle me-1"></i>Tài khoản đã được kích hoạt thành công.</div>
     <?php endif; ?>
-    <h2 class="text-center mb-4"><?= htmlspecialchars($t['note_list']) ?></h2>
+    <section class="dashboard-welcome" aria-labelledby="notezyWelcomeTitle">
+        <div class="dashboard-welcome__copy">
+            <span class="dashboard-welcome__eyebrow"><i class="fas fa-sparkles" aria-hidden="true"></i> KHÔNG GIAN CỦA BẠN</span>
+            <h1 id="notezyWelcomeTitle">Mỗi ý tưởng đều xứng đáng<br><span>có một nơi để lớn lên.</span></h1>
+            <p>Viết một dòng nhỏ hôm nay. Notezy sẽ giúp bạn giữ nó an toàn, tìm lại dễ dàng và phát triển thành điều lớn hơn.</p>
+            <div class="dashboard-welcome__actions">
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalAddNote"><i class="fas fa-plus me-2" aria-hidden="true"></i>Tạo ghi chú</button>
+                <button class="btn dashboard-welcome__ai" type="button" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles me-2" aria-hidden="true"></i>Hỏi trợ lý AI</button>
+            </div>
+        </div>
+        <img class="dashboard-welcome__mascot" src="assets/notezy-mascot-2026.png" alt="Linh vật sổ tay Notezy cầm bút chào đón bạn" width="1302" height="1208">
+    </section>
+    <h2 class="notezy-section-heading mb-4"><?= htmlspecialchars($t['note_list']) ?></h2>
 
     <section class="today-overview" aria-labelledby="todayOverviewTitle">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
@@ -1563,7 +1576,7 @@ $card_style = '';
                         <div class="unlocked-pwd-content" id="pwdUnlockedContent_grid_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2 text-center">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1584,7 +1597,7 @@ $card_style = '';
                         <div class="unlocked-note-content" id="unlockedContent_grid_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2 text-center">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1593,7 +1606,7 @@ $card_style = '';
                         <!-- Hiển thị nội dung đầy đủ rõ ràng -->
                         <?php if (!empty($note['image_path'])): ?>
                             <div class="mb-2 text-center">
-                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
+                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
                             </div>
                         <?php endif; ?>
                         <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1666,10 +1679,10 @@ $card_style = '';
             <?php endforeach; ?>
         <?php else: ?>
             <div class="text-center mt-4 col-12">
-                <div class="p-5 border rounded-3 bg-white shadow-sm">
-                    <i class="fas fa-sticky-note fa-3x text-muted mb-3"></i>
+                <div class="notezy-empty-state p-5 border rounded-3 bg-white shadow-sm">
+                    <img src="assets/notezy-notebooks-2026.png" alt="Minh họa những cuốn sổ tay đang chờ câu chuyện đầu tiên" width="1536" height="1024" loading="lazy">
                     <h5>Bạn chưa có ghi chú nào.</h5>
-                    <p class="text-muted">Nhấn nút "+" bên dưới hoặc nút "Thêm ghi chú" để tạo ghi chú đầu tiên!</p>
+                    <p class="text-muted">Một ý tưởng nhỏ cũng là khởi đầu tuyệt vời. Hãy viết ghi chú đầu tiên của bạn.</p>
                     <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#modalAddNote">
                         <i class="fas fa-plus me-1"></i> Tạo sổ ghi chú mới
                     </button>
@@ -1703,7 +1716,7 @@ $card_style = '';
                         <div class="unlocked-note-content" id="unlockedContent_grid_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2 text-center">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1711,7 +1724,7 @@ $card_style = '';
                     <?php else: ?>
                         <?php if (!empty($note['image_path'])): ?>
                             <div class="mb-2 text-center">
-                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
                             </div>
                         <?php endif; ?>
                         <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1802,7 +1815,7 @@ $card_style = '';
                         </div>
                         <div class="unlocked-pwd-content" id="pwdUnlockedContent_list_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
-                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 150px; border-radius: 6px;"></div>
+                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                             <?php endif; ?>
                             <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
@@ -1816,13 +1829,13 @@ $card_style = '';
                         </div>
                         <div class="unlocked-note-content" id="unlockedContent_list_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
-                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 150px; border-radius: 6px;"></div>
+                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                             <?php endif; ?>
                             <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
                     <?php else: ?>
                         <?php if (!empty($note['image_path'])): ?>
-                            <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 150px; border-radius: 6px;"></div>
+                            <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                         <?php endif; ?>
                         <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                     <?php endif; ?>
@@ -1928,7 +1941,7 @@ $card_style = '';
                             <div class="unlocked-note-content" id="unlockedContent_list_<?= $note['note_id'] ?>" style="display:none;">
                                 <?php if (!empty($note['image_path'])): ?>
                                     <div class="mb-2">
-                                        <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
+                                        <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
                                     </div>
                                 <?php endif; ?>
                                 <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1936,7 +1949,7 @@ $card_style = '';
                         <?php else: ?>
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -2484,7 +2497,7 @@ $card_style = '';
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
-                <form id="directAddNoteForm" enctype="multipart/form-data">
+                <form id="directAddNoteForm" method="post" action="themghichu.php" enctype="multipart/form-data">
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label for="directNoteTitle" class="form-label fw-semibold">Tiêu đề ghi chú <span class="text-danger">*</span></label>
@@ -2536,7 +2549,7 @@ $card_style = '';
                             </div>
                             <div id="directPinWrapper" style="display:none;" class="mt-2">
                                 <label for="directNotePin" class="form-label small fw-semibold">Nhập mã bảo mật 6 số (000000 - 999999):</label>
-                                <input type="password" class="form-control fw-bold" id="directNotePin" name="note_pin" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="•••••• (6 số)" style="letter-spacing: 6px; max-width: 180px; font-size: 1.1rem;" autocomplete="off">
+                                <input type="password" class="form-control fw-bold" id="directNotePin" name="note_pin" maxlength="6" pattern="\d{6}" inputmode="numeric" placeholder="•••••• (6 số)" style="letter-spacing: 6px; max-width: 180px; font-size: 1.1rem;" autocomplete="new-password" disabled>
                                 <small class="text-muted d-block mt-1">Người được chia sẻ cũng cần nhập đúng PIN 6 số do chủ sở hữu cung cấp.</small>
                             </div>
                         </div>
@@ -2565,7 +2578,6 @@ $card_style = '';
         </div>
     </div>
 
-    <!-- FOOTER -->
     <footer class="bg-dark text-white-50 pt-5 pb-3 mt-5">
         <div class="container">
             <div class="row">
@@ -3569,6 +3581,7 @@ $card_style = '';
                     .then(response => response.text())
                     .then(data => {
                         ownNotesGrid.innerHTML = data;
+                        ownNotesGrid.style.display = 'grid';
                         sharedNotesGrid.style.display = 'none';
                         ownNotesList.style.display = 'none';
                         sharedNotesList.style.display = 'none';
@@ -3677,12 +3690,14 @@ function toggleDirectPinInput(checkbox) {
     const input = document.getElementById('directNotePin');
     if (checkbox.checked) {
         wrapper.style.display = 'block';
+        input.disabled = false;
         input.setAttribute('required', 'required');
         input.focus();
     } else {
         wrapper.style.display = 'none';
         input.removeAttribute('required');
         input.value = '';
+        input.disabled = true;
     }
 }
 
@@ -3926,6 +3941,13 @@ document.getElementById('directAddNoteForm')?.addEventListener('submit', async f
             text: 'Vui lòng nhập đúng 6 chữ số (000000 - 999999) để bảo mật sổ ghi chú.'
         });
         document.getElementById('directNotePin').focus();
+        return;
+    }
+
+    // Online saves use the native multipart POST so the note and optional image
+    // still reach PHP when this browser cannot complete a JavaScript fetch.
+    if (navigator.onLine) {
+        this.submit();
         return;
     }
 

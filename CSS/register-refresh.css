@@ -1,0 +1,31 @@
+*, *::before, *::after { box-sizing: border-box; }
+body.register-refresh { min-height: 100vh; margin: 0; background: #faf8f4 !important; color: #343344 !important; font-family: 'Segoe UI', system-ui, sans-serif; }
+.register-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; max-width: 1230px; margin: 0 auto; padding: 25px 30px; }
+.register-brand { display: inline-flex; align-items: center; gap: 9px; color: #343344 !important; text-decoration: none; font-size: 1.25rem; font-weight: 800; letter-spacing: -.04em; }
+.register-brand__mark { display: grid; place-items: center; width: 37px; height: 37px; border-radius: 11px; background: #756c91; color: #fff; font-size: 1.15rem; }
+.register-header__login { color: #625a7e !important; text-decoration: none; font-size: .9rem; font-weight: 700; }
+.register-main { display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; max-width: 1230px; min-height: calc(100vh - 145px); margin: 0 auto; padding: 0 30px 34px; gap: clamp(20px, 5vw, 85px); }
+.register-story { position: relative; overflow: hidden; padding: clamp(32px, 5vw, 70px); border: 1px solid #e3dce8; border-radius: 32px; background: radial-gradient(circle at 50% 90%, #e8e2ec 0, transparent 57%), #f2eff3; }
+.register-eyebrow { display: block; color: #776c92; font-size: .72rem; font-weight: 800; letter-spacing: .14em; }
+.register-story h1 { margin: 18px 0 12px; font-size: clamp(2.2rem, 4vw, 4rem); line-height: 1.11; font-weight: 800; letter-spacing: -.055em; }
+.register-story h1 em { color: #756c91; font-style: normal; }
+.register-story p { max-width: 425px; color: #6d687a; line-height: 1.65; }
+.register-story img { display: block; width: min(100%, 570px); height: auto; margin: 15px auto -30px; filter: drop-shadow(0 24px 19px #3c344b22); }
+.register-form-panel { position: relative; width: 100%; max-width: 470px; margin: 0 auto; padding: 20px 0; }
+.register-mascot { display: block; width: 74px; height: 70px; object-fit: contain; margin-bottom: 10px; }
+.register-form-panel h2 { margin: 8px 0 5px; font-size: clamp(1.8rem, 3vw, 2.25rem); font-weight: 800; letter-spacing: -.04em; }
+.register-intro { margin-bottom: 28px; color: #76717e; }
+.register-field { margin-bottom: 17px; }
+.register-field label { display: block; margin-bottom: 7px; color: #454257; font-size: .87rem; font-weight: 700; }
+.register-field .form-control { width: 100%; min-height: 48px; padding: 11px 14px; border: 1px solid #dfd9df; border-radius: 12px; background: #fffefa; color: #343344; box-shadow: none; }
+.register-field .form-control:focus { border-color: #887ba5; box-shadow: 0 0 0 3px #887ba52b; }
+.register-submit { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 50px; margin-top: 23px; border: 0; border-radius: 13px; background: #756c91; color: white; font-weight: 800; box-shadow: 0 9px 20px #756c9130; cursor: pointer; }
+.register-submit:hover { background: #625a7e; }
+.register-signin { margin: 17px 0 0; text-align: center; color: #77717f; font-size: .9rem; }
+.register-signin a { color: #625a7e; font-weight: 800; }
+.register-error { padding: 12px 14px; border: 1px solid #e9aca8; border-radius: 11px; background: #fff3f1; color: #922d29; }
+.register-footer { max-width: 1230px; margin: 0 auto; padding: 0 30px 22px; color: #8b8590; font-size: .75rem; }
+.register-footer a { color: inherit; }
+.register-refresh a:focus-visible, .register-refresh button:focus-visible { outline: 3px solid #887ba5; outline-offset: 3px; }
+@media (max-width: 850px) { .register-main { grid-template-columns: 1fr; gap: 28px; } .register-story { padding: 30px; } .register-story img { max-width: 370px; max-height: 210px; object-fit: contain; margin-bottom: -25px; } .register-form-panel { max-width: 580px; padding-bottom: 30px; } }
+@media (max-width: 520px) { .register-header, .register-main, .register-footer { padding-left: 18px; padding-right: 18px; } .register-story { padding: 24px; border-radius: 22px; } .register-story h1 { font-size: 2.35rem; } .register-story p { font-size: .9rem; } .register-story img { max-height: 150px; margin-top: 4px; } }

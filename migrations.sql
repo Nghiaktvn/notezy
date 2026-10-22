@@ -490,3 +490,30 @@ SELECT
   password_hash,
   last_seen_at
 FROM users;
+
+-- ---------------------------------------------------------------------------
+-- Safe account overview for classroom demonstrations in phpMyAdmin.
+-- Passwords are intentionally never stored as plaintext. The view exposes the
+-- bcrypt hash and a human-readable storage status so the registration/login
+-- implementation can be verified without weakening account security.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE VIEW `demo_account_overview` AS
+SELECT
+  `id`,
+  `username`,
+  CONCAT(`firstname`, ' ', `lastname`) AS `full_name`,
+  `email`,
+  CASE WHEN `activated` = 1 THEN 'Activated' ELSE 'Pending activation' END AS `account_status`,
+  `role`,
+  `password_hash`,
+  CASE
+    WHEN `password_hash` LIKE '$2y$%' AND CHAR_LENGTH(`password_hash`) = 60
+      THEN 'Bcrypt hash (secure)'
+    ELSE 'Check password storage'
+  END AS `password_storage`,
+  `last_seen_at`
+FROM `users`
+-- Only the two deterministic classroom accounts belong in this demo view.
+-- Other registered users remain available in the normal `users` table to an
+-- authorised administrator, but are not displayed during a presentation.
+WHERE `username` IN ('user1', 'user2');

@@ -319,7 +319,7 @@ echo "SUMMARY: $passCount / $totalTests TESTS PASSED (" . round($passCount / $to
 echo "=======================================================\n";
 
 if ($passCount === $totalTests) {
-    echo "\n🎉 ALL 24/24 RUBRIC CRITERIA FULLY SATISFIED AND VERIFIED!\n";
+    echo "\n🎉 ALL AUTOMATED RUBRIC CHECKS PASSED. See RUBRIC_32_STATUS.md for the exact 32-criterion mapping.\n";
     exit(0);
 } else {
     echo "\n⚠️ SOME CRITERIA FAILED.\n";

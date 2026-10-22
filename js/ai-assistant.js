@@ -19,7 +19,7 @@
     <div class="notezy-ai-panel" id="notezyAiPanel" role="dialog" aria-label="Notezy AI">
       <div class="notezy-ai-header">
         <div class="notezy-ai-brand">
-          <img src="assets/notezy-ai-orb.png" alt="" aria-hidden="true">
+          <img src="assets/notezy-mascot-2026.png" alt="" aria-hidden="true">
           <span>Notezy AI<small>Trợ lý ghi chú của bạn</small></span>
         </div>
         <button type="button" id="notezyAiClose" aria-label="Đóng">✕</button>
@@ -36,8 +36,9 @@
         <button type="button" id="notezyAiSend">Gửi</button>
       </div>
     </div>
-    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Notezy AI">
-      <img src="assets/notezy-ai-orb.png" alt="" aria-hidden="true">
+    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Notezy AI" aria-expanded="false" aria-controls="notezyAiPanel">
+      <span class="notezy-ai-fab__prompt" aria-hidden="true">Hỏi mình nhé! ✦</span>
+      <img src="assets/notezy-mascot-2026.png" alt="" aria-hidden="true">
     </button>
   `;
 
@@ -63,6 +64,8 @@
 
   function render() {
     panel.classList.toggle('open', state.open);
+    panel.classList.toggle('is-thinking', state.loading);
+    root.querySelector('#notezyAiFab').setAttribute('aria-expanded', String(state.open));
     messagesEl.innerHTML = '';
     state.messages.forEach((msg, idx) => {
       if (msg.response && msg.response.type === 'note_created') {
@@ -218,6 +221,7 @@
   document.getElementById('notezyAiFab').addEventListener('click', () => {
     state.open = !state.open;
     render();
+    if (state.open) input.focus();
   });
   document.getElementById('notezyAiClose').addEventListener('click', () => {
     state.open = false;

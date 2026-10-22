@@ -16,7 +16,7 @@ $checks = [
     'offline label queue' => ['js/offline-store.js', 'ADD_LABEL'],
     'offline conflict message' => ['js/offline-store.js', 'Note has been changed on another device.'],
     'api conflict status' => ['api/notes.php', 'http_response_code(409)'],
-    'service worker version' => ['sw.js', 'notezy-v4'],
+    'service worker version' => ['sw.js', 'notezy-v5'],
     'health endpoint exists' => ['health.php', "'database' => 'connected'"],
     'docker healthcheck' => ['docker-compose.yml', 'http://localhost/health.php'],
     'env example exists' => ['.env.example', 'DB_HOST='],

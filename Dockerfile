@@ -8,9 +8,10 @@ RUN docker-php-ext-install mysqli pdo pdo_mysql && \
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libonig-dev \
+    libpq-dev \
     curl \
     --no-install-recommends && \
-    docker-php-ext-install mbstring intl && \
+    docker-php-ext-install mbstring intl pdo_pgsql && \
     rm -rf /var/lib/apt/lists/*
 
 # Enable Apache mod_rewrite

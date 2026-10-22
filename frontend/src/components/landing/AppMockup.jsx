@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import {
   DocumentTextIcon,
-  StarIcon,
-  TrashIcon,
-  PlusIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
   LockClosedIcon,
   LockOpenIcon,
   BellIcon,
   CheckCircleIcon,
-  TagIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AppMockup() {
@@ -19,12 +15,13 @@ export default function AppMockup() {
   const [searchQuery, setSearchQuery] = useState('dự án');
 
   return (
-    <div className="relative mx-auto w-full max-w-4xl">
+    <div className="notezy-mockup-stage relative mx-auto w-full max-w-4xl">
       {/* Tab switcher buttons matching user ASCII mockup */}
       <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
         <button
           type="button"
           onClick={() => setActiveTab('ai')}
+          aria-pressed={activeTab === 'ai'}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all ${
             activeTab === 'ai'
               ? 'bg-green-600 text-white shadow-md shadow-green-600/30 scale-105 dark:bg-red-600 dark:shadow-red-600/30'
@@ -38,6 +35,7 @@ export default function AppMockup() {
         <button
           type="button"
           onClick={() => setActiveTab('search')}
+          aria-pressed={activeTab === 'search'}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all ${
             activeTab === 'search'
               ? 'bg-green-600 text-white shadow-md shadow-green-600/30 scale-105 dark:bg-red-600 dark:shadow-red-600/30'
@@ -51,6 +49,7 @@ export default function AppMockup() {
         <button
           type="button"
           onClick={() => setActiveTab('notes')}
+          aria-pressed={activeTab === 'notes'}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all ${
             activeTab === 'notes'
               ? 'bg-green-600 text-white shadow-md shadow-green-600/30 scale-105 dark:bg-red-600 dark:shadow-red-600/30'
@@ -58,7 +57,7 @@ export default function AppMockup() {
           }`}
         >
           <DocumentTextIcon className="h-4 w-4" />
-          <span>📝 Quick notes & Khóa 4 số</span>
+          <span>📝 Ghi chú & PIN 6 số</span>
         </button>
       </div>
 
@@ -79,7 +78,7 @@ export default function AppMockup() {
       <div className="absolute -right-6 bottom-10 hidden w-48 rotate-[4deg] rounded-2xl border border-black/10 bg-white/95 p-3.5 shadow-xl backdrop-blur-md transition-transform hover:rotate-0 md:block dark:border-white/10 dark:bg-neutral-900/95">
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400">
           <LockClosedIcon className="h-3.5 w-3.5" />
-          <span>Bảo mật 4 số: [2026]</span>
+          <span>Bảo mật bằng PIN 6 số</span>
         </div>
         <p className="mt-1 text-xs font-semibold text-gray-800 dark:text-gray-200">
           Sổ nhật ký bí mật
@@ -103,7 +102,7 @@ export default function AppMockup() {
           </div>
           <div className="flex items-center gap-2 text-[11px] text-gray-400">
             <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-ping" />
-            <span>AI Online</span>
+            <span>Bản xem trước</span>
           </div>
         </div>
 
@@ -122,7 +121,7 @@ export default function AppMockup() {
                   Kế hoạch ra mắt sản phẩm Notezy 2026
                 </h4>
                 <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                  Cuộc họp thảo luận về tính năng bảo mật sổ ghi chú bằng mã 4 số, tích hợp trợ lý AI tóm tắt văn bản, và thiết kế 2 chế độ màu Sáng (Trắng + Xanh) và Tối (Đen + Đỏ). Nhóm kỹ thuật cần hoàn thành tích hợp trong tuần này...
+                  Cuộc họp thảo luận về bảo mật ghi chú bằng mã PIN 6 số, trợ lý AI hỗ trợ tóm tắt và giao diện màu dịu. Nhóm kỹ thuật cần hoàn thành tích hợp trong tuần này...
                 </p>
               </div>
 
@@ -139,11 +138,11 @@ export default function AppMockup() {
                 <div className="space-y-2 mt-3">
                   <div className="flex items-start gap-2 text-xs font-medium text-gray-800 dark:text-gray-200">
                     <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-red-500 shrink-0 mt-0.5" />
-                    <span><strong>Bảo mật 4 số:</strong> Khóa sổ an toàn, nhập mã 4 số mở nội dung và sự kiện.</span>
+                    <span><strong>Bảo mật 6 số:</strong> Khóa sổ an toàn, nhập đúng PIN để mở nội dung.</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs font-medium text-gray-800 dark:text-gray-200">
                     <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-red-500 shrink-0 mt-0.5" />
-                    <span><strong>Giao diện 2 chế độ:</strong> Sáng (Trắng + Xanh lá) & Tối (Đen + Đỏ).</span>
+                    <span><strong>Giao diện 2 chế độ:</strong> Sáng dịu và tối êm mắt.</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs font-medium text-gray-800 dark:text-gray-200">
                     <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-red-500 shrink-0 mt-0.5" />
@@ -213,10 +212,10 @@ export default function AppMockup() {
                   {isPinUnlocked ? <LockOpenIcon className="h-5 w-5" /> : <LockClosedIcon className="h-5 w-5" />}
                 </div>
                 <h5 className="text-sm font-bold text-gray-900 dark:text-white">
-                  {isPinUnlocked ? 'Sổ đã được mở khóa!' : 'Sổ ghi chú đã khóa bằng mã 4 số'}
+                  {isPinUnlocked ? 'Sổ đã được mở khóa!' : 'Sổ ghi chú đã khóa bằng mã 6 số'}
                 </h5>
                 <p className="text-xs text-gray-500 mt-1 mb-3">
-                  {isPinUnlocked ? 'Nội dung và sự kiện đã sẵn sàng để chỉnh sửa.' : 'Mã PIN bảo mật gồm 4 chữ số bí mật (0000 - 9999).'}
+                  {isPinUnlocked ? 'Nội dung và sự kiện đã sẵn sàng để chỉnh sửa.' : 'Đây là bản mô phỏng. Sổ thật yêu cầu PIN 6 số để mở.'}
                 </p>
                 <button
                   type="button"
@@ -227,7 +226,7 @@ export default function AppMockup() {
                       : 'bg-green-600 hover:bg-green-700 dark:bg-red-600 dark:hover:bg-red-500 shadow-md'
                   }`}
                 >
-                  {isPinUnlocked ? 'Khóa lại sổ' : '✦ Thử mở khóa mã 4 số'}
+                  {isPinUnlocked ? 'Khóa lại sổ' : '✦ Xem mô phỏng mở khóa'}
                 </button>
               </div>
 

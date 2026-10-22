@@ -1,15 +1,40 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AuthLayout from '../components/landing/AuthLayout.jsx';
+import { getAppUrl, submitAuth } from '../api/auth.js';
 
 export default function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // Wire this up to your auth endpoint (e.g. /register.php or an API route)
-    // once the backend integration for this React app is ready.
-    console.log('register submit', form);
+    setError('');
+    if (form.password !== form.confirmPassword) {
+      setError('Hai lần nhập mật khẩu chưa khớp.');
+      return;
+    }
+    setLoading(true);
+    const [firstname = '', ...lastNameParts] = form.name.trim().split(/\s+/);
+    try {
+      const result = await submitAuth('register.php', {
+        firstname,
+        lastname: lastNameParts.join(' '),
+        display_name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+      });
+      if (result.status === 'warning') {
+        const email = encodeURIComponent(form.email.trim());
+        window.location.assign(getAppUrl(`verify_activation.php?email=${email}`));
+        return;
+      }
+      window.location.assign(getAppUrl(result.redirect || 'index_notezy.php?unverified=1'));
+    } catch (requestError) {
+      setError(requestError.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -19,13 +44,13 @@ export default function Register() {
       footer={
         <>
           Đã có tài khoản?{' '}
-          <Link to="/login" className="font-medium text-green-700 hover:underline dark:text-red-400">
+          <Link to="/login" className="notezy-text-link">
             Đăng nhập
           </Link>
         </>
       }
     >
-      <form className="space-y-4" onSubmit={onSubmit}>
+      <form className="notezy-auth-form" onSubmit={onSubmit}>
         <Field
           label="Họ và tên"
           type="text"
@@ -47,15 +72,25 @@ export default function Register() {
           type="password"
           value={form.password}
           onChange={(v) => setForm((f) => ({ ...f, password: v }))}
-          placeholder="Tối thiểu 8 ký tự"
+          placeholder="Tối thiểu 6 ký tự"
+          required
+        />
+        <Field
+          label="Nhập lại mật khẩu"
+          type="password"
+          value={form.confirmPassword}
+          onChange={(v) => setForm((f) => ({ ...f, confirmPassword: v }))}
+          placeholder="Xác nhận mật khẩu"
           required
         />
 
+        {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
-          className="w-full rounded-full bg-green-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700 dark:bg-red-600 dark:hover:bg-red-500"
+          disabled={loading}
+          className="notezy-button notezy-button--primary notezy-auth-form__submit"
         >
-          Tạo tài khoản miễn phí
+          {loading ? 'Đang tạo tài khoản…' : 'Tạo tài khoản miễn phí'}
         </button>
       </form>
     </AuthLayout>
@@ -64,15 +99,15 @@ export default function Register() {
 
 function Field({ label, type, value, onChange, placeholder, required }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">{label}</span>
+    <label className="notezy-field">
+      <span>{label}</span>
       <input
         type={type}
         value={value}
         required={required}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-green-600 focus:ring-2 focus:ring-green-100 dark:border-white/15 dark:bg-neutral-900 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-red-600 dark:focus:ring-red-950"
+        className="notezy-field__input"
       />
     </label>
   );

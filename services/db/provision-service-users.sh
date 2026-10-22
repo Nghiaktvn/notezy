@@ -58,6 +58,19 @@ CREATE USER IF NOT EXISTS 'notezy_premium'@'%' IDENTIFIED BY '${escaped_password
 CREATE USER IF NOT EXISTS 'notezy_ai'@'%' IDENTIFIED BY '${escaped_password}';
 CREATE USER IF NOT EXISTS 'notezy_outbox'@'%' IDENTIFIED BY '${escaped_password}';
 
+# Existing named volumes keep service accounts across restarts. CREATE USER IF
+# NOT EXISTS does not rotate an existing account password, so a changed
+# SERVICE_DB_PASSWORD would otherwise leave every service failing healthchecks
+# with MySQL error 1045. Keep the accounts synchronized on every provision run.
+ALTER USER 'notezy_auth'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_user'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_note'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_file'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_collaboration'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_premium'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_ai'@'%' IDENTIFIED BY '${escaped_password}';
+ALTER USER 'notezy_outbox'@'%' IDENTIFIED BY '${escaped_password}';
+
 GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.users TO 'notezy_auth'@'%';
 GRANT SELECT, UPDATE ON \`${MYSQL_DATABASE}\`.users TO 'notezy_user'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.notes TO 'notezy_note'@'%';

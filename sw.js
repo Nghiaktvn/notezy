@@ -10,7 +10,7 @@
  * They're fetched network-first with a safe offline.html fallback only.
  */
 
-const CACHE_VERSION = 'notezy-v4';
+const CACHE_VERSION = 'notezy-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -25,7 +25,14 @@ const PRECACHE_URLS = [
     'CSS/style.css',
     'CSS/login.css',
     'CSS/register.css',
-    'CSS/reset.css'
+    'CSS/reset.css',
+    'CSS/landing-refresh.css',
+    'CSS/register-refresh.css',
+    'CSS/dashboard-refresh.css',
+    'CSS/ai-assistant.css',
+    'js/ai-assistant.js',
+    'assets/notezy-notebooks-2026.png',
+    'assets/notezy-mascot-2026.png'
 ];
 
 self.addEventListener('install', (event) => {

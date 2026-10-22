@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import NotezyLogo from './NotezyLogo.jsx';
+import { EnvelopeIcon } from '@heroicons/react/24/outline';
 
 const columns = [
   {
-    title: 'Sản phẩm',
+    title: 'Khám phá',
     links: [
-      { label: 'Tính năng', href: '#features' },
-      { label: 'AI Assistant', href: '#ai' },
-      { label: 'Bảng giá', href: '#pricing' },
+      { label: 'Home', href: '#top' },
+      { label: 'About', href: '#about' },
+      { label: 'Contact', href: '#contact' },
     ],
   },
   {
@@ -18,11 +19,17 @@ const columns = [
       { label: 'Đăng ký', to: '/register' },
     ],
   },
+  {
+    title: 'Connect',
+    links: [
+      { label: 'trungnghia282006@gmail.com', href: 'mailto:trungnghia282006@gmail.com' },
+    ],
+  },
 ];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-black/5 bg-white dark:border-white/10 dark:bg-black">
+    <footer className="notezy-footer border-t border-black/5 bg-white dark:border-white/10 dark:bg-black">
       <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         <div className="flex flex-col justify-between gap-10 sm:flex-row">
           <div className="max-w-xs">
@@ -33,11 +40,11 @@ export default function Footer() {
               </span>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-              Ghi chú thông minh hơn với AI — viết, tổ chức và tìm kiếm mọi ý tưởng của bạn.
+              Cuốn sổ học tập số cho ghi bài, ôn tập và chia sẻ kiến thức cùng AI.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:gap-16">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-10">
             {columns.map((col) => (
               <div key={col.title}>
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{col.title}</h4>
@@ -56,8 +63,9 @@ export default function Footer() {
                       <li key={l.label}>
                         <a
                           href={l.href}
-                          className="text-sm text-gray-500 transition-colors hover:text-green-700 dark:text-gray-400 dark:hover:text-red-400"
+                          className="notezy-footer__link text-sm text-gray-500 transition-colors hover:text-green-700 dark:text-gray-400 dark:hover:text-red-400"
                         >
+                          {l.href.startsWith('mailto:') && <EnvelopeIcon aria-hidden="true" />}
                           {l.label}
                         </a>
                       </li>

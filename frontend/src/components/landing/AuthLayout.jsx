@@ -4,34 +4,23 @@ import NotezyLogo from './NotezyLogo.jsx';
 import ThemeToggle from '../ThemeToggle.jsx';
 
 export default function AuthLayout({ title, subtitle, footer, children }) {
-  return (
-    <div className="flex min-h-screen flex-col bg-[#f5f3ff] transition-colors duration-300 dark:bg-black">
-      <header className="flex items-center justify-between px-5 py-4 sm:px-8">
-        <Link to="/" className="flex items-center gap-2.5">
-          <NotezyLogo className="h-7 w-7" />
-          <span className="font-[var(--font-display)] text-base font-semibold text-gray-900 dark:text-white">
-            Notezy
-          </span>
-        </Link>
-        <ThemeToggle />
-      </header>
-
-      <main className="flex flex-1 items-center justify-center px-5 py-10">
-        <div className="w-full max-w-sm">
-          <div className="text-center">
-            <h1 className="font-[var(--font-display)] text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-              {title}
-            </h1>
-            {subtitle && <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-neutral-950">
-            {children}
-          </div>
-
-          {footer && <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">{footer}</div>}
-        </div>
-      </main>
-    </div>
-  );
+  return <div className="notezy-auth">
+    <header className="notezy-auth__header"><Link to="/" className="notezy-nav__brand"><NotezyLogo className="h-9 w-9" /><span>Notezy</span></Link><ThemeToggle /></header>
+    <main className="notezy-auth__main">
+      <section className="notezy-auth__story" aria-labelledby="auth-story-title">
+        <span className="notezy-eyebrow">NOTEZY · KHÔNG GIAN GHI CHÚ</span>
+        <h1 id="auth-story-title">Ý tưởng của bạn<br /><em>xứng đáng được giữ gìn.</em></h1>
+        <p>Một cuốn sổ dịu dàng cho suy nghĩ, kế hoạch và những điều bạn muốn nhớ.</p>
+        <img src="/assets/notezy-notebooks-2026.png" width="1536" height="1024" alt="Những cuốn sổ tay hoạt hình Notezy" />
+      </section>
+      <section className="notezy-auth__form-wrap" aria-labelledby="auth-form-title">
+        <img className="notezy-auth__mascot" src="/assets/notezy-mascot-2026.png" width="1302" height="1208" alt="Linh vật sổ tay Notezy" />
+        <span className="notezy-eyebrow">CHÀO MỪNG BẠN</span>
+        <h2 id="auth-form-title">{title}</h2>
+        {subtitle && <p className="notezy-auth__subtitle">{subtitle}</p>}
+        {children}
+        {footer && <div className="notezy-auth__footer">{footer}</div>}
+      </section>
+    </main>
+  </div>;
 }
