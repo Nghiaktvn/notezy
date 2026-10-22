@@ -1,6 +1,6 @@
                     <main className="nz2-main">
                         <section id="home" className="nz2-hero" aria-label="Giới thiệu Notezy">
-                            <video className="nz2-hero-motion" autoPlay muted loop playsInline preload="auto" poster="assets/notezy-magic-hero-2026.png" aria-hidden="true" tabIndex={-1}>
+                            <video className="nz2-hero-motion" autoPlay muted loop playsInline preload="auto" aria-hidden="true" tabIndex={-1}>
                                 <source src="assets/notezy-study-loop-20s.mp4" type="video/mp4" />
                             </video>
                             <div className="nz2-hero-copy">
@@ -11,10 +11,6 @@
                                     <button type="button" onClick={() => { setAuthMode('register'); setIsAuthModalOpen(true); }}>Bắt đầu cùng Notezy <span>↗</span></button>
                                 </div>
                                 <div className="nz2-hero-points"><span>✦ Ghi chú thông minh</span><span>✦ Không gian riêng</span><span>✦ Cộng tác dễ dàng</span></div>
-                            </div>
-                            <div className="nz2-stage">
-                                <div className="nz2-stage-glow" aria-hidden="true" />
-                                <img src="assets/notezy-video-poster.png" alt="Cuốn sổ Notezy hoạt hình cầm bút" loading="eager" decoding="async" />
                             </div>
                         </section>
 
