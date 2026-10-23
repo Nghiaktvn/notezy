@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         }
     </style>
     <link rel="stylesheet" href="CSS/landing-refresh.css?v=1" />
-    <link rel="stylesheet" href="CSS/landing-rebuild.css?v=5" />
+    <link rel="stylesheet" href="CSS/landing-rebuild.css?v=6" />
 </head>
 <body class="landing-refresh text-gray-900 antialiased">
     <div id="root"></div>
@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         // ── Notezy Wave Logo Component ──────────────────────────────────────────
         function NotezyLogo({ className = "h-8 w-8" }) {
             return (
-                <div className={`notezy-brand-mark relative flex items-center justify-center rounded-xl p-2 text-white shadow-md ${className}`}>
+                <div className={`notezy-brand-mark relative flex items-center justify-center rounded-xl p-2 text-white shadow-md bg-gradient-to-br from-purple-600 via-indigo-600 to-pink-500 shadow-purple-600/30 ${className}`}>
                     <i className="fas fa-book-open text-sm"></i>
                 </div>
             );
@@ -197,6 +197,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                 error: '',
                 loading: false
             });
+
+            // 3D Tilt Interaction for Collection Cards and Hero Section
+            useEffect(() => {
+                const handleMouseMove = (e) => {
+                    const card = e.currentTarget;
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const rotateX = ((y - centerY) / centerY) * -11;
+                    const rotateY = ((x - centerX) / centerX) * 11;
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.025, 1.025, 1.025) translateY(-6px)`;
+                };
+
+                const handleMouseLeave = (e) => {
+                    const card = e.currentTarget;
+                    card.style.transform = '';
+                };
+
+                const tiltTargets = document.querySelectorAll('.nz2-card, .nz2-hero-copy, .nz2-about-visual, .nz2-contact-art');
+                tiltTargets.forEach(el => {
+                    el.addEventListener('mousemove', handleMouseMove);
+                    el.addEventListener('mouseleave', handleMouseLeave);
+                });
+
+                return () => {
+                    tiltTargets.forEach(el => {
+                        el.removeEventListener('mousemove', handleMouseMove);
+                        el.removeEventListener('mouseleave', handleMouseLeave);
+                    });
+                };
+            }, []);
 
             // Check URL for ?registered=1
             useEffect(() => {
@@ -345,18 +378,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                         <nav className={`mx-auto flex max-w-6xl items-center justify-between px-3 sm:px-5 py-2.5 rounded-full transition-all duration-300 border ${
                             isDark
                                 ? 'bg-black/90 backdrop-blur-xl border-red-900/40 shadow-xl shadow-red-950/20'
-                                : 'bg-white/90 backdrop-blur-xl border-gray-200/80 shadow-lg shadow-green-950/5'
+                                : 'bg-white/85 backdrop-blur-2xl border-white/85 shadow-lg shadow-purple-950/5'
                         }`}>
                             {/* Logo */}
                             <a href="#" className="flex items-center gap-2.5">
                                 <NotezyLogo className="h-8 w-8" />
                                 <span className="font-display text-lg font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-1.5">
                                     Notezy
-                                    <span className={`text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded-full font-bold border ${
-                                        isDark
-                                            ? 'bg-red-950/60 text-red-400 border-red-900/60'
-                                            : 'bg-green-100 text-green-700 border-green-200'
-                                    }`}>
+                                    <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full font-bold bg-purple-100/90 text-purple-700 border border-purple-200/90">
                                         AI
                                     </span>
                                 </span>
@@ -375,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 <button
                                     type="button"
                                     onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
-                                    className="rounded-full px-2 sm:px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 hover:text-green-700 dark:text-gray-200 dark:hover:bg-neutral-900 dark:hover:text-red-400 transition-all"
+                                    className="rounded-full px-2 sm:px-4 py-2 text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-all"
                                 >
                                     Đăng nhập
                                 </button>
@@ -384,11 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 <button
                                     type="button"
                                     onClick={() => { setAuthMode('register'); setIsAuthModalOpen(true); }}
-                                    className={`notezy-nav-primary hidden min-[360px]:block rounded-full px-3 sm:px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95 ${
-                                        isDark
-                                            ? 'bg-red-600 hover:bg-red-500 shadow-red-600/30'
-                                            : 'bg-green-600 hover:bg-green-700 shadow-green-600/25'
-                                    }`}
+                                    className="notezy-nav-primary hidden min-[360px]:block rounded-full px-3 sm:px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-600/30"
                                 >
                                     Bắt đầu
                                 </button>
