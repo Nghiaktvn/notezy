@@ -32,6 +32,10 @@ function login($username, $password)
         return "Mật khẩu không hợp lệ.";
     }
 
+    if ((int) $data['activated'] !== 1) {
+        return ['success' => false, 'code' => 'not_activated', 'email' => $data['email']];
+    }
+
     notezy_ensure_user_last_seen_column($conn);
     $seen = $conn->prepare("UPDATE users SET last_seen_at = NOW() WHERE id = ?");
     if ($seen) {
@@ -40,9 +44,7 @@ function login($username, $password)
         $seen->close();
     }
 
-    // The rubric explicitly permits unverified users to use the application;
-    // the dashboard displays a persistent verification notice until activation.
-    return ['success' => true, 'user' => $data, 'unverified' => ((int) $data['activated'] === 0)];
+    return ['success' => true, 'user' => $data];
 }
 
 /**
@@ -116,27 +118,4 @@ function register($username, $firstname, $lastname, $email, $password)
     return ['success' => false, 'error' => $stm->error];
 }
 
-function reset_password($email, $password)
-{
-    $conn = create_connect();
-    $sql = "SELECT COUNT(*) FROM users WHERE email = ?";
-    $stm = $conn->prepare($sql);
-    $stm->bind_param('s', $email);
-    $stm->execute();
-    $result = $stm->get_result();
-    $exists = $result->fetch_array()[0] > 0;
-    
-    if (!$exists) {
-        return "Tài khoản không tồn tại.";
-    }
-    
-    $hashed = password_hash($password, PASSWORD_DEFAULT);
-    $sql = "UPDATE users SET password_hash = ?, pass = NULL WHERE email = ?";
-    $stm = $conn->prepare($sql);
-    $stm->bind_param('ss', $hashed, $email);
-    if ($stm->execute()) {
-        return true;
-    }
-    return $stm->error;
-}
 ?>

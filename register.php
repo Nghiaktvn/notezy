@@ -22,16 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $first_name = $display_name;
     $last_name = '';
     $email = trim($_POST['email'] ?? '');
-    // Username is an internal identifier. The public registration form only
-    // asks for display name, email and password as required by the rubric.
-    $base_username = strtolower((string) preg_replace('/[^a-z0-9]+/i', '_', $display_name));
-    $base_username = trim($base_username, '_');
-    $user = substr($base_username !== '' ? $base_username : 'user', 0, 40) . '_' . substr(bin2hex(random_bytes(4)), 0, 7);
+    $user = trim($_POST['username'] ?? '');
     $pass = $_POST['pass'] ?? '';
     $pass_confirm = $_POST['pass-confirm'] ?? '';
 
     if (empty($display_name)) {
         $error = 'Vui lòng nhập tên hiển thị';
+    } elseif (!preg_match('/^[a-zA-Z0-9_]{3,40}$/', $user)) {
+        $error = 'Tên tài khoản phải có 3–40 ký tự, chỉ gồm chữ, số và dấu gạch dưới.';
     } elseif (empty($email)) {
         $error = 'Please enter your email';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -49,22 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
             $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($result['activation_token']);
             $mailRes = sendActivationEmail($email, $result['otp'], $first_name, $activationLink);
-            $_SESSION['demo_otp'] = $result['otp'];
             if ($mailRes !== true) {
                 $_SESSION['otp_mail_warning'] = ' (Lưu ý hệ thống email: ' . $mailRes . ')';
             }
-
-            // Users are signed in immediately, but receive a persistent
-            // activation notice until they use the email link or OTP.
-            session_regenerate_id(true);
-            $_SESSION['id'] = $result['user_id'] ?? 0;
-            if ($_SESSION['id'] <= 0) {
-                $fresh = login($email, $pass);
-                $_SESSION['id'] = (int) ($fresh['user']['id'] ?? 0);
-                $_SESSION['theme'] = $fresh['user']['theme'] ?? 'light';
-                $_SESSION['language'] = $fresh['user']['language'] ?? 'vi';
-            }
-            $redirect_url = 'index_notezy.php?unverified=1';
+            $redirect_url = 'verify_activation.php?email=' . urlencode($email);
 
             $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
                 || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
@@ -128,6 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="register-error" role="alert">Lỗi: <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
       <?php endif; ?>
       <form method="post" action="" id="form-res">
+        <div class="register-field">
+          <label for="username">Tên tài khoản</label>
+          <input value="<?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?>" name="username" required minlength="3" maxlength="40" pattern="[A-Za-z0-9_]+" class="form-control" type="text" placeholder="Ví dụ: nguyenvana" id="username" autocomplete="username">
+        </div>
         <div class="register-field">
           <label for="display_name">Tên hiển thị</label>
           <input value="<?= htmlspecialchars($display_name, ENT_QUOTES, 'UTF-8') ?>" name="display_name" required class="form-control" type="text" placeholder="Tên bạn muốn hiển thị" id="display_name" autocomplete="name">

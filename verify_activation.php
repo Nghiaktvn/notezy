@@ -11,6 +11,7 @@ require_once('sendmail.php');
 
 $error   = '';
 $success = '';
+$otpSent = false;
 $email   = trim($_GET['email'] ?? $_POST['email'] ?? '');
 $activationToken = trim((string) ($_GET['token'] ?? ''));
 $mailWarning = $_SESSION['otp_mail_warning'] ?? '';
@@ -30,12 +31,7 @@ if ($activationToken !== '') {
         $activate = $conn->prepare('UPDATE users SET activated = 1, activation_token_hash = NULL, activation_token_expires_at = NULL, activation_otp_hash = NULL, activation_otp_expires_at = NULL, activation_otp_attempts = 0 WHERE id = ?');
         $activate->bind_param('i', $tokenUser['id']);
         if ($activate->execute()) {
-            session_regenerate_id(true);
-            $_SESSION['id'] = (int) $tokenUser['id'];
-            $_SESSION['theme'] = $tokenUser['theme'] ?? 'light';
-            $_SESSION['language'] = $tokenUser['language'] ?? 'vi';
-            unset($_SESSION['demo_otp']);
-            header('Location: index_notezy.php?activated=1');
+            header('Location: index.php?auth=login&activated=1');
             exit();
         }
         $error = 'Không thể kích hoạt tài khoản. Vui lòng thử lại.';
@@ -91,12 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("UPDATE users SET activated = 1, activation_otp_hash = NULL, activation_otp_expires_at = NULL, activation_otp_attempts = 0, activated_tokens = NULL WHERE id = ?");
             $stmt->bind_param('i', $user['id']);
             if ($stmt->execute()) {
-                unset($_SESSION['demo_otp']);
-                session_regenerate_id(true);
-                $_SESSION['id'] = $user['id'];
-                $_SESSION['theme'] = $user['theme'] ?? 'light';
-                $_SESSION['language'] = $user['language'] ?? 'vi';
-                header('Location: index_notezy.php');
+                header('Location: index.php?auth=login&activated=1');
                 exit();
             } else {
                 $error = 'Có lỗi xảy ra. Vui lòng thử lại.';
@@ -130,10 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
                 $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($token);
                 $mailResult = sendActivationEmail($email, $otp, $user['firstname'], $activationLink);
-                $_SESSION['demo_otp'] = $otp;
                 if ($mailResult === true) {
                     $_SESSION['otp_resend_at_' . md5($email)] = time();
                     $success = 'Đã gửi lại mã OTP mới (hiệu lực 5 phút) đến email của bạn.';
+                    $otpSent = true;
                 } else {
                     $error = 'Không thể gửi email. ' . $mailResult;
                 }
@@ -179,20 +170,7 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
             <div class="alert alert-success"><?= $success ?></div>
           <?php endif; ?>
 
-          <?php if (!empty($_SESSION['demo_otp']) && empty($success)): ?>
-            <div class="alert alert-info py-2 shadow-sm border-info-subtle">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <i class="fas fa-key text-primary me-1"></i>
-                  <strong>Mã OTP xác thực (Môi trường Demo / Local):</strong>
-                </div>
-                <span class="badge bg-primary fs-6 px-3 py-2"><?= htmlspecialchars($_SESSION['demo_otp']) ?></span>
-              </div>
-              <small class="text-muted d-block mt-1">Mã đã được tạo an toàn. Bạn có thể nhập ngay 6 số trên vào ô bên dưới để kích hoạt tài khoản.</small>
-            </div>
-          <?php endif; ?>
-
-          <?php if (empty($success)): ?>
+          <?php if (empty($success) || $otpSent): ?>
           <p class="text-muted mb-3">
             Mã OTP 6 số (hiệu lực 5 phút) đã được gửi đến email <strong><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></strong>.<br>
             Vui lòng kiểm tra hộp thư (và thư mục Spam).

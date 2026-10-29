@@ -77,11 +77,7 @@ Nếu môi trường PHP chưa bật extension `mysqli`:
    - Tìm dòng: `;extension=mysqli`
    - Xóa dấu chấm phẩy `;` ở đầu dòng thành: `extension=mysqli`
    - Lưu file `php.ini`, sau đó nhấn **Stop** và **Start** lại dịch vụ Apache.
-2. **Trên Linux / Docker:**
-   ```bash
-   sudo apt-get update && sudo apt-get install -y php-mysql
-   sudo service apache2 restart
-   ```
+2. **Trên Docker:** image trong `Dockerfile` đã cài `mysqli`; nếu container lỗi, xem `docker compose logs --tail 100 web db` trong PowerShell.
 
 ### Thứ tự Import Database chuẩn
 Để đảm bảo toàn vẹn dữ liệu và các khóa ngoại:
@@ -95,30 +91,115 @@ Nếu môi trường PHP chưa bật extension `mysqli`:
 
 ---
 
-## 🐳 3. Chạy qua Docker Compose
+## 🐳 3. Chạy và demo bằng Docker Desktop trên Windows PowerShell
 
-Nếu môi trường của bạn hỗ trợ Docker:
-```bash
-docker compose up -d --build
+### 3.1. Chuẩn bị
+
+1. Mở **Docker Desktop**, chọn Linux containers/WSL 2 và chờ trạng thái *Engine running*.
+2. Mở **Windows PowerShell**. Chạy các lệnh trong thư mục gốc dự án:
+
+   ```powershell
+   Set-Location "D:\notezy_fixed_updated"
+   docker compose version
+   ```
+
+3. Nếu chưa có `.env`, tạo từ mẫu và điền các biến bắt buộc trước khi khởi động. Không ghi mật khẩu hoặc API key vào README, ảnh chụp hay Git. Với máy đã chạy và có dữ liệu MySQL, giữ `DB_PASSWORD` hiện tại để không làm hỏng kết nối tới volume cũ.
+
+   ```powershell
+   if (-not (Test-Path -LiteralPath '.env')) { Copy-Item '.env.example' '.env' }
+   notepad .env
+   ```
+
+   Cần có `AI_AGENT_SHARED_SECRET` không rỗng. Để gửi OTP bằng Gmail: `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USERNAME` là email gửi, `MAIL_FROM_ADDRESS` là cùng email đó, `MAIL_PASSWORD` là **mật khẩu ứng dụng Google**, không phải mật khẩu đăng nhập Gmail. Nếu dùng AI thật, cấu hình `LLM_PROVIDER` và `GEMINI_API_KEY` riêng. Sau khi sửa `.env` trên container đang chạy, dùng `docker compose up -d --no-deps --force-recreate web` để web đọc giá trị mới.
+
+### 3.2. Khởi động và kiểm tra
+
+```powershell
+Set-Location "D:\notezy_fixed_updated"
+docker compose --profile tools up -d --build --wait
+docker compose --profile tools ps
+(Invoke-WebRequest 'http://localhost:8080/health.php' -UseBasicParsing).StatusCode
+Start-Process 'http://localhost:8080/'
 ```
-Hệ thống đã cấu hình đầy đủ 4 dịch vụ:
-- **Web App:** `http://localhost:8080`
-- **MySQL:** `localhost:3307` (Container MySQL 8.0, tự động chạy `note.sql` và `migrations.sql`)
-- **phpMyAdmin:** `http://localhost:8081` (Đăng nhập: user `root`, pass `root_password`)
-- **AI Agent:** `http://localhost:8765` (Python FastAPI service)
+
+Kết quả mong đợi: các dịch vụ chính `web`, `db`, `ai_agent`, `collab_ws` ở trạng thái `healthy`; lệnh kiểm tra HTTP trả `200`. Ứng dụng ở `http://localhost:8080/`, phpMyAdmin (profile `tools`) ở `http://localhost:8081/`, AI Agent ở `http://localhost:8765/`, WebSocket ở port `8766`. MySQL mở trên máy tại port `3307`; web kết nối nội bộ tới `db:3306`. Nếu đã có các container dịch vụ bổ sung từ `docker-compose.services.yml`, Compose có thể báo *orphan containers*; cảnh báo này không đồng nghĩa lần khởi động thất bại. Không chạy `--remove-orphans` khi vẫn cần các dịch vụ đó.
+
+### 3.3. Tạo hai tài khoản và ghi chú mẫu
+
+```powershell
+docker compose exec -T web php tests/seed_demo_accounts.php
+docker compose exec -T web php tests/seed_demo_showcase.php
+```
+
+Lệnh đầu tạo/kích hoạt hoặc đặt lại mật khẩu cho `user1` và `user2`, rồi phải in `Login user1: SUCCESS` và `Login user2: SUCCESS`. Cả hai dùng mật khẩu demo `Password123!`. Lệnh thứ hai tạo bốn ghi chú mẫu cho `user1` (ghim, ảnh, khóa, cộng tác) và chia sẻ ghi chú cộng tác cho `user2` với quyền sửa. **Chạy lại lệnh thứ hai sẽ xóa và tạo lại các ghi chú mẫu khớp tiêu đề demo của `user1`**; không dùng sau khi đã sửa các ghi chú mẫu và muốn giữ thay đổi. Mật khẩu riêng của ghi chú khóa mẫu là `123456`.
+
+Đăng nhập `user1` trên Chrome thường, `user2` trên cửa sổ ẩn danh hoặc trình duyệt khác. Mỗi cửa sổ cần phiên đăng nhập riêng. Khi thử đăng ký tài khoản mới hoặc quên mật khẩu, dùng một email bạn thật sự đọc được; tài khoản `user1`/`user2` đã kích hoạt sẵn nên không có OTP kích hoạt để nhận.
+
+### 3.4. Kiểm thử từ PowerShell
+
+```powershell
+docker compose exec -T web php test_system_flow.php
+docker compose exec -T web php tests/verify_full_rubric_checklist.php
+docker compose exec -T web php tests/password_reset_security_check.php
+docker compose logs --tail 100 web db ai_agent collab_ws
+```
+
+`test_system_flow.php` kiểm tra backend đăng ký, kích hoạt, đăng nhập, chia sẻ và quyền cộng tác. Checklist thứ hai chạy 31 kiểm tra database/cấu hình trong giao dịch được rollback. **31/31 không có nghĩa giảng viên sẽ chấm 32/32**; hãy thực hiện các thao tác giao diện dưới đây. Không cần cài PHP trên Windows để chạy các lệnh `docker compose exec`.
 
 ---
 
-## 🧪 4. Chạy Kiểm Thử Tự Động (Automated Test Suite)
+## 4. Thứ tự demo 32 tiêu chí trong rubric
 
-Chạy kịch bản kiểm tra toàn bộ luồng hệ thống từ CLI:
-```bash
-php test_system_flow.php
+Bảng rubric chính thức nằm trong mục IV của `503073-FinalProject-V1.pdf`. Mỗi bước dưới đây có thao tác và kết quả cần quan sát; nếu kết quả khác, ghi lại thông báo/lỗi và kiểm tra log trước khi chuyển sang bước tiếp theo. Dùng dữ liệu mẫu `user1`/`user2` cho các bước ghi chú. Với bước đăng ký và quên mật khẩu, dùng **tài khoản thử riêng** và email nhận thư thật, tránh đổi mật khẩu của hai tài khoản demo đang dùng.
+
+### 4.1. Tài khoản (ID 1–8)
+
+1. **Đăng ký (1):** Tại `http://localhost:8080/`, bấm **Bắt đầu**. Trang `register.php` phải mở. Nhập tên tài khoản mới (3–40 ký tự chữ/số/gạch dưới), tên hiển thị, email nhận thư, mật khẩu tối thiểu 6 ký tự và xác nhận. Bấm **Tạo tài khoản**. Kết quả: chuyển tới trang xác thực; không được vào dashboard khi chưa kích hoạt. Thử đăng ký trùng tên/email và xác nhận có lỗi rõ ràng.
+2. **Kích hoạt (2):** Mở thư Notezy trong Inbox hoặc Spam, lấy OTP **6 số**; nhập tại `verify_activation.php`. Mã có hiệu lực 5 phút. Thử một mã sai để xem thông báo, rồi nhập mã đúng hoặc bấm **Gửi lại OTP** (chờ 60 giây giữa các lần gửi). Kết quả: báo kích hoạt thành công, OTP cũ không dùng lại được.
+3. **Đăng nhập/đăng xuất (3):** Tại trang ngoài bấm **Đăng nhập**, nhập tài khoản vừa kích hoạt; kiểm tra vào `index_notezy.php`. Bấm avatar góc trên → **Đăng xuất**; kiểm tra trở về trang ngoài và không mở được dashboard khi chưa đăng nhập lại. Với phần demo còn lại, dùng `user1` và `user2` đã seed.
+4. **Quên mật khẩu (4):** Trên form đăng nhập bấm **Quên mật khẩu?**. Nhập **đúng tên tài khoản và email** của tài khoản thử. Kiểm tra OTP nhận qua email (15 phút), nút **Gửi lại mã OTP** sau 60 giây và thông báo mã sai. Nhập mã đúng, đặt mật khẩu mới tối thiểu 6 ký tự và xác nhận trùng nhau. Kết quả: trở về trang ngoài; đăng nhập lại bằng mật khẩu mới thành công. Không nhập mật khẩu mới vào tài liệu hay ảnh chụp.
+5. **Xem hồ sơ/avatar (5):** Đăng nhập `user1`, bấm avatar → **Xem trang cá nhân**. Kiểm tra tên tài khoản, họ tên, email và avatar đúng với người đang đăng nhập.
+6. **Sửa hồ sơ/avatar (6):** Trong `account.php`, bấm **Sửa** một trường họ/tên, lưu và tải lại. Bấm **Upload Avatar**, chọn ảnh thử, kiểm tra avatar mới xuất hiện ở hồ sơ và menu. Dùng ảnh không nhạy cảm.
+7. **Đổi mật khẩu khi đã đăng nhập (7):** Kiểm tra trang hồ sơ có luồng đổi mật khẩu riêng, xác thực mật khẩu hiện tại và nhập mật khẩu mới hai lần. Thử mật khẩu cũ/sai và đăng nhập lại sau khi đổi. Nếu không có thao tác này trên UI, **ghi tiêu chí 7 là chưa đạt**, không dùng chức năng Quên mật khẩu để thay thế khi trình bày rubric.
+8. **Tùy chọn (8):** Trong `account.php`, đổi **Giao diện** Sáng/Tối và **Ngôn ngữ**, bấm **Lưu tùy chọn**; tải lại và kiểm tra lựa chọn được giữ.
+
+### 4.2. Ghi chú cơ bản (ID 9–22)
+
+9. **List view (9):** Ở dashboard `user1`, bấm **List View**; kiểm tra các ghi chú thành hàng danh sách, vẫn mở và thao tác được.
+10. **Grid view (10):** Bấm **Grid View**; kiểm tra các ghi chú thành thẻ. Ghi chú ghim mẫu nên ở đầu.
+11. **Tạo (11):** Bấm **Tạo ghi chú**, nhập tiêu đề `DEMO RUBRIC`, nội dung ngắn và bấm **Lưu ghi chú**. Quay về dashboard, kiểm tra ghi chú mới xuất hiện. Ghi lại ID nếu cần kiểm tra các bước sau.
+12. **Sửa (12):** Mở **Sửa nội dung sổ** của `DEMO RUBRIC`, đổi tiêu đề/nội dung. Tải lại và kiểm tra nội dung mới còn đó.
+13. **Xóa (13):** Tạo một ghi chú thử khác tên `DEMO XOA`, bấm **Xóa sổ** trên đúng ghi chú đó, đọc hộp xác nhận rồi xác nhận xóa. Kiểm tra ghi chú biến mất. Không xóa ghi chú mẫu hoặc ghi chú cá nhân.
+14. **Tự lưu (14):** Mở ghi chú `DEMO RUBRIC` để sửa, gõ thêm một câu rồi chờ trạng thái lưu; tải lại trang. Kết quả: nội dung vừa gõ vẫn còn mà không cần bấm lưu thủ công.
+15. **Ảnh/video (15):** Trong form sửa ghi chú, chọn một ảnh nhỏ và một video thử theo giới hạn hiển thị. Lưu, tải lại, kiểm tra ảnh/video hiển thị và truy cập được. Nếu chỉ có ô ảnh ở form nhanh, dùng trang **Sửa nội dung sổ** để kiểm tra video/tệp.
+16. **Tệp khác (16):** Trong trang sửa, chọn một PDF hoặc DOCX thử ở **Tệp đính kèm**; lưu, tải lại, tải xuống và mở được tệp. Thử với `user2` không có quyền để kiểm tra tệp không bị lộ.
+17. **Ghim (17):** Bấm **Ghim hoặc bỏ ghim sổ** trên `DEMO RUBRIC`; tải lại và kiểm tra nó ở đầu danh sách, bấm lần nữa để bỏ ghim.
+18. **Biểu tượng (18):** So sánh thẻ ghi chú ghim, khóa và đang chia sẻ trong dữ liệu mẫu. Kiểm tra dấu ghim/khóa/chia sẻ đúng trạng thái thực của từng ghi chú.
+19. **Tìm kiếm (19):** Dùng **Tìm kiếm ghi chú**, tìm `DEMO RUBRIC`, tìm một cụm trong nội dung, rồi tìm chuỗi không tồn tại. Kiểm tra đúng kết quả và trạng thái rỗng.
+20. **Nhãn (20):** Bấm **Quản lý nhãn**, thêm nhãn `Demo`, đổi tên thành `Demo mới`, kiểm tra danh sách, rồi xóa nhãn thử sau khi đã gỡ nó khỏi ghi chú.
+21. **Gắn nhãn (21):** Gắn `Demo mới` vào `DEMO RUBRIC`, lưu và tải lại; nhãn phải hiện trên thẻ. Thử bỏ nhãn rồi kiểm tra lại.
+22. **Lọc nhãn (22):** Chọn nhãn `Demo mới` trên thanh lọc; chỉ ghi chú mang nhãn này được hiển thị. Chọn **Tất cả** để khôi phục danh sách.
+
+### 4.3. Bảo vệ, chia sẻ, cộng tác và AI (ID 23–28)
+
+23. **Bật/tắt mật khẩu ghi chú (23):** Trên ghi chú thử, bấm **Đặt hoặc đổi mật khẩu**, nhập mật khẩu mới và xác nhận hai lần. Kiểm tra ghi chú bị che khi mở lại; để tắt, nhập đúng mật khẩu hiện tại và chọn gỡ bảo vệ. Dữ liệu mẫu có ghi chú khóa với mật khẩu `123456` để trình bày mở khóa.
+24. **Đổi mật khẩu ghi chú (24):** Thử mở khóa bằng mật khẩu sai, sau đó đúng; đổi sang mật khẩu mới bằng cách nhập mật khẩu cũ và mật khẩu mới hai lần. Kiểm tra mật khẩu cũ không còn mở được, mật khẩu mới mở được; sau demo có thể gỡ khóa trên ghi chú thử.
+25. **Chia sẻ/nhận (25):** Ở `user1`, bấm **Chia sẻ sổ** của ghi chú thử, nhập email của `user2` (`user2@example.com`), chọn Viewer/đọc. Ở cửa sổ `user2`, kiểm tra **Được chia sẻ với tôi**; thử sửa và xác nhận bị chặn. Ở `user1`, đổi quyền sang Editor/ghi; ở `user2`, thử sửa lại. Kiểm tra danh sách người nhận và quyền, rồi thu hồi quyền sau demo nếu đó là ghi chú thử.
+26. **Cộng tác thời gian thực (26):** Dùng ghi chú **👥 Ghi chú Cộng tác thời gian thực** đã seed, mở `themghichu.php?id=...` trong hai cửa sổ: `user1` và `user2`. Gõ ở A, quan sát B cập nhật mà không tải lại; thử gõ cùng lúc để xem presence, typing và cảnh báo xung đột. Có thể mở `http://localhost:8080/collab_demo.php` để trình diễn giao diện chia đôi, nhưng vẫn cần thử hai phiên thật cho rubric.
+27. **AI tóm tắt (27):** Mở một ghi chú có vài đoạn nội dung, bấm **Hỏi trợ lý AI** và yêu cầu “Tóm tắt ghi chú này”. Kiểm tra tóm tắt bám đúng nội dung, không chỉ là câu chào. Nếu muốn chứng minh LLM thật, kiểm tra `LLM_PROVIDER` và khóa API hợp lệ trong `.env` trước demo.
+28. **AI hỏi đáp (28):** Hỏi AI một chi tiết chỉ có trong ghi chú đã mở, ví dụ “Ghi chú này đặt hạn vào ngày nào?”. So sánh câu trả lời với nội dung thật; thử câu hỏi ngoài dữ liệu để kiểm tra phản hồi khi không biết.
+
+### 4.4. Chất lượng và triển khai (ID 29–32)
+
+29. **UI/UX (29):** Trình diễn cả trang ngoài, đăng ký, dashboard, trạng thái chưa có ghi chú, thông báo thành công/lỗi, thao tác bàn phím và nhãn form. Tiêu chí này do giảng viên đánh giá trực tiếp.
+30. **Responsive (30):** Mở DevTools của Chrome (`F12`), bật biểu tượng thiết bị (`Ctrl+Shift+M`), thử kích thước điện thoại, tablet và desktop tại trang ngoài, dashboard và form sửa. Kiểm tra không tràn ngang, nút đủ dễ chạm và menu vẫn dùng được.
+31. **Offline (31):** Khi đã mở dashboard và ghi chú, vào DevTools → **Network** → **Offline**; thử xem ghi chú đã lưu và sửa/tạo ghi chú thử. Chuyển lại **Online**, chờ trạng thái đồng bộ rồi tải lại để đối chiếu dữ liệu. Không dùng `docker compose stop` để giả lập mất mạng vì nó tắt cả server và làm sai kịch bản PWA.
+32. **Triển khai (32):** Chạy bước 3.2 trên máy giảng viên hoặc Codespaces; kiểm tra URL ứng dụng, database và các dịch vụ hoạt động. Docker Compose là phương án thay thế được PDF cho phép khi không triển khai public. Nếu trình bày triển khai online, kiểm tra HTTPS, port public và thời gian hoạt động trong giai đoạn chấm.
+
+Sau demo, nếu ghi chú `DEMO RUBRIC` hoặc nhãn thử còn tồn tại, dọn chúng bằng UI sau khi đối chiếu đúng tiêu đề. Để dừng container mà giữ dữ liệu, dùng:
+
+```powershell
+docker compose --profile tools stop
 ```
-Kịch bản sẽ tự động xác minh:
-1. Kết nối cơ sở dữ liệu.
-2. Quy trình đăng ký & kích hoạt OTP (`activated = 0`, OTP hash bcrypt, thời hạn 5 phút).
-3. Đăng nhập và xác thực.
-4. Chia sẻ ghi chú (phân quyền Viewer/Editor).
-5. Đồng bộ cộng tác, Presence, và Conflict Detection (ID 24).
-6. Ranh giới bảo mật phân quyền (Editor không được phép xóa ghi chú của Owner).
+
+Không dùng `docker compose down -v` trừ khi chủ động muốn xóa toàn bộ dữ liệu trong Docker volumes. Bảng theo dõi mức độ đã kiểm tra của từng tiêu chí nằm trong `RUBRIC_32_DEMO.md`; các mục chưa kiểm tra trực tiếp không được xem là đã đạt điểm tối đa.

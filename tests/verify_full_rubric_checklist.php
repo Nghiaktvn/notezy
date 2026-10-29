@@ -11,6 +11,7 @@ $conn = create_connect();
 if (!$conn || $conn->connect_error) {
     die("❌ FAILED: Cannot connect to MySQL database\n");
 }
+$conn->begin_transaction(); // Keep synthetic rubric rows out of the demo database.
 
 echo "=======================================================\n";
 echo "       NOTEZY FULL RUBRIC CHECKLIST VERIFICATION       \n";
@@ -57,11 +58,10 @@ $userId = (int)($userRow['id'] ?? 0);
 $otpValid = !empty($userRow['activation_otp_hash']) && password_verify($otp, $userRow['activation_otp_hash']);
 $unactivatedInitially = ((int)$userRow['activated'] === 0);
 
-// The assignment allows unverified users to use the app, with a persistent
-// activation reminder. Confirm login succeeds and exposes that state.
+// Registration requires activation before login.
 $unverifiedLogin = login($testUser, $testPass);
-$unverifiedLoginPassed = is_array($unverifiedLogin) && !empty($unverifiedLogin['success']) && !empty($unverifiedLogin['unverified']);
-report("Unverified user can log in with activation reminder", $unverifiedLoginPassed, "Unverified flag returned by login");
+$unverifiedLoginPassed = is_array($unverifiedLogin) && ($unverifiedLogin['code'] ?? '') === 'not_activated';
+report("Unverified user is blocked until activation", $unverifiedLoginPassed);
 
 // 1.2 Account activation
 $stmt = $conn->prepare("UPDATE users SET activated = 1, activation_otp_hash = NULL, activation_otp_expires_at = NULL WHERE id = ?");
@@ -75,10 +75,13 @@ $loginRes = login($testUser, $testPass);
 $loginPassed = is_array($loginRes) && !empty($loginRes['success']) && !empty($loginRes['user']);
 report("User login", $loginPassed, "User ID: $userId authenticated");
 
-// 1.4 Password reset
+// 1.4 Password hash update; the OTP web flow is checked separately.
 $newPass = "NewSecret456!";
-$resetResult = reset_password($testEmail, $newPass);
-report("Password reset", $resetResult === true, "Password updated for $testEmail");
+$newHash = password_hash($newPass, PASSWORD_DEFAULT);
+$resetStmt = $conn->prepare('UPDATE users SET password_hash = ?, pass = NULL WHERE email = ?');
+$resetStmt->bind_param('ss', $newHash, $testEmail);
+$resetResult = $resetStmt->execute();
+report("Password hash update (not full OTP reset)", $resetResult, "Password updated for $testEmail");
 
 // Verify login with new password
 $loginNewRes = login($testUser, $newPass);
@@ -317,9 +320,10 @@ report("Online deployment (Docker containerization & Cloud readiness)", $hasDock
 echo "\n=======================================================\n";
 echo "SUMMARY: $passCount / $totalTests TESTS PASSED (" . round($passCount / $totalTests * 100, 1) . "%)\n";
 echo "=======================================================\n";
+$conn->rollback();
 
 if ($passCount === $totalTests) {
-    echo "\n🎉 ALL AUTOMATED RUBRIC CHECKS PASSED. See RUBRIC_32_STATUS.md for the exact 32-criterion mapping.\n";
+    echo "\nAutomated database checks passed. This is not a 32/32 end-to-end rubric certification.\n";
     exit(0);
 } else {
     echo "\n⚠️ SOME CRITERIA FAILED.\n";

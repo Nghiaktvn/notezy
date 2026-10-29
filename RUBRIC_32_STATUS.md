@@ -1,5 +1,7 @@
 # Đối chiếu 32 tiêu chí rubric Notezy
 
+> **Lưu ý kiểm tra ngày 28/10/2026:** Bảng PASS dưới đây là kết quả tự đánh giá cũ từ 21/09/2026, không chứng minh 32/32 theo PDF của giảng viên. Bài `verify_full_rubric_checklist.php` hiện chạy 31 kiểm tra database/cấu hình và trả 31/31, nhưng không kiểm thử đầy đủ giao diện, đồng bộ offline, AI thật hoặc điểm UI/UX. `test_system_flow.php` qua các bước đăng ký, kích hoạt, chia sẻ và cộng tác backend. Gmail SMTP đã xác thực thành công; OTP gửi lại được nhập và kích hoạt tài khoản thật, sau đó tài khoản đăng nhập vào trang tạo sổ. Chưa thể bảo đảm phần mềm không bao giờ lỗi hoặc giảng viên sẽ chấm 32/32.
+
 Trạng thái dưới đây được đối chiếu bằng bộ test tự động, kiểm tra giao diện thật
 trên XAMPP và Docker, cùng kiểm tra database/phpMyAdmin ngày 21/09/2026.
 

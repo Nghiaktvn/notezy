@@ -245,6 +245,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                     setAuthMode('login');
                     setIsAuthModalOpen(true);
                 }
+                if (params.get('activated') === '1' || params.get('reset') === '1') {
+                    setLoginSuccessMsg(params.get('reset') === '1'
+                        ? 'Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.'
+                        : 'Xác thực tài khoản thành công. Vui lòng đăng nhập.');
+                    setAuthMode('login');
+                    setIsAuthModalOpen(true);
+                }
             }, []);
 
             // Demo video runner
@@ -412,7 +419,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 {/* Bắt đầu miễn phí (mở tab Đăng ký trong modal) */}
                                 <button
                                     type="button"
-                                    onClick={() => { setAuthMode('register'); setIsAuthModalOpen(true); }}
+                                    onClick={() => { window.location.href = 'register.php'; }}
                                     className="notezy-nav-primary hidden min-[360px]:block rounded-full px-3 sm:px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-600/30"
                                 >
                                     Bắt đầu
@@ -468,7 +475,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => { setAuthMode('register'); setLoginForm(l => ({ ...l, error: '' })); }}
+                                        onClick={() => { window.location.href = 'register.php'; }}
                                         className={`py-2 text-xs font-bold rounded-xl transition-all ${
                                             authMode === 'register'
                                                 ? (isDark ? 'bg-red-600 text-white shadow-md' : 'bg-white text-green-700 shadow-md')
@@ -566,7 +573,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                             Chưa có tài khoản?{' '}
                                             <button
                                                 type="button"
-                                                onClick={() => setAuthMode('register')}
+                                                onClick={() => { window.location.href = 'register.php'; }}
                                                 className={`font-bold hover:underline ${isDark ? 'text-red-400' : 'text-green-700'}`}
                                             >
                                                 Chuyển sang Đăng ký

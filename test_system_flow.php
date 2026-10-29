@@ -72,13 +72,13 @@ if ($has_mysql && $conn) {
     $timeDiff = $expiresAt - time();
     echo "✅ Confirmed OTP expiry: {$userA_db['activation_otp_expires_at']} (~{$timeDiff}s remaining, expected ~300s)\n";
 
-    // TEST 2: UNVERIFIED USERS MAY USE THE APP WITH AN ACTIVATION REMINDER
-    echo "\n--- TEST 2: Unverified login and activation reminder ---\n";
+    // TEST 2: UNVERIFIED USERS MUST COMPLETE ACTIVATION BEFORE LOGIN
+    echo "\n--- TEST 2: Unverified login is blocked ---\n";
     $loginRes = login($test_username_a, $test_pass);
-    if (is_array($loginRes) && !empty($loginRes['success']) && !empty($loginRes['unverified'])) {
-        echo "✅ Unverified user logged in and is marked for the activation reminder\n";
+    if (is_array($loginRes) && ($loginRes['code'] ?? '') === 'not_activated') {
+        echo "✅ Unverified user is redirected to activation\n";
     } else {
-        die("❌ FAILED: Unverified login should succeed with an unverified flag\n");
+        die("❌ FAILED: Unverified login should require activation\n");
     }
 
     // TEST 3: OTP VERIFICATION & ACTIVATION
