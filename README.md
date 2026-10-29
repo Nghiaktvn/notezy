@@ -5,6 +5,26 @@
 Ứng dụng ghi chú (notes) full-stack: PHP + MySQL cho backend/web truyền thống,
 kèm REST API (`api/`) phục vụ frontend React (Vite) trong thư mục `frontend/`.
 
+## Chạy nhanh trên Windows bằng PowerShell và Docker
+
+Mở **Docker Desktop** và đợi trạng thái **Engine running**. Mở PowerShell tại thư mục
+chứa `docker-compose.yml` (trên máy tác giả là `D:\notezy_fixed_updated`). Nếu chưa
+có mã nguồn, chạy `git clone https://github.com/Nghiaktvn/notezy.git` rồi
+`Set-Location .\notezy`. Sau đó chạy lần lượt:
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+docker compose up -d --build --wait
+docker compose exec -T web php tests/seed_demo_accounts.php
+Start-Process 'http://localhost:8080/'
+```
+
+Đăng nhập demo bằng `user1` hoặc `user2`, mật khẩu `Password123!`. Hai tài khoản
+được kích hoạt sẵn. Muốn có ghi chú mẫu để trình bày, chạy thêm
+`docker compose exec -T web php tests/seed_demo_showcase.php` **một lần**. Lệnh
+này tạo lại các ghi chú demo cùng tên của `user1` nếu chạy lặp lại. Xem mục 3
+để cấu hình email OTP, kiểm tra hệ thống và xử lý lỗi khởi động.
+
 ## Triển khai chỉ bằng GitHub Codespaces
 
 GitHub Pages không chạy PHP/MySQL. Repository này cung cấp cấu hình Codespaces
@@ -95,34 +115,32 @@ Nếu môi trường PHP chưa bật extension `mysqli`:
 
 ### 3.1. Chuẩn bị
 
-1. Mở **Docker Desktop**, chọn Linux containers/WSL 2 và chờ trạng thái *Engine running*.
-2. Mở **Windows PowerShell**. Chạy các lệnh trong thư mục gốc dự án:
+1. Cài và mở **Docker Desktop**, chọn Linux containers/WSL 2 và chờ trạng thái *Engine running*.
+2. Mở **Windows PowerShell** tại thư mục gốc dự án, nơi có `docker-compose.yml`. Nếu vừa clone từ GitHub, dùng thư mục `notezy`; đường dẫn dưới đây chỉ là ví dụ trên máy tác giả:
 
    ```powershell
    Set-Location "D:\notezy_fixed_updated"
    docker compose version
    ```
 
-3. Nếu chưa có `.env`, tạo từ mẫu và điền các biến bắt buộc trước khi khởi động. Không ghi mật khẩu hoặc API key vào README, ảnh chụp hay Git. Với máy đã chạy và có dữ liệu MySQL, giữ `DB_PASSWORD` hiện tại để không làm hỏng kết nối tới volume cũ.
+3. Nếu chưa có `.env`, tạo từ mẫu. File mẫu đủ để **chạy giao diện và hai tài khoản demo trên máy mới**; muốn thử email OTP thật hoặc AI thật thì mở file và điền thông tin riêng. Không đưa mật khẩu hoặc API key lên Git. Với máy đã chạy và có dữ liệu MySQL, giữ `DB_PASSWORD` hiện tại để không làm hỏng kết nối tới volume cũ.
 
    ```powershell
    if (-not (Test-Path -LiteralPath '.env')) { Copy-Item '.env.example' '.env' }
-   notepad .env
    ```
 
-   Cần có `AI_AGENT_SHARED_SECRET` không rỗng. Để gửi OTP bằng Gmail: `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USERNAME` là email gửi, `MAIL_FROM_ADDRESS` là cùng email đó, `MAIL_PASSWORD` là **mật khẩu ứng dụng Google**, không phải mật khẩu đăng nhập Gmail. Nếu dùng AI thật, cấu hình `LLM_PROVIDER` và `GEMINI_API_KEY` riêng. Sau khi sửa `.env` trên container đang chạy, dùng `docker compose up -d --no-deps --force-recreate web` để web đọc giá trị mới.
+   Để gửi OTP bằng Gmail, mở `notepad .env` và đặt `MAIL_USERNAME` là email gửi, `MAIL_PASSWORD` là **mật khẩu ứng dụng Google**, không phải mật khẩu đăng nhập Gmail; đặt **cả** `MAIL_FROM_ADDRESS` và `MAIL_FROM` trùng `MAIL_USERNAME`. Thêm dòng `MAIL_FROM=...` vào `.env` nếu chưa có. Nếu dùng AI thật, cấu hình `LLM_PROVIDER=gemini` và `GEMINI_API_KEY`; nếu chưa có khóa, đặt `LLM_PROVIDER=mock` để demo giao diện AI. Thay các giá trị mẫu `JWT_SECRET` và `AI_AGENT_SHARED_SECRET` bằng chuỗi bí mật riêng trước khi chia sẻ bản chạy cho người khác. Sau khi sửa `.env` trên container đang chạy, dùng `docker compose up -d --no-deps --force-recreate web ai_agent` để các dịch vụ đọc giá trị mới.
 
 ### 3.2. Khởi động và kiểm tra
 
 ```powershell
-Set-Location "D:\notezy_fixed_updated"
 docker compose --profile tools up -d --build --wait
 docker compose --profile tools ps
 (Invoke-WebRequest 'http://localhost:8080/health.php' -UseBasicParsing).StatusCode
 Start-Process 'http://localhost:8080/'
 ```
 
-Kết quả mong đợi: các dịch vụ chính `web`, `db`, `ai_agent`, `collab_ws` ở trạng thái `healthy`; lệnh kiểm tra HTTP trả `200`. Ứng dụng ở `http://localhost:8080/`, phpMyAdmin (profile `tools`) ở `http://localhost:8081/`, AI Agent ở `http://localhost:8765/`, WebSocket ở port `8766`. MySQL mở trên máy tại port `3307`; web kết nối nội bộ tới `db:3306`. Nếu đã có các container dịch vụ bổ sung từ `docker-compose.services.yml`, Compose có thể báo *orphan containers*; cảnh báo này không đồng nghĩa lần khởi động thất bại. Không chạy `--remove-orphans` khi vẫn cần các dịch vụ đó.
+Kết quả mong đợi: các dịch vụ chính `web`, `db`, `ai_agent`, `collab_ws` ở trạng thái `healthy`; lệnh kiểm tra HTTP trả `200`. Ứng dụng ở `http://localhost:8080/`, phpMyAdmin (profile `tools`) ở `http://localhost:8081/`, AI Agent ở `http://localhost:8765/`, WebSocket ở port `8766`. MySQL mở trên máy tại port `3307`; web kết nối nội bộ tới `db:3306`. Nếu port `8080` đã bị dùng, đóng ứng dụng chiếm port hoặc thêm `WEB_PORT=8082` vào `.env`, chạy lại Compose và mở `http://localhost:8082/`; khi thử liên kết OTP, đặt `APP_URL=http://localhost:8082` cùng lúc. Nếu đã có các container dịch vụ bổ sung từ `docker-compose.services.yml`, Compose có thể báo *orphan containers*; cảnh báo này không đồng nghĩa lần khởi động thất bại. Không chạy `--remove-orphans` khi vẫn cần các dịch vụ đó.
 
 ### 3.3. Tạo hai tài khoản và ghi chú mẫu
 
