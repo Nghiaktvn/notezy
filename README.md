@@ -63,6 +63,32 @@ docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --buil
 docker compose -f docker-compose.yml -f docker-compose.services.yml ps
 ```
 
+## Triển khai trên Render
+
+Render Web Service chỉ chạy container PHP của `Dockerfile`; nó không tự khởi động
+MySQL trong `compose.yaml`. Cần có một MySQL truy cập được từ Render và đặt các
+biến môi trường sau trong **Render → Web Service → Environment**:
+
+```text
+DB_HOST=<hostname MySQL, không dùng localhost hoặc db>
+DB_PORT=3306
+DB_NAME=notezy
+DB_USER=<tài khoản MySQL>
+DB_PASSWORD=<mật khẩu MySQL>
+APP_ENV=production
+APP_URL=https://<tên-dịch-vụ>.onrender.com
+```
+
+Tạo database và nhập `note.sql`, sau đó áp dụng `migrations.sql` cho database
+đó. Kiểm tra `https://<tên-dịch-vụ>.onrender.com/health.php`: chỉ demo đăng
+nhập và ghi chú khi trả `"status":"ok"` và `"database":"connected"`.
+Nếu trả HTTP 503 với `"database":"unavailable"`, kiểm tra host, cổng, tài
+khoản, mật khẩu và quyền truy cập mạng của MySQL. Để ảnh đại diện và file đính
+kèm không mất sau mỗi lần triển khai, gắn persistent disk vào `uploads/`.
+Không nhập mật khẩu vào GitHub hoặc commit file `.env`.
+
+---
+
 ## Triển khai chỉ bằng GitHub Codespaces
 
 GitHub Pages không chạy PHP/MySQL. Repository này cung cấp cấu hình Codespaces

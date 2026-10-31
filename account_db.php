@@ -4,8 +4,12 @@ require_once('db.php');
 function login($username, $password)
 {
     $conn = create_connect();
+    if (!$conn) {
+        return 'Dịch vụ dữ liệu tạm thời không khả dụng. Vui lòng thử lại sau.';
+    }
     $sql = "SELECT * FROM users WHERE email = ? or username = ?";
     $stm = $conn->prepare($sql);
+    if (!$stm) return 'Dịch vụ dữ liệu tạm thời không khả dụng. Vui lòng thử lại sau.';
     $stm->bind_param('ss', $username, $username);
 
     if (!$stm->execute()) return "Lỗi hệ thống, vui lòng liên hệ admin.";
@@ -54,6 +58,9 @@ function login($username, $password)
 function register($username, $firstname, $lastname, $email, $password)
 {
     $conn = create_connect();
+    if (!$conn) {
+        return 'Dịch vụ dữ liệu tạm thời không khả dụng. Vui lòng thử lại sau.';
+    }
 
     $sql = "SELECT id, username, email, activated FROM users WHERE username = ? LIMIT 1";
     $byUser = $conn->prepare($sql);
