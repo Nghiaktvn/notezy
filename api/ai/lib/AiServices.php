@@ -907,6 +907,10 @@ function ai_rate_limit(mysqli $conn, int $user_id): void {
 function ai_call_agent(array $payload): array {
     $url = rtrim((string) (getenv('AI_AGENT_URL') ?: 'http://127.0.0.1:8765'), '/') . '/v1/chat';
     $secret = (string) getenv('AI_AGENT_SHARED_SECRET');
+    // Keep the local fallback responsive when the separately hosted AI agent
+    // is absent or unreachable (common on single-service free deployments).
+    $timeout = (int) (getenv('AI_AGENT_TIMEOUT_SECONDS') ?: 15);
+    $timeout = max(3, min($timeout, 60));
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
     $raw = false;
     $http = 0;
@@ -921,8 +925,8 @@ function ai_call_agent(array $payload): array {
                 'X-Notezy-Agent-Secret: ' . $secret,
             ],
             CURLOPT_POSTFIELDS => $json,
-            CURLOPT_TIMEOUT => 50,
-            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => min(3, $timeout),
         ]);
         $raw = curl_exec($ch);
         $errno = curl_errno($ch);
@@ -937,7 +941,7 @@ function ai_call_agent(array $payload): array {
                 'method' => 'POST',
                 'header' => "Content-Type: application/json\r\nX-Notezy-Agent-Secret: {$secret}\r\n",
                 'content' => $json,
-                'timeout' => 50,
+                'timeout' => $timeout,
                 'ignore_errors' => true,
             ],
         ]);

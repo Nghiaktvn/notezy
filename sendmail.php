@@ -25,6 +25,15 @@ function notezy_mailer(): PHPMailer {
     $mail->CharSet = 'UTF-8';
     $mail->isSMTP();
 
+    // Bound SMTP failures so a blocked provider cannot hold a signup or
+    // password-reset request for PHPMailer’s five-minute default.
+    $smtpTimeout = (int) (getenv('MAIL_TIMEOUT_SECONDS') ?: 10);
+    $smtpTimeout = max(3, min($smtpTimeout, 30));
+    $smtpTimeLimit = (int) (getenv('MAIL_TIMELIMIT_SECONDS') ?: 15);
+    $smtpTimeLimit = max($smtpTimeout, min($smtpTimeLimit, 60));
+    $mail->Timeout = $smtpTimeout;
+    $mail->getSMTPInstance()->Timelimit = $smtpTimeLimit;
+
     $host = trim((string) (getenv('MAIL_HOST') ?: ''));
     $port = (int) (getenv('MAIL_PORT') ?: 0);
 
