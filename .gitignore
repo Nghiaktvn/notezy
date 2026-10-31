@@ -17,6 +17,7 @@ node_modules/
 submission/
 outputs/
 tmp/
+recovery/
 
 # ── User-uploaded content (not source, and may contain private data) ─────
 uploads/*
