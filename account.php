@@ -19,12 +19,13 @@ $user_id = (int) $_SESSION['id'];
 
 // Xử lý cập nhật avatar
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
+    header('Content-Type: application/json; charset=utf-8');
     $max_size = 5 * 1024 * 1024;
     $file = $_FILES['avatar'];
 
-    if ($file['error'] === UPLOAD_ERR_OK && $file['size'] <= $max_size) {
-        // Validate if it's an image
-        $image_info = getimagesize($file['tmp_name']);
+    if ($file['error'] === UPLOAD_ERR_OK && $file['size'] > 0 && $file['size'] <= $max_size
+        && is_uploaded_file($file['tmp_name'])) {
+        $image_info = @getimagesize($file['tmp_name']);
         $image_extensions = [
             IMAGETYPE_JPEG => 'jpg',
             IMAGETYPE_PNG => 'png',
@@ -33,25 +34,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
         ];
         if ($image_info !== false && isset($image_extensions[$image_info[2]])) {
             $ext = $image_extensions[$image_info[2]];
-            $filename = 'avatar_' . $user_id . '_' . time() . '.' . $ext;
-            $upload_dir = 'Uploads/';
-            $upload_path = $upload_dir . $filename;
+            $filename = bin2hex(random_bytes(10)) . '.' . $ext;
+            $upload_dir = __DIR__ . '/uploads/avatars';
+            $upload_path = 'uploads/avatars/' . $filename;
 
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0755, true);
+            if ((!is_dir($upload_dir) && !mkdir($upload_dir, 0775, true)) || !is_writable($upload_dir)) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Không thể tạo thư mục lưu ảnh đại diện.']);
+                exit;
             }
 
-            if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+            if (move_uploaded_file($file['tmp_name'], $upload_dir . '/' . $filename)) {
                 $sql = "UPDATE users SET avatar = ? WHERE id = ?";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param("si", $upload_path, $user_id);
                 if ($stmt->execute()) {
                     echo json_encode(['success' => true, 'message' => 'Cập nhật avatar thành công', 'avatar' => $upload_path]);
                 } else {
+                    @unlink($upload_dir . '/' . $filename);
+                    http_response_code(500);
                     echo json_encode(['success' => false, 'message' => 'Lỗi khi cập nhật avatar']);
                 }
                 $stmt->close();
             } else {
+                http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Lỗi khi tải lên file']);
             }
         } else {
@@ -185,16 +191,18 @@ if (!$user) {
             margin-top: 15px;
             text-align: center;
         }
-        .avatar-upload label {
+        .avatar-upload button {
             background: #000000;
             color: #FFFFFF;
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.9rem;
+            border: 0;
             transition: background 0.3s ease, transform 0.2s ease;
         }
-        .avatar-upload label:hover {
+        .avatar-upload button:hover,
+        .avatar-upload button:focus-visible {
             background: #333333;
             transform: scale(1.05);
         }
@@ -497,11 +505,11 @@ if (!$user) {
         body.dark-mode .form-control:disabled {
             background: #222;
         }
-        body.dark-mode .btn-save, body.dark-mode .edit-btn, body.dark-mode .avatar-upload label {
+        body.dark-mode .btn-save, body.dark-mode .edit-btn, body.dark-mode .avatar-upload button {
             background: #0d6efd;
             color: #ffffff;
         }
-        body.dark-mode .btn-save:hover, body.dark-mode .edit-btn:hover, body.dark-mode .avatar-upload label:hover {
+        body.dark-mode .btn-save:hover, body.dark-mode .edit-btn:hover, body.dark-mode .avatar-upload button:hover {
             background: #0b5ed7;
         }
         body.dark-mode .password-toggle {
@@ -520,12 +528,13 @@ if (!$user) {
         <a href="chat.php?user_id=<?php echo $user_id; ?>" class="btn btn-primary">Chat with Others</a>
     </div>
     <div class="avatar-section">
-        <img src="<?php echo htmlspecialchars($user['avatar'] ?? 'default.png'); ?>" alt="Avatar" class="avatar-img" id="avatarImage">
+        <img src="<?php echo htmlspecialchars(!empty($user['avatar']) ? $user['avatar'] : 'default.png', ENT_QUOTES, 'UTF-8'); ?>" alt="Ảnh đại diện" class="avatar-img" id="avatarImage" onerror="this.onerror=null;this.src='default.png'">
         <div class="avatar-upload">
             <form id="avatarForm" method="post" action="account.php" enctype="multipart/form-data">
-                <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
-                <label for="avatarInput">Upload Avatar</label>
+                <input type="file" name="avatar" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" />
+                <button type="button" id="avatarUploadButton">Cập nhật ảnh đại diện</button>
             </form>
+            <p class="avatar-message" id="avatarMessage" role="status" aria-live="polite"></p>
         </div>
     </div>
     <div class="row">
@@ -615,38 +624,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordToggleContainer = document.getElementById('passwordToggleContainer');
     const togglePasswordBtn = document.getElementById('togglePassword');
     const avatarInput = document.getElementById('avatarInput');
+    const avatarUploadButton = document.getElementById('avatarUploadButton');
     const avatarImg = document.querySelector('.avatar-img');
     const avatarMessage = document.getElementById('avatarMessage');
 
+    avatarUploadButton.addEventListener('click', () => avatarInput.click());
+
     // Xử lý upload avatar
-    avatarInput.addEventListener('change', () => {
+    avatarInput.addEventListener('change', async () => {
         const file = avatarInput.files[0];
         if (!file) return;
+
+        if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+            avatarMessage.style.color = 'red';
+            avatarMessage.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP không quá 5 MB.';
+            avatarInput.value = '';
+            return;
+        }
 
         const formData = new FormData();
         formData.append('avatar', file);
 
         avatarMessage.textContent = 'Đang tải lên...';
         avatarMessage.style.color = '#000000';
-
-        fetch('', {
-            method: 'POST',
-            body: formData
-        }).then(res => res.json())
-        .then(data => {
+        avatarInput.disabled = true;
+        avatarUploadButton.disabled = true;
+        try {
+            const res = await fetch('account.php', { method: 'POST', body: formData, credentials: 'same-origin' });
+            const data = await res.json();
             if (data.success) {
                 avatarImg.src = data.avatar;
                 avatarMessage.style.color = 'green';
                 avatarMessage.textContent = data.message;
             } else {
                 avatarMessage.style.color = 'red';
-                avatarMessage.textContent = data.message;
+                avatarMessage.textContent = data.message || 'Không thể cập nhật ảnh đại diện.';
             }
-        })
-        .catch(() => {
+        } catch (error) {
             avatarMessage.style.color = 'red';
             avatarMessage.textContent = 'Lỗi khi tải lên avatar';
-        });
+        } finally {
+            avatarInput.disabled = false;
+            avatarUploadButton.disabled = false;
+            avatarInput.value = '';
+        }
     });
 
     // Khi bấm nút Sửa
@@ -783,5 +804,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-</html>
 </html>

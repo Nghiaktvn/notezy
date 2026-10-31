@@ -233,4 +233,4 @@ Sau demo, nếu ghi chú `DEMO RUBRIC` hoặc nhãn thử còn tồn tại, dọ
 docker compose --profile tools stop
 ```
 
-Không dùng `docker compose down -v` trừ khi chủ động muốn xóa toàn bộ dữ liệu trong Docker volumes. Bảng theo dõi mức độ đã kiểm tra của từng tiêu chí nằm trong `RUBRIC_32_DEMO.md`; các mục chưa kiểm tra trực tiếp không được xem là đã đạt điểm tối đa.
+Không dùng `docker compose down -v` trừ khi chủ động muốn xóa toàn bộ dữ liệu trong Docker volumes. Các mục chưa kiểm tra trực tiếp trên môi trường demo không được xem là đã đạt điểm tối đa.

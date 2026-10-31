@@ -273,7 +273,7 @@ if (!$result1) {
 }
 
 $kq = $result1->fetch_assoc();
-$avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallback nếu không có avatar
+$avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
 ?>
 
 <!DOCTYPE html>
@@ -455,12 +455,13 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             align-items: center;
         }
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #e0e0e0;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border: 2px solid #ffffff;
+            background: #ffffff;
+            box-shadow: 0 0 0 2px #6d28d9, 0 3px 10px rgba(0, 0, 0, 0.18);
         }
         .main-content {
             padding: 40px 0;
@@ -1363,18 +1364,18 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                             </li>
                         </ul>
                     </li>
-                    <li class="nav-item dropdown avatar-container ms-2">
-                        <a class="nav-link dropdown-toggle p-0" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="<?= htmlspecialchars($avatar) ?>" alt="Avatar" class="avatar" onerror="this.onerror=null;this.src='default.png'">
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                            <li><a class="dropdown-item" href="account.php"><i class="fas fa-user me-2"></i>Xem trang cá nhân</a></li>
-                            <li><a class="dropdown-item" href="admin_users.php"><i class="fas fa-users-cog me-2"></i>Quản trị Người Dùng</a></li>
-                            <li><a class="dropdown-item" href="labels.php"><i class="fas fa-tags me-2"></i>Quản lý Nhãn</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
-                        </ul>
-                    </li>
+                </ul>
+            </div>
+            <div class="dropdown avatar-container ms-auto ms-lg-2">
+                <a class="nav-link dropdown-toggle p-0" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Mở menu tài khoản">
+                    <img src="<?= htmlspecialchars($avatar, ENT_QUOTES, 'UTF-8') ?>" alt="Ảnh đại diện của bạn" class="avatar" onerror="this.onerror=null;this.src='default.png'">
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                    <li><a class="dropdown-item" href="account.php"><i class="fas fa-user me-2"></i>Xem trang cá nhân</a></li>
+                    <li><a class="dropdown-item" href="admin_users.php"><i class="fas fa-users-cog me-2"></i>Quản trị Người Dùng</a></li>
+                    <li><a class="dropdown-item" href="labels.php"><i class="fas fa-tags me-2"></i>Quản lý Nhãn</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
                 </ul>
             </div>
         </div>
