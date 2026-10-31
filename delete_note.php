@@ -46,6 +46,22 @@ try {
             echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập vào ghi chú này.']);
         }
     } else {
+        // Verify ownership before deleting any labels, shares, or attachments.
+        $owner_check = $conn->prepare('SELECT note_id FROM notes WHERE note_id = ? AND user_id = ? FOR UPDATE');
+        if (!$owner_check) {
+            throw new Exception('Không thể kiểm tra quyền sở hữu ghi chú.');
+        }
+        $owner_check->bind_param('ii', $note_id, $user_id);
+        $owner_check->execute();
+        $is_owner = $owner_check->get_result()->num_rows > 0;
+        $owner_check->close();
+        if (!$is_owner) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => 'Ghi chú không tồn tại hoặc bạn không phải chủ sở hữu.']);
+            $conn->close();
+            exit;
+        }
+
         // Xóa liên kết nhãn trong bảng note_labels
         $stmt = $conn->prepare("DELETE FROM note_labels WHERE note_id = ?");
         if (!$stmt) {
