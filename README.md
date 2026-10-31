@@ -87,6 +87,28 @@ khoản, mật khẩu và quyền truy cập mạng của MySQL. Để ảnh đ�
 kèm không mất sau mỗi lần triển khai, gắn persistent disk vào `uploads/`.
 Không nhập mật khẩu vào GitHub hoặc commit file `.env`.
 
+**Email trên Render Free:** Render chặn SMTP ra ngoài trên cổng 25, 465 và 587;
+đổi `MAIL_PORT` không giải quyết được. Ứng dụng hỗ trợ gửi qua Resend HTTPS.
+Tạo API key và xác minh tên miền gửi trong Resend, sau đó thêm vào Environment:
+
+```text
+MAIL_MAILER=resend
+RESEND_API_KEY=<Resend API key, chỉ đặt trong Render>
+MAIL_FROM_ADDRESS=notezy@<tên-miền-đã-xác-minh>
+MAIL_FROM_NAME=Notezy
+```
+
+Chọn **Save and deploy** rồi đăng ký thử bằng email của bạn; API phải trả
+`status: success` và thư kích hoạt phải đến hộp thư. Mật khẩu ứng dụng Gmail
+`MAIL_PASSWORD` chỉ dùng cho SMTP trên XAMPP/Codespaces hoặc máy chủ cho phép
+SMTP; nó không phải khóa Resend.
+
+Tunnel MySQL từ XAMPP/Pinggy chỉ phù hợp demo tạm: URL đổi khi tunnel kết thúc
+và máy phải luôn bật. Để chạy ổn định, dùng MySQL được host lâu dài và cập nhật
+`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` trên Render. Render Free cũng xóa
+tệp tải lên trong container sau khi dịch vụ ngủ hoặc deploy lại; cần lưu ảnh và
+tệp đính kèm trong object storage hoặc dùng ổ đĩa bền vững ở gói phù hợp.
+
 ---
 
 ## Triển khai chỉ bằng GitHub Codespaces

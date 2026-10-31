@@ -32,7 +32,7 @@ if ($method === 'GET') {
 
     $otp     = (string) random_int(100000, 999999);
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
-    $expires = date('Y-m-d H:i:s', time() + 900);
+    $expires = date('Y-m-d H:i:s', time() + 300);
 
     $upd = $conn->prepare("UPDATE users SET activation_otp_hash = ?, activation_otp_expires_at = ?, activation_otp_attempts = 0 WHERE id = ?");
     $upd->bind_param('ssi', $otpHash, $expires, $user['id']);

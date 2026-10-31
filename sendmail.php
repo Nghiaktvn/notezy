@@ -63,11 +63,77 @@ function notezy_mailer(): PHPMailer {
     $mail->SMTPAuth   = $user !== '';
     $mail->Username   = $user;
     $mail->Password   = $pass;
-    $mail->SMTPSecure = 'tls';
+    $encryption = strtolower(trim((string) (getenv('MAIL_ENCRYPTION') ?: 'tls')));
+    $mail->SMTPSecure = match ($encryption) {
+        'ssl', 'smtps' => PHPMailer::ENCRYPTION_SMTPS,
+        'none' => '',
+        default => PHPMailer::ENCRYPTION_STARTTLS,
+    };
 
     $mail->setFrom($from, $fromName);
     $mail->Sender = $from;
     return $mail;
+}
+
+/** Send through Resend's HTTPS API when SMTP ports are unavailable (Render Free). */
+function notezy_send_resend(string $email, string $subject, string $html, string $plain): bool
+{
+    $key = trim((string) (getenv('RESEND_API_KEY') ?: ''));
+    $from = notezy_valid_email(getenv('MAIL_FROM_ADDRESS'))
+         ?? notezy_valid_email(getenv('MAIL_FROM'));
+    if ($key === '' || $from === null) {
+        error_log('Notezy mail: RESEND_API_KEY or MAIL_FROM_ADDRESS is missing');
+        return false;
+    }
+
+    $fromName = trim((string) (getenv('MAIL_FROM_NAME') ?: 'Notezy'));
+    $payload = json_encode([
+        'from' => ($fromName !== '' ? $fromName . ' <' . $from . '>' : $from),
+        'to' => [$email],
+        'subject' => $subject,
+        'html' => $html,
+        'text' => $plain,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($payload === false) {
+        return false;
+    }
+
+    $timeout = max(3, min((int) (getenv('MAIL_TIMEOUT_SECONDS') ?: 10), 30));
+    $context = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => "Authorization: Bearer {$key}\r\nContent-Type: application/json\r\n",
+        'content' => $payload,
+        'timeout' => $timeout,
+        'ignore_errors' => true,
+    ]]);
+    $response = @file_get_contents('https://api.resend.com/emails', false, $context);
+    $statusLine = $http_response_header[0] ?? '';
+    if ($response === false || !preg_match('~^HTTP/\S+ 2\d\d\b~', $statusLine)) {
+        error_log('Notezy mail: Resend request failed (' . preg_replace('/[^0-9 ]/', '', $statusLine) . ')');
+        return false;
+    }
+    $result = json_decode($response, true);
+    return is_array($result) && !empty($result['id']);
+}
+
+function notezy_send_message(string $email, string $toName, string $subject, string $html, string $plain)
+{
+    if (strtolower(trim((string) (getenv('MAIL_MAILER') ?: 'smtp'))) === 'resend') {
+        return notezy_send_resend($email, $subject, $html, $plain)
+            ? true : 'Lỗi gửi email: không thể gửi qua dịch vụ HTTPS. Vui lòng thử lại sau.';
+    }
+    try {
+        $mail = notezy_mailer();
+        $mail->addAddress($email, $toName);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $html;
+        $mail->AltBody = $plain;
+        $mail->send();
+        return true;
+    } catch (Throwable $e) {
+        return notezy_mail_error_message($e);
+    }
 }
 
 /**
@@ -94,15 +160,12 @@ function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLin
         return 'Lỗi gửi email: địa chỉ nhận không hợp lệ';
     }
     try {
-        $mail = notezy_mailer();
-        $mail->addAddress($email, $toName);
-        $mail->isHTML(true);
-        $mail->Subject = 'Kích hoạt tài khoản Notezy';
         $safeLink = filter_var($activationLink, FILTER_VALIDATE_URL) ? $activationLink : '';
         $linkHtml = $safeLink !== ''
             ? "<p><a href=\"" . htmlspecialchars($safeLink, ENT_QUOTES, 'UTF-8') . "\" style=\"display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none\">Kích hoạt tài khoản</a></p>"
             : '';
-        $mail->Body    = "Chào <b>$toName</b>,<br><br>"
+        $safeName = htmlspecialchars((string) $toName, ENT_QUOTES, 'UTF-8');
+        $html = "Chào <b>$safeName</b>,<br><br>"
                        . "Bấm liên kết dưới đây để kích hoạt tài khoản:<br>"
                        . $linkHtml
                        . "<p>Hoặc nhập mã OTP kích hoạt:</p>"
@@ -110,9 +173,8 @@ function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLin
                        . "<p>Mã có hiệu lực trong <strong>5 phút</strong>.</p>"
                        . "<p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.</p>"
                        . "<p>-- Đội ngũ Notezy</p>";
-        $mail->AltBody = ($safeLink !== '' ? "Kích hoạt tài khoản: $safeLink\n" : '') . "Mã OTP kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
-        $mail->send();
-        return true;
+        $plain = ($safeLink !== '' ? "Kích hoạt tài khoản: $safeLink\n" : '') . "Mã OTP kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
+        return notezy_send_message($email, (string) $toName, 'Kích hoạt tài khoản Notezy', $html, $plain);
     } catch (Throwable $e) {
         return notezy_mail_error_message($e);
     }
@@ -128,19 +190,15 @@ function sendResetPasswordEmail($email, $otp = '', $toName = 'User') {
         return 'Lỗi gửi email: địa chỉ nhận không hợp lệ';
     }
     try {
-        $mail = notezy_mailer();
-        $mail->addAddress($email, $toName);
-        $mail->isHTML(true);
-        $mail->Subject = 'Khôi phục mật khẩu Notezy';
-        $mail->Body    = "Chào <b>$toName</b>,<br><br>"
+        $safeName = htmlspecialchars((string) $toName, ENT_QUOTES, 'UTF-8');
+        $html = "Chào <b>$safeName</b>,<br><br>"
                        . "Mã OTP đặt lại mật khẩu của bạn là:<br>"
                        . "<h2 style='letter-spacing:4px;color:#dc2626;'>$otp</h2>"
                        . "<p>Mã có hiệu lực trong <strong>15 phút</strong>.</p>"
                        . "<p>Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>"
                        . "<p>-- Đội ngũ Notezy</p>";
-        $mail->AltBody = "Mã OTP đặt lại mật khẩu: $otp (hiệu lực 15 phút)";
-        $mail->send();
-        return true;
+        $plain = "Mã OTP đặt lại mật khẩu: $otp (hiệu lực 15 phút)";
+        return notezy_send_message($email, (string) $toName, 'Khôi phục mật khẩu Notezy', $html, $plain);
     } catch (Throwable $e) {
         return notezy_mail_error_message($e);
     }

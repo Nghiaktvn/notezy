@@ -168,6 +168,11 @@ notezy/
 
 ### 📝 Ghi chú SMTP
 
+Render Free chặn SMTP ở cổng 25/465/587. Khi deploy trên Render Free, dùng
+`MAIL_MAILER=resend`, `RESEND_API_KEY` và `MAIL_FROM_ADDRESS` thuộc tên miền
+đã xác minh trong Resend; xem phần Render trong `README.md`. Không chuyển Gmail
+SMTP sang một cổng khác chỉ để vượt giới hạn này.
+
 Dự án dùng Gmail SMTP với App Password (không phải mật khẩu thường). Để tạo App Password:
 1. Vào Google Account → Security → 2-Step Verification (phải bật)
 2. Tìm "App passwords" → Tạo password cho "Mail"
