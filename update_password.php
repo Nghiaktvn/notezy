@@ -107,11 +107,11 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
-                        <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-home me-1"></i>Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-info-circle me-1"></i>About Us</a></li>
-                        <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-star me-1"></i>Explore Features</a></li>
-                        <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-shield-alt me-1"></i>Privacy Policy</a></li>
-                        <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-envelope me-1"></i>Contact Us</a></li>
+                        <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
+                        <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Explore Features</a></li>
+                        <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy Policy</a></li>
+                        <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact Us</a></li>
                     </ul>
                 </div>
             </div>
@@ -176,11 +176,11 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
                 <div class="col-md-4 mb-4">
                     <h5 class="text-white">Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="../a.html" class="text-white-50">Home</a></li>
-                        <li><a href="../introduction.html" class="text-white-50">About Us</a></li>
-                        <li><a href="#" class="text-white-50">Explore Features</a></li>
-                        <li><a href="../privacy.html" class="text-white-50">Privacy Policy</a></li>
-                        <li><a href="../contact.html" class="text-white-50">Contact Us</a></li>
+                        <li><a href="index_notezy.php" class="text-white-50">Home</a></li>
+                        <li><a href="introduce.php" class="text-white-50">About Us</a></li>
+                        <li><a href="khampha.php" class="text-white-50">Explore Features</a></li>
+                        <li><a href="privacy.php" class="text-white-50">Privacy Policy</a></li>
+                        <li><a href="contact.php" class="text-white-50">Contact Us</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-4">

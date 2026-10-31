@@ -72,7 +72,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                 <div class="col-lg-6 mb-4 mb-lg-0">
                     <div class="artist-video-container">
                         <div class="ratio ratio-16x9">
-                            <video controls muted playsinline preload="metadata" src="introduce.mp4"></video>
+                            <video controls muted playsinline preload="metadata" src="assets/notezy-study-loop-20s.mp4"></video>
                         </div>
                     </div>
                 </div>
@@ -95,7 +95,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                   <div class="row exhibition-grid">
                     
                     <section class="post">
-                      <img src="../imageltw/image1.jpg" alt="Secure Notes" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-magic-hero-2026.png" alt="Secure Notes" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Secure and Private</h2>
                         <p class="meta">Updated April 2025</p>
@@ -107,7 +107,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image2.jpg" alt="Beautiful UI" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-journal-3d.webp" alt="Beautiful UI" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Elegant Interface</h2>
                         <p class="meta">Updated April 2025</p>
@@ -120,7 +120,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image3.jpg" alt="Fast sync" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-planner-3d.webp" alt="Fast sync" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Sync Across Devices</h2>
                         <p class="meta">Updated April 2025</p>
@@ -132,7 +132,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image4.jpg" alt="Organized notes" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-notebooks-2026.png" alt="Organized notes" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Smart Organization</h2>
                         <p class="meta">Updated April 2025</p>
@@ -144,7 +144,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image5.jpg" alt="Collaborate" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-study-3d.webp" alt="Collaborate" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Collaborate in Real-time</h2>
                         <p class="meta">Updated April 2025</p>
@@ -156,7 +156,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image6.jpg" alt="Themes and Customization" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-mascot-2026.png" alt="Themes and Customization" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Customize Your Style</h2>
                         <p class="meta">Updated April 2025</p>
@@ -168,7 +168,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image7.jpg" alt="Offline Mode" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-planner-3d.webp" alt="Offline Mode" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Work Offline</h2>
                         <p class="meta">Updated April 2025</p>
@@ -180,7 +180,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </section>
               
                     <section class="post">
-                      <img src="../imageltw/image8.jpg" alt="Productivity Focus" loading="lazy" class="lazy-slide"/>
+                      <img src="assets/notezy-journal-3d.webp" alt="Productivity Focus" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
                         <h2>Focus Mode</h2>
                         <p class="meta">Updated April 2025</p>
