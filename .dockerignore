@@ -21,6 +21,7 @@ frontend/.vite
 submission/
 outputs/
 tmp/
+recovery/
 Rubric.xlsx.inspect.ndjson
 Rubric_preview.png
 vendor/
