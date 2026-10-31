@@ -13,6 +13,10 @@ frontend/dist/
 frontend/.vite/
 frontend/dev-dist/
 node_modules/
+.artifact_node_modules/
+submission/
+outputs/
+tmp/
 
 # ── User-uploaded content (not source, and may contain private data) ─────
 uploads/*

@@ -55,6 +55,6 @@ The React authentication screens still submit to the existing PHP API; successfu
 - React preview: from `frontend/`, run `npm run dev -- --host 127.0.0.1`, then open `http://127.0.0.1:5173/`.
 - PHP app (requires a healthy Docker engine): from the repository root run `docker compose --profile tools up -d --build`, then open `http://localhost:8080/`.
 - Frontend checks: `npm run build` and `npm run lint`.
-- PHP static regressions: `php tests/offline_deployment_static_check.php`, `php tests/security_regression_check.php`, and `php tests/password_reset_security_check.php`.
+- Runtime health: `docker compose ps` và `http://localhost:8080/health.php`.
 
 Static checks do not prove registration, email delivery, note CRUD, realtime collaboration or AI work end-to-end. Those require MySQL and services running and must be verified in a browser with test accounts before making a no-errors claim.

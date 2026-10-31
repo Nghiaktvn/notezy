@@ -213,6 +213,17 @@ class MockProvider(LlmProvider):
                 "tool_calls": [_fn("delete_note", {"note_id": nid})],
             }
 
+        # In local/demo mode, answer questions about a named note from actual
+        # search results instead of returning the generic capability menu.
+        if ("ghi chú" in lower or "note" in lower) and (
+            "?" in last_user or "nội dung" in lower or "noi dung" in lower
+        ):
+            return {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [_fn("search_notes", {"query": _named_note_query(last_user), "limit": 5})],
+            }
+
         return {
             "role": "assistant",
             "content": (
@@ -280,6 +291,13 @@ def _note_query(text: str) -> str:
 
 
 def _named_note_query(text: str) -> str:
+    question = re.search(
+        r"(?:ghi chú|note)\s+(.+?)\s+(?:kiểm tra|chứa|gồm|nói về|đề cập|là gì|có những)",
+        text,
+        flags=re.I,
+    )
+    if question:
+        return question.group(1).strip(" .,:;?!\"'")
     named_book = re.search(r"(?:sổ|ghi chú|note)\s+(.+?)\s+(?:ghi\s+)?(?:nội dung gì|gì\?|nói gì)", text, flags=re.I)
     if named_book:
         return named_book.group(1).strip(" .,:;?!\"'")

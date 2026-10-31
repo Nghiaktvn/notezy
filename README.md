@@ -15,15 +15,53 @@ có mã nguồn, chạy `git clone https://github.com/Nghiaktvn/notezy.git` rồ
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 docker compose up -d --build --wait
-docker compose exec -T web php tests/seed_demo_accounts.php
+docker compose exec -T web php scripts/seed_demo_accounts.php
 Start-Process 'http://localhost:8080/'
 ```
 
 Đăng nhập demo bằng `user1` hoặc `user2`, mật khẩu `Password123!`. Hai tài khoản
 được kích hoạt sẵn. Muốn có ghi chú mẫu để trình bày, chạy thêm
-`docker compose exec -T web php tests/seed_demo_showcase.php` **một lần**. Lệnh
+`docker compose exec -T web php scripts/seed_demo_showcase.php` **một lần**. Lệnh
 này tạo lại các ghi chú demo cùng tên của `user1` nếu chạy lặp lại. Xem mục 3
 để cấu hình email OTP, kiểm tra hệ thống và xử lý lỗi khởi động.
+
+### Nén mã nguồn để nộp E-learning (Windows PowerShell)
+
+Từ thư mục dự án đã clone bằng Git, chạy:
+
+```powershell
+python scripts/package_submission.py
+Get-Item .\submission\Notezy-Docker-Source.zip | Select-Object Name, @{Name='MB';Expression={[math]::Round($_.Length / 1MB, 2)}}
+```
+
+Nộp **một file** `submission/Notezy-Docker-Source.zip`. Script kiểm tra ZIP không
+hỏng và nhỏ hơn 100 MB. ZIP chứa mã nguồn PHP, SQL MySQL, frontend, assets,
+Docker Compose, dữ liệu demo và README; bỏ `.git`, `.env` chứa mật khẩu,
+`node_modules`, cache, tệp tạm và Supabase/PostgreSQL không được ứng dụng Docker
+sử dụng. Khi giải nén trên máy khác, chạy các lệnh ở đầu README để khởi động.
+
+### Kiến trúc hướng dịch vụ
+
+Chế độ Docker gọn gồm bốn container độc lập: `web` phục vụ PHP/API, `db` lưu dữ liệu,
+`ai_agent` xử lý trợ lý AI và `collab_ws` xử lý kết nối cộng tác thời gian thực.
+Các thành phần giao tiếp qua mạng nội bộ Compose và có health check. Mã nguồn
+cho từng dịch vụ nghiệp vụ (auth, user, note, file, AI, premium, collaboration),
+API gateway, Redis và outbox worker nằm trong `services/`; cấu hình mở rộng là
+`docker-compose.services.yml`. Kiểm tra danh sách dịch vụ bằng PowerShell:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.services.yml config --services
+```
+
+Chế độ mở rộng giữ nguyên giao diện PHP hiện có và thêm API gateway ở cổng 8088.
+Các trang PHP cũ vẫn được xử lý bởi `web`; các API qua gateway được chuyển tới
+service tương ứng. Chỉ bật chế độ mở rộng khi cần trình bày kiến trúc và máy có
+đủ tài nguyên để tải, dựng thêm các image:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --build --wait
+docker compose -f docker-compose.yml -f docker-compose.services.yml ps
+```
 
 ## Triển khai chỉ bằng GitHub Codespaces
 
@@ -50,34 +88,10 @@ thể cần bật lại sau khi Codespace được restart.
 > **Mục tiêu đánh giá: Đạt điểm tối đa 0.5/0.5**
 > Hệ thống hỗ trợ 2 người dùng mở và cùng chỉnh sửa một ghi chú trên 2 cửa sổ/trình duyệt khác nhau với khả năng đồng bộ thời gian thực và cảnh báo xung đột tức thì.
 
-### Cách 1: Sử dụng công cụ Demo trực quan 1-Click (`collab_demo.php`)
-1. Mở trình duyệt và truy cập:
-   ```
-   http://localhost:8080/collab_demo.php
-   # hoặc http://localhost/notezy/collab_demo.php (nếu dùng XAMPP)
-   ```
-2. Màn hình chia đôi xuất hiện:
-   - **Bên trái (Cửa sổ 1):** Người dùng `collab_user_a` (Chủ sở hữu ghi chú).
-   - **Bên phải (Cửa sổ 2):** Người dùng `collab_user_b` (Cộng tác viên có quyền Sửa - Editor).
-3. **Thử nghiệm 1 (Live Sync tức thì):**
-   - Nhấn nút **"1. Thử Live Sync"** ở thanh công cụ trên cùng (hoặc gõ trực tiếp bên cửa sổ A).
-   - Quan sát khung bên phải (User B): nội dung tự động cập nhật trong vòng **1 giây** mà **không cần reload trang**, kèm hiệu ứng viền phát sáng và thông báo toast `⚡ Ghi chú vừa được cập nhật trực tiếp bởi cộng tác viên`.
-4. **Thử nghiệm 2 (Cảnh báo Xung Đột - Conflict Alert):**
-   - Nhấn nút **"2. Thử Conflict Alert"** (hoặc để cả 2 bên cùng gõ nội dung khác nhau cùng lúc).
-   - Khi User A lưu phiên bản mới, khung User B lập tức bật **Hộp thoại Cảnh Báo Xung Đột Thời Gian Thực**:
-     * Hiển thị bảng so sánh trực quan song song giữa **"Bản hiện tại của bạn"** và **"Bản mới nhất trên máy chủ"**.
-     * Cung cấp 3 lựa chọn tức thì:
-       1. `[Tải bản của người khác]` (Chấp nhận bản của cộng tác viên).
-       2. `[Ghi đè bản của tôi]` (Giữ nguyên bản nháp của mình).
-       3. `[Hợp nhất cả hai (Merge)]` (Tự động ghép cả 2 nội dung lại với nhau để không mất dữ liệu).
-5. **Thử nghiệm 3 (Trạng thái Hiện Diện Trực Tuyến - Live Presence):**
-   - Phía trên form chỉnh sửa hiển thị huy hiệu: `🟢 [Tên người dùng] đang cùng mở`.
-   - Khi một người đang gõ chữ, bên kia hiện: `✍️ [Tên người dùng] đang gõ...`.
-
-### Cách 2: Thử nghiệm thủ công trên 2 trình duyệt riêng biệt
+### Kiểm tra trên 2 trình duyệt riêng biệt
 1. **Trình duyệt 1 (Chrome thường):** Đăng nhập tài khoản A, tạo một ghi chú và chia sẻ cho tài khoản B với quyền **"Có thể chỉnh sửa (Editor)"** tại mục Chia sẻ ghi chú.
 2. **Trình duyệt 2 (Chrome Ẩn danh / Firefox):** Đăng nhập tài khoản B, vào mở ghi chú được chia sẻ (`edit_note.php?id=...`).
-3. Cùng soạn thảo và theo dõi kết quả đồng bộ hoặc cảnh báo xung đột tương tự như trên.
+3. Cùng soạn thảo và theo dõi kết quả đồng bộ hoặc cảnh báo xung đột trên cả hai phiên.
 
 ---
 
@@ -145,24 +159,23 @@ Kết quả mong đợi: các dịch vụ chính `web`, `db`, `ai_agent`, `colla
 ### 3.3. Tạo hai tài khoản và ghi chú mẫu
 
 ```powershell
-docker compose exec -T web php tests/seed_demo_accounts.php
-docker compose exec -T web php tests/seed_demo_showcase.php
+docker compose exec -T web php scripts/seed_demo_accounts.php
+docker compose exec -T web php scripts/seed_demo_showcase.php
 ```
 
 Lệnh đầu tạo/kích hoạt hoặc đặt lại mật khẩu cho `user1` và `user2`, rồi phải in `Login user1: SUCCESS` và `Login user2: SUCCESS`. Cả hai dùng mật khẩu demo `Password123!`. Lệnh thứ hai tạo bốn ghi chú mẫu cho `user1` (ghim, ảnh, khóa, cộng tác) và chia sẻ ghi chú cộng tác cho `user2` với quyền sửa. **Chạy lại lệnh thứ hai sẽ xóa và tạo lại các ghi chú mẫu khớp tiêu đề demo của `user1`**; không dùng sau khi đã sửa các ghi chú mẫu và muốn giữ thay đổi. Mật khẩu riêng của ghi chú khóa mẫu là `123456`.
 
 Đăng nhập `user1` trên Chrome thường, `user2` trên cửa sổ ẩn danh hoặc trình duyệt khác. Mỗi cửa sổ cần phiên đăng nhập riêng. Khi thử đăng ký tài khoản mới hoặc quên mật khẩu, dùng một email bạn thật sự đọc được; tài khoản `user1`/`user2` đã kích hoạt sẵn nên không có OTP kích hoạt để nhận.
 
-### 3.4. Kiểm thử từ PowerShell
+### 3.4. Kiểm tra dịch vụ từ PowerShell
 
 ```powershell
-docker compose exec -T web php test_system_flow.php
-docker compose exec -T web php tests/verify_full_rubric_checklist.php
-docker compose exec -T web php tests/password_reset_security_check.php
+docker compose ps
+(Invoke-WebRequest 'http://localhost:8080/health.php' -UseBasicParsing).StatusCode
 docker compose logs --tail 100 web db ai_agent collab_ws
 ```
 
-`test_system_flow.php` kiểm tra backend đăng ký, kích hoạt, đăng nhập, chia sẻ và quyền cộng tác. Checklist thứ hai chạy 31 kiểm tra database/cấu hình trong giao dịch được rollback. **31/31 không có nghĩa giảng viên sẽ chấm 32/32**; hãy thực hiện các thao tác giao diện dưới đây. Không cần cài PHP trên Windows để chạy các lệnh `docker compose exec`.
+Các lệnh trên xác nhận container và endpoint đang chạy. Hãy thực hiện các thao tác giao diện ở mục 4 để kiểm tra chức năng; không suy ra điểm 32/32 chỉ từ trạng thái container. Không cần cài PHP trên Windows.
 
 ---
 
@@ -178,7 +191,7 @@ Bảng rubric chính thức nằm trong mục IV của `503073-FinalProject-V1.p
 4. **Quên mật khẩu (4):** Trên form đăng nhập bấm **Quên mật khẩu?**. Nhập **đúng tên tài khoản và email** của tài khoản thử. Kiểm tra OTP nhận qua email (15 phút), nút **Gửi lại mã OTP** sau 60 giây và thông báo mã sai. Nhập mã đúng, đặt mật khẩu mới tối thiểu 6 ký tự và xác nhận trùng nhau. Kết quả: trở về trang ngoài; đăng nhập lại bằng mật khẩu mới thành công. Không nhập mật khẩu mới vào tài liệu hay ảnh chụp.
 5. **Xem hồ sơ/avatar (5):** Đăng nhập `user1`, bấm avatar → **Xem trang cá nhân**. Kiểm tra tên tài khoản, họ tên, email và avatar đúng với người đang đăng nhập.
 6. **Sửa hồ sơ/avatar (6):** Trong `account.php`, bấm **Sửa** một trường họ/tên, lưu và tải lại. Bấm **Upload Avatar**, chọn ảnh thử, kiểm tra avatar mới xuất hiện ở hồ sơ và menu. Dùng ảnh không nhạy cảm.
-7. **Đổi mật khẩu khi đã đăng nhập (7):** Kiểm tra trang hồ sơ có luồng đổi mật khẩu riêng, xác thực mật khẩu hiện tại và nhập mật khẩu mới hai lần. Thử mật khẩu cũ/sai và đăng nhập lại sau khi đổi. Nếu không có thao tác này trên UI, **ghi tiêu chí 7 là chưa đạt**, không dùng chức năng Quên mật khẩu để thay thế khi trình bày rubric.
+7. **Đổi mật khẩu khi đã đăng nhập (7):** Trong trang hồ sơ, bấm **Đổi mật khẩu** để mở `update_password.php`. Nhập mật khẩu hiện tại và mật khẩu mới hai lần. Thử mật khẩu hiện tại sai, sau đó đổi thành công; đăng xuất và đăng nhập lại để kiểm tra mật khẩu cũ không còn dùng được.
 8. **Tùy chọn (8):** Trong `account.php`, đổi **Giao diện** Sáng/Tối và **Ngôn ngữ**, bấm **Lưu tùy chọn**; tải lại và kiểm tra lựa chọn được giữ.
 
 ### 4.2. Ghi chú cơ bản (ID 9–22)
@@ -203,7 +216,7 @@ Bảng rubric chính thức nằm trong mục IV của `503073-FinalProject-V1.p
 23. **Bật/tắt mật khẩu ghi chú (23):** Trên ghi chú thử, bấm **Đặt hoặc đổi mật khẩu**, nhập mật khẩu mới và xác nhận hai lần. Kiểm tra ghi chú bị che khi mở lại; để tắt, nhập đúng mật khẩu hiện tại và chọn gỡ bảo vệ. Dữ liệu mẫu có ghi chú khóa với mật khẩu `123456` để trình bày mở khóa.
 24. **Đổi mật khẩu ghi chú (24):** Thử mở khóa bằng mật khẩu sai, sau đó đúng; đổi sang mật khẩu mới bằng cách nhập mật khẩu cũ và mật khẩu mới hai lần. Kiểm tra mật khẩu cũ không còn mở được, mật khẩu mới mở được; sau demo có thể gỡ khóa trên ghi chú thử.
 25. **Chia sẻ/nhận (25):** Ở `user1`, bấm **Chia sẻ sổ** của ghi chú thử, nhập email của `user2` (`user2@example.com`), chọn Viewer/đọc. Ở cửa sổ `user2`, kiểm tra **Được chia sẻ với tôi**; thử sửa và xác nhận bị chặn. Ở `user1`, đổi quyền sang Editor/ghi; ở `user2`, thử sửa lại. Kiểm tra danh sách người nhận và quyền, rồi thu hồi quyền sau demo nếu đó là ghi chú thử.
-26. **Cộng tác thời gian thực (26):** Dùng ghi chú **👥 Ghi chú Cộng tác thời gian thực** đã seed, mở `themghichu.php?id=...` trong hai cửa sổ: `user1` và `user2`. Gõ ở A, quan sát B cập nhật mà không tải lại; thử gõ cùng lúc để xem presence, typing và cảnh báo xung đột. Có thể mở `http://localhost:8080/collab_demo.php` để trình diễn giao diện chia đôi, nhưng vẫn cần thử hai phiên thật cho rubric.
+26. **Cộng tác thời gian thực (26):** Dùng ghi chú **👥 Ghi chú Cộng tác thời gian thực** đã seed, mở `themghichu.php?id=...` trong hai cửa sổ: `user1` và `user2`. Gõ ở A, quan sát B cập nhật mà không tải lại; thử gõ cùng lúc để xem presence, typing và cảnh báo xung đột.
 27. **AI tóm tắt (27):** Mở một ghi chú có vài đoạn nội dung, bấm **Hỏi trợ lý AI** và yêu cầu “Tóm tắt ghi chú này”. Kiểm tra tóm tắt bám đúng nội dung, không chỉ là câu chào. Nếu muốn chứng minh LLM thật, kiểm tra `LLM_PROVIDER` và khóa API hợp lệ trong `.env` trước demo.
 28. **AI hỏi đáp (28):** Hỏi AI một chi tiết chỉ có trong ghi chú đã mở, ví dụ “Ghi chú này đặt hạn vào ngày nào?”. So sánh câu trả lời với nội dung thật; thử câu hỏi ngoài dữ liệu để kiểm tra phản hồi khi không biết.
 
@@ -212,7 +225,7 @@ Bảng rubric chính thức nằm trong mục IV của `503073-FinalProject-V1.p
 29. **UI/UX (29):** Trình diễn cả trang ngoài, đăng ký, dashboard, trạng thái chưa có ghi chú, thông báo thành công/lỗi, thao tác bàn phím và nhãn form. Tiêu chí này do giảng viên đánh giá trực tiếp.
 30. **Responsive (30):** Mở DevTools của Chrome (`F12`), bật biểu tượng thiết bị (`Ctrl+Shift+M`), thử kích thước điện thoại, tablet và desktop tại trang ngoài, dashboard và form sửa. Kiểm tra không tràn ngang, nút đủ dễ chạm và menu vẫn dùng được.
 31. **Offline (31):** Khi đã mở dashboard và ghi chú, vào DevTools → **Network** → **Offline**; thử xem ghi chú đã lưu và sửa/tạo ghi chú thử. Chuyển lại **Online**, chờ trạng thái đồng bộ rồi tải lại để đối chiếu dữ liệu. Không dùng `docker compose stop` để giả lập mất mạng vì nó tắt cả server và làm sai kịch bản PWA.
-32. **Triển khai (32):** Chạy bước 3.2 trên máy giảng viên hoặc Codespaces; kiểm tra URL ứng dụng, database và các dịch vụ hoạt động. Docker Compose là phương án thay thế được PDF cho phép khi không triển khai public. Nếu trình bày triển khai online, kiểm tra HTTPS, port public và thời gian hoạt động trong giai đoạn chấm.
+32. **Triển khai online (32):** Bản ZIP này chạy được bằng Docker Compose trên máy cục bộ. Để đạt mức điểm tối đa theo rubric, cần triển khai ứng dụng thực sự lên một URL công khai có HTTPS, kiểm tra hiệu năng, khả năng mở rộng và thời gian hoạt động. Chỉ chạy `localhost` hoặc có cấu hình Docker chưa đủ chứng minh tiêu chí này.
 
 Sau demo, nếu ghi chú `DEMO RUBRIC` hoặc nhãn thử còn tồn tại, dọn chúng bằng UI sau khi đối chiếu đúng tiêu đề. Để dừng container mà giữ dữ liệu, dùng:
 

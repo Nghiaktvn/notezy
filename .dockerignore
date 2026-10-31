@@ -17,6 +17,12 @@ node_modules
 frontend/node_modules
 frontend/dist
 frontend/.vite
+.artifact_node_modules/
+submission/
+outputs/
+tmp/
+Rubric.xlsx.inspect.ndjson
+Rubric_preview.png
 vendor/
 composer.lock
 
@@ -28,8 +34,11 @@ storage/sessions/
 
 # ── Dev-only scripts: must not be reachable on a deployed host ────────────
 tests/
+ai_agent/tests/
 test_db.php
 test_system_flow.php
+test_mysql_conn.php
+test_reminder_demo.php
 
 # ── Python agent caches (deployed as its own service) ─────────────────────
 ai_agent/__pycache__/

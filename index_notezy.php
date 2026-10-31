@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/session.php';
 require_once('db.php');
 notezy_session_start();
+header('Cache-Control: private, no-store, no-cache, must-revalidate');
 
 if (!isset($_SESSION['id'])) {
     header('Location: index.php');
@@ -1318,6 +1319,9 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i>Tìm kiếm ghi chú</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button type="button" class="dropdown-item" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles"></i>Trợ lý AI</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="account.php"><i class="fas fa-user"></i>Trang cá nhân</a></li>
+                    <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt"></i>Đăng xuất</a></li>
                 </ul>
             </div>
             <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>

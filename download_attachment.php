@@ -36,7 +36,11 @@ if (!is_file($path)) {
 $safeName = str_replace(["\r", "\n", '"'], '', $file['original_name']);
 header('Content-Type: ' . $file['mime_type']);
 header('Content-Length: ' . filesize($path));
-header("Content-Disposition: attachment; filename=\"{$safeName}\"");
+$inline = isset($_GET['inline']) && $_GET['inline'] === '1'
+    && (str_starts_with((string) $file['mime_type'], 'image/')
+        || str_starts_with((string) $file['mime_type'], 'video/'));
+$disposition = $inline ? 'inline' : 'attachment';
+header("Content-Disposition: {$disposition}; filename=\"{$safeName}\"");
 header('X-Content-Type-Options: nosniff');
 readfile($path);
 exit;

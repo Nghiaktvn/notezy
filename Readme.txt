@@ -44,21 +44,16 @@ Tài khoản phụ để kiểm tra chia sẻ/cộng tác:
 2) Mở “Kế hoạch ôn tập tuần này”; thử ghim, tạo/sửa note và thấy autosave.
 3) Mở menu đen bên trái -> “Sơ đồ tư duy”. Chọn “Xem sơ đồ dự án Notezy”, sau đó bấm “Tạo sơ đồ tư duy”.
 4) Từ dashboard gửi note vào “Thời khóa biểu”; kiểm tra ba khung sáng/chiều/tối và báo thức giờ Việt Nam (+07:00).
-5) Chia sẻ “Công việc hôm nay” cho user1@example.com với quyền Editor; đăng nhập user1 ở trình duyệt thứ hai và mở collab_demo.php.
+5) Chia sẻ “Công việc hôm nay” cho user1@example.com với quyền Editor; đăng nhập user1 ở trình duyệt thứ hai và mở cùng ghi chú được chia sẻ.
 6) Mở Notezy AI; yêu cầu “Tóm tắt ghi chú Kế hoạch ôn tập tuần này bằng ba ý chính.” AI trả lời và hiển thị nguồn ghi chú.
 7) Tắt mạng trong DevTools để kiểm tra trang offline/cache, sau đó bật lại để đồng bộ hàng đợi.
 
-5. Kiểm thử
-------------
-docker compose exec -T web php tests/verify_full_rubric_checklist.php
-docker compose exec -T web php tests/security_regression_check.php
-docker compose exec -T web php tests/password_reset_security_check.php
-docker compose exec -T web php tests/offline_deployment_static_check.php
-docker compose exec -T web php tests/test_ai_live.php
-docker compose exec -T ai_agent python -m unittest ai_agent.tests.test_ai_agent
-
-Kết quả kiểm thử cuối: rubric 31/31 PASS; kiểm tra bảo mật, password-reset,
-offline/deployment và AI unit tests đều PASS.
+5. Kiểm tra khi chạy
+-------------------
+docker compose ps
+Mở http://localhost:8080/health.php và kiểm tra HTTP 200.
+Đăng nhập user1/user2, thử tạo ghi chú, đính kèm tệp, chia sẻ và AI trên giao diện.
+Các script kiểm thử và ảnh thử nghiệm không cần cho runtime đã được bỏ khỏi source nộp.
 
 6. Kiến trúc
 ------------
@@ -81,6 +76,8 @@ dùng cuối.
 -----------------
 - Nộp toàn bộ thư mục source này, gồm docker-compose.yml, Dockerfile, SQL,
   api, ai_agent, collaboration_ws.py và Readme.txt.
+- Nếu cần dữ liệu demo, chạy `docker compose exec -T web php scripts/seed_demo_accounts.php`
+  và `docker compose exec -T web php scripts/seed_demo_showcase.php`.
 - Rubric.xlsx là bảng tự đánh giá đi kèm, với 32 tiêu chí.
 - Video demo.mp4 phải do nhóm tự quay ở tối thiểu 1080p, tiếng rõ, có thành viên
   giới thiệu kiến trúc và lần lượt trình bày toàn bộ 32 tiêu chí.

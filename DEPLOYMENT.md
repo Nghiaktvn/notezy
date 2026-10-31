@@ -58,7 +58,6 @@ trường Docker và forward URL HTTPS cho các port của ứng dụng.
 
 5. **Truy cập ứng dụng:**
    - Trang chủ: `http://localhost/notezy/index.php`
-   - **Demo cộng tác thời gian thực 2 cửa sổ (Realtime Collaboration):** `http://localhost/notezy/collab_demo.php`
 
 ---
 

@@ -65,7 +65,7 @@ try {
     $error = "Lỗi truy vấn: " . $e->getMessage();
 }
 
-// ── Kiểm tra mã bảo mật 4 số (PIN) trước khi xem sổ ──────────────────────
+// ── Kiểm tra mã bảo mật 6 số (PIN) trước khi xem sổ ──────────────────────
 if (!isset($_SESSION['pin_unlocked_notes'])) {
     $_SESSION['pin_unlocked_notes'] = [];
 }
@@ -146,7 +146,7 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
                 <i class="fas fa-shield-alt fa-3x"></i>
             </div>
             <h4 class="fw-bold mb-1">Sổ ghi chú đã khóa bảo mật</h4>
-            <p class="text-muted small mb-4">Vui lòng nhập đúng mã 4 số đã thiết lập trước đó để xem nội dung và tùy chỉnh sự kiện của sổ.</p>
+            <p class="text-muted small mb-4">Vui lòng nhập đúng mã 6 số đã thiết lập trước đó để xem nội dung và tùy chỉnh sự kiện của sổ.</p>
             <?php if ($pin_error): ?>
                 <div class="alert alert-danger py-2 small"><?= htmlspecialchars($pin_error) ?></div>
             <?php endif; ?>
@@ -170,15 +170,18 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
 exit;
 }
 
-// Kiểm tra mật khẩu chữ thông thường nếu cần
-if (false && $note && $note['password_hash'] && !isset($_SESSION['accessed_notes'][$note_id])) {
-    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['password'])) {
-        if (password_verify($_POST['password'], $note['password_hash'])) {
-            $_SESSION['accessed_notes'][$note_id] = true;
-        } else {
-            $error = 'Mật khẩu không đúng.';
-        }
-    } else {
+// A direct detail URL must enforce the same password gate as the dashboard.
+if ($note && !empty($note['password_hash']) && empty($_SESSION['accessed_notes'][$note_id])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])
+        && password_verify((string) $_POST['password'], $note['password_hash'])) {
+        $_SESSION['accessed_notes'][$note_id] = true;
+        header('Location: notepass.php?id=' . urlencode((string) $note_id));
+        exit;
+    }
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
+        $error = 'Mật khẩu không đúng.';
+    }
+    http_response_code(423);
         // Hiển thị form nhập mật khẩu
         ?>
         <!DOCTYPE html>
@@ -252,7 +255,15 @@ if (false && $note && $note['password_hash'] && !isset($_SESSION['accessed_notes
         </html>
         <?php
 exit;
-    }
+}
+
+$attachments = [];
+if ($note) {
+    $attachmentStmt = $conn->prepare('SELECT attachment_id, original_name, mime_type, attachment_type FROM note_attachments WHERE note_id = ? ORDER BY created_at DESC');
+    $attachmentStmt->bind_param('i', $note_id);
+    $attachmentStmt->execute();
+    $attachments = $attachmentStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $attachmentStmt->close();
 }
 
 // Xử lý chia sẻ ghi chú
@@ -511,7 +522,7 @@ if ($is_owner && $_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['revoke'])
                     <h2 class="fw-bold mb-0"><?= htmlspecialchars($note['title']) ?></h2>
                     <div>
                         <?php if ($note['pin_hash']): ?>
-                            <span class="badge bg-success"><i class="fas fa-shield-alt me-1"></i>Đã bảo mật 4 số</span>
+                            <span class="badge bg-success"><i class="fas fa-shield-alt me-1"></i>Đã bảo mật 6 số</span>
                         <?php endif; ?>
                         <?php if ($note['pinned']): ?>
                             <span class="badge bg-warning text-dark"><i class="fas fa-thumbtack me-1"></i>Đã ghim</span>
@@ -535,6 +546,27 @@ if ($is_owner && $_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['revoke'])
                 <div class="p-3 bg-white rounded border mb-3 text-dark" style="min-height: 120px;">
                     <?= nl2br(htmlspecialchars($note['content'])) ?>
                 </div>
+
+                <?php if ($attachments): ?>
+                    <section class="mb-3" aria-label="Tệp đính kèm">
+                        <h3 class="h6 fw-semibold">Tệp đính kèm</h3>
+                        <?php foreach ($attachments as $attachment): ?>
+                            <?php
+                            $downloadUrl = 'download_attachment.php?attachment_id=' . (int) $attachment['attachment_id'];
+                            $inlineUrl = $downloadUrl . '&inline=1';
+                            $fileName = htmlspecialchars((string) $attachment['original_name'], ENT_QUOTES, 'UTF-8');
+                            ?>
+                            <div class="border rounded p-2 mb-2 bg-white">
+                                <?php if ($attachment['attachment_type'] === 'video'): ?>
+                                    <video controls preload="metadata" class="w-100 rounded mb-2" style="max-height: 360px" src="<?= htmlspecialchars($inlineUrl, ENT_QUOTES, 'UTF-8') ?>"></video>
+                                <?php elseif ($attachment['attachment_type'] === 'image'): ?>
+                                    <img src="<?= htmlspecialchars($inlineUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= $fileName ?>" class="img-fluid rounded mb-2" style="max-height: 350px">
+                                <?php endif; ?>
+                                <a href="<?= htmlspecialchars($downloadUrl, ENT_QUOTES, 'UTF-8') ?>" class="d-block text-break"><i class="fas fa-paperclip me-1"></i><?= $fileName ?></a>
+                            </div>
+                        <?php endforeach; ?>
+                    </section>
+                <?php endif; ?>
 
                 <?php if (!empty($note['labels'])): ?>
                     <div class="note-labels mb-3">

@@ -17,7 +17,7 @@ $collaboratorRow = $findCollaborator->get_result()->fetch_assoc();
 $findCollaborator->close();
 
 if (!$ownerRow || !$collaboratorRow) {
-    fwrite(STDERR, "Run tests/seed_demo_accounts.php before seeding the showcase.\n");
+    fwrite(STDERR, "Run scripts/seed_demo_accounts.php before seeding the showcase.\n");
     exit(1);
 }
 
@@ -86,14 +86,14 @@ $n1 = $conn->insert_id;
 // Note 2: Note with image attachment
 $t2 = "🖼️ Ghi chú có đính kèm ảnh & nhãn 'Học tập'";
 $c2 = "Ghi chú này minh họa tính năng đính kèm tệp đa phương tiện (ảnh) và gắn nhiều nhãn để dễ dàng lọc và tìm kiếm theo phân loại.";
-$s2 = $conn->prepare("INSERT INTO notes (user_id, title, content, pinned, background_color, text_color, image_path, created_at, updated_at) VALUES (?, ?, ?, 0, '#e0f2fe', '#0f172a', 'logo.png', NOW(), NOW())");
+$s2 = $conn->prepare("INSERT INTO notes (user_id, title, content, pinned, background_color, text_color, image_path, created_at, updated_at) VALUES (?, ?, ?, 0, '#e0f2fe', '#0f172a', 'assets/notezy-mascot-2026.png', NOW(), NOW())");
 $s2->bind_param("iss", $userId, $t2, $c2);
 $s2->execute();
 $n2 = $conn->insert_id;
 
 // Note 3: Note with Password protection
 $t3 = "🔒 Ghi chú bảo mật mật khẩu (Password Protection)";
-$c3 = "Nội dung bí mật được mã hóa và bảo vệ bằng mật khẩu riêng (Mật khẩu: 123456). Chỉ người có mật khẩu mới có thể mở xem.";
+$c3 = "Nội dung của ghi chú này được bảo vệ bằng mật khẩu riêng. Chỉ người có mật khẩu mới có thể mở xem.";
 $passHash = password_hash("123456", PASSWORD_DEFAULT);
 $s3 = $conn->prepare("INSERT INTO notes (user_id, title, content, pinned, background_color, password_hash, created_at, updated_at) VALUES (?, ?, ?, 0, '#fee2e2', ?, NOW(), NOW())");
 $s3->bind_param("isss", $userId, $t3, $c3, $passHash);

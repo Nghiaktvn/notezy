@@ -1,18 +1,16 @@
 /**
  * sw.js — Notezy service worker
  * Caches static assets (CSS, logo) via the Cache API and serves offline.html
- * as a fallback for navigation requests when the network is unavailable
- * and the page isn't already cached.
+ * as a fallback for navigation requests when the network is unavailable.
  *
  * NOTE: Dynamic PHP pages that depend on session/DB state (index_notezy.php,
  * account.php, themghichu.php, edit_note.php, ...) are intentionally NOT
  * precached — caching them would risk showing stale notes/session data.
- * They're fetched network-first with a safe offline.html fallback only.
+ * They are fetched from the network without being written to the Cache API.
  */
 
-const CACHE_VERSION = 'notezy-v5';
+const CACHE_VERSION = 'notezy-v6';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
 // Static, mostly-immutable assets safe to precache.
 const PRECACHE_URLS = [
@@ -72,39 +70,17 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(request.url);
 
-    // Navigation requests (loading a page/tab): network-first, fall back to
-    // cache, then to offline.html if nothing is available.
+    // Session-dependent PHP pages must never be stored in the shared Cache API.
+    // IndexedDB and the offline page provide the offline note experience.
     if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    // Cache successful navigations of pages
-                    if (response && response.ok) {
-                        const clone = response.clone();
-                        caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
-                    }
-                    return response;
-                })
-                .catch(() =>
-                    caches.match(request).then((cached) => cached || caches.match('offline.html'))
-                )
+            fetch(request).catch(() => caches.match('offline.html'))
         );
         return;
     }
 
-    // API calls: network-first, fall back to cache
+    // API responses can contain private notes and must not outlive a login.
     if (url.pathname.includes('/api/')) {
-        event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    if (response && response.ok) {
-                        const clone = response.clone();
-                        caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
-                    }
-                    return response;
-                })
-                .catch(() => caches.match(request))
-        );
         return;
     }
 
@@ -128,16 +104,5 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Everything else: Network-first, cache fallback
-    event.respondWith(
-        fetch(request)
-            .then((response) => {
-                if (response && response.ok) {
-                    const clone = response.clone();
-                    caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
-                }
-                return response;
-            })
-            .catch(() => caches.match(request))
-    );
+    // All remaining dynamic requests use the network without caching.
 });

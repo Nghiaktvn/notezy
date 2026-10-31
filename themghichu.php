@@ -539,7 +539,7 @@ if ($lstmt) {
                                 <div class="form-check">
                                     <input class="form-check-input label-checkbox" type="checkbox"
                                            name="noteLabels[]" value="<?= htmlspecialchars($lbl['name']) ?>"
-                                           id="lbl_<?= $lbl['label_id'] ?>">
+                                           id="lbl_<?= $lbl['label_id'] ?>" <?= in_array($lbl['name'], $editing_labels, true) ? 'checked' : '' ?>>
                                     <label class="form-check-label" for="lbl_<?= $lbl['label_id'] ?>">
                                         <?= htmlspecialchars($lbl['name']) ?>
                                     </label>

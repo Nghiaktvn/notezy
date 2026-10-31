@@ -19,14 +19,20 @@ $user_id = (int) $_SESSION['id'];
 
 // Xử lý cập nhật avatar
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
-    $max_size = 5 * 1024 * 1024; // 2MB
+    $max_size = 5 * 1024 * 1024;
     $file = $_FILES['avatar'];
 
     if ($file['error'] === UPLOAD_ERR_OK && $file['size'] <= $max_size) {
         // Validate if it's an image
         $image_info = getimagesize($file['tmp_name']);
-        if ($image_info !== false) {
-            $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $image_extensions = [
+            IMAGETYPE_JPEG => 'jpg',
+            IMAGETYPE_PNG => 'png',
+            IMAGETYPE_GIF => 'gif',
+            IMAGETYPE_WEBP => 'webp',
+        ];
+        if ($image_info !== false && isset($image_extensions[$image_info[2]])) {
+            $ext = $image_extensions[$image_info[2]];
             $filename = 'avatar_' . $user_id . '_' . time() . '.' . $ext;
             $upload_dir = 'Uploads/';
             $upload_path = $upload_dir . $filename;
@@ -38,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar'])) {
             if (move_uploaded_file($file['tmp_name'], $upload_path)) {
                 $sql = "UPDATE users SET avatar = ? WHERE id = ?";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("si", $filename, $user_id);
+                $stmt->bind_param("si", $upload_path, $user_id);
                 if ($stmt->execute()) {
                     echo json_encode(['success' => true, 'message' => 'Cập nhật avatar thành công', 'avatar' => $upload_path]);
                 } else {
@@ -367,9 +373,36 @@ if (!$user) {
             }
         }
         @media (max-width: 767px) {
+            .container {
+                padding: 16px;
+            }
+            .row {
+                margin-left: 0;
+                margin-right: 0;
+                width: 100%;
+                min-width: 0;
+            }
             .col-left, .col-right {
                 width: 100%;
+                min-width: 0;
                 padding: 15px;
+            }
+            table.info-table {
+                width: 100%;
+                table-layout: fixed;
+            }
+            table.info-table th {
+                width: 70px;
+                font-size: 0.85rem;
+            }
+            table.info-table td.field-value {
+                padding: 8px;
+                overflow-wrap: anywhere;
+                font-size: 0.85rem;
+            }
+            table.info-table td.action {
+                width: 60px;
+                padding: 6px;
             }
             .form-control {
                 font-size: 0.9rem;
@@ -382,6 +415,29 @@ if (!$user) {
         @media (max-width: 480px) {
             body {
                 padding: 8px;
+            }
+            table.info-table,
+            table.info-table tbody {
+                display: block;
+            }
+            table.info-table tr {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 6px 8px;
+                margin-bottom: 12px;
+            }
+            table.info-table th {
+                grid-column: 1 / -1;
+                width: auto;
+                padding: 0;
+            }
+            table.info-table td.field-value {
+                grid-column: 1;
+                min-width: 0;
+            }
+            table.info-table td.action {
+                grid-column: 2;
+                width: auto;
             }
             .col-left, .col-right {
                 padding: 10px;
@@ -518,6 +574,10 @@ $fields = [
                     </div>
                      <a href="index_notezy.php">Trở về trang chủ</a>
                 </form>
+            </div>
+            <div class="edit-section mt-4">
+                <h4>Bảo mật tài khoản</h4>
+                <a href="update_password.php" class="btn btn-outline-primary w-100">Đổi mật khẩu</a>
             </div>
             <div class="edit-section mt-4">
                 <h4>Tùy chọn hiển thị</h4>

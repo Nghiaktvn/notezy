@@ -271,9 +271,6 @@ function notezy_render_diagnostic(string $errorType, string $errorMessage = '', 
     <?php endif; ?>
 
     <div class="d-flex gap-2 justify-content-end mt-4 pt-3 border-top border-secondary">
-        <a href="test_system_flow.php" class="btn btn-outline-info btn-sm">
-            <i class="fas fa-vial me-1"></i> Chạy kiểm thử tự động
-        </a>
         <button onclick="window.location.reload();" class="btn btn-primary btn-sm px-3">
             <i class="fas fa-sync-alt me-1"></i> Thử kết nối lại
         </button>

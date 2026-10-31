@@ -8,11 +8,14 @@ RUN docker-php-ext-install mysqli pdo pdo_mysql && \
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libonig-dev \
-    libpq-dev \
     curl \
     --no-install-recommends && \
-    docker-php-ext-install mbstring intl pdo_pgsql && \
+    docker-php-ext-install mbstring intl && \
     rm -rf /var/lib/apt/lists/*
+
+# The attachment API accepts videos up to 25 MiB and up to 10 files per request.
+RUN printf 'upload_max_filesize=25M\npost_max_size=256M\nmax_file_uploads=20\nmax_execution_time=120\n' \
+    > /usr/local/etc/php/conf.d/notezy-uploads.ini
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite

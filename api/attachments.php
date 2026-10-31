@@ -107,18 +107,37 @@ if ($count > 10) {
 $dir = dirname(__DIR__) . '/uploads/attachments';
 if (!is_dir($dir)) mkdir($dir, 0775, true);
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
-$saved = [];
+$validated = [];
 for ($i = 0; $i < $count; $i++) {
     $name = is_array($files['name']) ? $files['name'][$i] : $files['name'];
     $tmp = is_array($files['tmp_name']) ? $files['tmp_name'][$i] : $files['tmp_name'];
     $size = (int) (is_array($files['size']) ? $files['size'][$i] : $files['size']);
     $error = (int) (is_array($files['error']) ? $files['error'][$i] : $files['error']);
-    if ($error !== UPLOAD_ERR_OK || $size <= 0) continue;
+    if ($error !== UPLOAD_ERR_OK || $size <= 0 || !is_uploaded_file($tmp)) {
+        finfo_close($finfo);
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Không tải được tệp. Kiểm tra giới hạn dung lượng PHP và thử lại.']);
+        exit;
+    }
     $mime = finfo_file($finfo, $tmp);
-    if (!isset($allowed[$mime]) || $size > $allowed[$mime][2]) continue;
+    if (!isset($allowed[$mime]) || $size > $allowed[$mime][2]) {
+        finfo_close($finfo);
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Định dạng hoặc dung lượng tệp không được hỗ trợ: ' . basename((string) $name)]);
+        exit;
+    }
+    $validated[] = [$name, $tmp, $size, $mime];
+}
+$saved = [];
+foreach ($validated as [$name, $tmp, $size, $mime]) {
     [$type, $ext] = $allowed[$mime];
     $stored = bin2hex(random_bytes(16)) . '.' . $ext;
-    if (!move_uploaded_file($tmp, $dir . '/' . $stored)) continue;
+    if (!move_uploaded_file($tmp, $dir . '/' . $stored)) {
+        finfo_close($finfo);
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Không thể lưu tệp đính kèm.']);
+        exit;
+    }
     $safeOriginal = mb_substr(basename((string)$name), 0, 255);
     $stmt = $conn->prepare('INSERT INTO note_attachments (note_id, uploaded_by_user_id, original_name, stored_name, mime_type, file_size, attachment_type) VALUES (?, ?, ?, ?, ?, ?, ?)');
     $stmt->bind_param('iisssis', $noteId, $userId, $safeOriginal, $stored, $mime, $size, $type);

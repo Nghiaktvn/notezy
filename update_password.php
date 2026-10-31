@@ -7,6 +7,7 @@ session_set_cookie_params([
     'samesite' => 'Lax',
 ]);
 notezy_session_start();
+require_once __DIR__ . '/includes/csrf.php';
 include 'db.php';
 
 // Kiểm tra đăng nhập
@@ -18,7 +19,10 @@ if (empty($_SESSION['id'])) {
 $error = null;
 $success = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_check((string) ($_POST['csrf_token'] ?? ''))) {
+    http_response_code(403);
+    $error = 'Phiên biểu mẫu đã hết hạn. Vui lòng tải lại trang.';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current_password = trim($_POST['pass'] ?? '');
     $new_password     = trim($_POST['pass_new'] ?? '');
     $confirm_password = trim($_POST['pass_confirm'] ?? '');
@@ -97,7 +101,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
         <nav class="navbar navbar-expand-lg fixed-top">
             <div class="container">
                 <img src="logo.svg" alt="Notezy" width="100" height="100" class="me-2" />
-                <a class="navbar-brand logo" href="../a.html">Notezy</a>
+                <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -119,31 +123,32 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-md-6 col-lg-5">
-                    <h3 class="text-center text-secondary mt-5 mb-3">Change Password</h3>
+                    <h3 class="text-center text-secondary mt-5 mb-3">Đổi mật khẩu</h3>
                     <form novalidate method="post" action="" class="border rounded w-100 mb-5 mx-auto px-3 pt-3 bg-light">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <!-- FIX: Email field removed — user identified by session, not by POST input -->
                     <?php if (!empty($success_msg)): ?>
                         <div class="alert alert-success"><?= htmlspecialchars($success_msg) ?></div>
                     <?php endif; ?>
                         <div class="form-group">
-                            <label for="pass">Old Password</label>
-                            <input name="pass" class="form-control bg-dark text-warning" type="password" placeholder="Password" id="pass">
+                            <label for="pass">Mật khẩu hiện tại</label>
+                            <input name="pass" class="form-control bg-dark text-warning" type="password" id="pass" autocomplete="current-password" required>
                             <div class="invalid-feedback">Password is not valid.</div>
                         </div>
                         <div class="form-group">
-                            <label for="pass2">New Password</label>
-                            <input name="pass_new" class="form-control bg-dark text-warning" type="password" placeholder="Confirm Password" id="pass2">
+                            <label for="pass2">Mật khẩu mới (ít nhất 6 ký tự)</label>
+                            <input name="pass_new" class="form-control bg-dark text-warning" type="password" id="pass2" autocomplete="new-password" minlength="6" required>
                             <div class="invalid-feedback">Password is not valid.</div>
                         </div>
                         <div class="form-group">
-                            <label for="pass2">Confirm Password</label>
-                            <input name="pass_confirm" class="form-control bg-dark text-warning" type="password" placeholder="Confirm Password" id="pass2">
+                            <label for="pass3">Xác nhận mật khẩu mới</label>
+                            <input name="pass_confirm" class="form-control bg-dark text-warning" type="password" id="pass3" autocomplete="new-password" minlength="6" required>
                         </div>
                           <?php if (!empty($error)): ?>
                             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                           <?php endif; ?>
                         <div class="form-group">
-                            <button class="btn btn-success px-5" id="change">Change password</button>
+                            <button class="btn btn-success px-5" id="change">Lưu mật khẩu mới</button>
                         </div>
                     </form>
                     <form action="logout.php" method="post">
