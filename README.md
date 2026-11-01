@@ -103,6 +103,14 @@ Chọn **Save and deploy** rồi đăng ký thử bằng email của bạn; API 
 `MAIL_PASSWORD` chỉ dùng cho SMTP trên XAMPP/Codespaces hoặc máy chủ cho phép
 SMTP; nó không phải khóa Resend.
 
+**AI trên một Web Service:** Container PHP trên Render có thể gọi Gemini qua
+HTTPS để tóm tắt, hỏi đáp, tìm kiếm và tạo ghi chú khi không chạy AI agent riêng.
+Thao tác sửa, xóa ghi chú hoặc tạo nhãn yêu cầu xác nhận trên giao diện. Đặt
+`LLM_PROVIDER=gemini`, `GEMINI_API_KEY` và `GEMINI_MODEL=gemini-3.6-flash`
+trong Render Environment rồi chọn **Save and deploy**. Nếu khóa không có hoặc
+API không truy cập được, trợ lý vẫn dùng chế độ nội bộ dự phòng; không coi đó
+là kết quả AI thật.
+
 Tunnel MySQL từ XAMPP/Pinggy chỉ phù hợp demo tạm: URL đổi khi tunnel kết thúc
 và máy phải luôn bật. Để chạy ổn định, dùng MySQL được host lâu dài và cập nhật
 `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` trên Render. Render Free cũng xóa

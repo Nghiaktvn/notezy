@@ -23,6 +23,9 @@ if (isset($_SESSION['reset_otp_time']) && time() - $_SESSION['reset_otp_time'] >
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_check((string) ($_POST['csrf_token'] ?? ''))) {
         $error = 'Phiên làm việc không hợp lệ. Vui lòng tải lại trang và thử lại.';
+    } elseif (!create_connect(false)) {
+        $error = 'Dịch vụ dữ liệu tạm thời không khả dụng. Vui lòng thử lại sau.';
+        http_response_code(503);
     } else {
     $action = $_POST['action'] ?? '';
 
