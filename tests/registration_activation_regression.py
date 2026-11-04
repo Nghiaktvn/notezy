@@ -15,7 +15,8 @@ class RegistrationActivationRegression(unittest.TestCase):
         import urllib.request
         pending = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
         username = 'activation_' + uuid.uuid4().hex[:20]
-        data = {'username': username, 'display_name': 'Synthetic activation fixture',
+        # Match the landing-page modal, which requests a display name and email.
+        data = {'display_name': 'Synthetic activation fixture',
                 'email': username + '@example.com', 'password': 'FixturePassword2468!'}
         status, body = request(pending, '/api/register.php', 'POST', data)
         self.assertEqual(status, 200)
@@ -25,7 +26,7 @@ class RegistrationActivationRegression(unittest.TestCase):
         # An unactivated account can restart activation, without gaining a session.
         self.assertIn(request(pending, '/api/register.php', 'POST', data)[1]['status'], ['success', 'warning'])
         self.assertEqual(request(pending, '/api/notes.php')[0], 401)
-        status, body = request(pending, '/api/login.php', 'POST', {'username': username, 'password': data['password']})
+        status, body = request(pending, '/api/login.php', 'POST', {'email': data['email'], 'password': data['password']})
         self.assertEqual(status, 403)
         self.assertEqual(body['code'], 'not_activated')
         self.assertEqual(request(pending, '/api/notes.php')[0], 401)

@@ -340,36 +340,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                 setRegForm(prev => ({ ...prev, loading: true, error: '' }));
 
                 try {
-                    const formData = new URLSearchParams();
-                    formData.append('display_name', regForm.displayName);
-                    formData.append('email', regForm.email);
-                    formData.append('pass', regForm.password);
-                    formData.append('pass-confirm', regForm.passwordConfirm);
-                    formData.append('ajax', '1');
-
-                    const res = await fetch('register.php', {
+                    const res = await fetch('api/register.php', {
                         method: 'POST',
-                        headers: { 'Accept': 'application/json' },
-                        body: formData
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            display_name: regForm.displayName,
+                            email: regForm.email,
+                            password: regForm.password
+                        })
                     });
                     const data = await res.json();
 
-                    if (data.success) {
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
-                            return;
-                        }
-                        setLoginSuccessMsg('🎉 Đăng ký thành công! Bạn đã được đăng nhập.');
-                        setRegForm({
-                            displayName: '',
-                            email: '',
-                            password: '',
-                            passwordConfirm: '',
-                            error: '',
-                            loading: false
-                        });
+                    if (data.status === 'success' || data.status === 'warning') {
+                        window.location.href = data.redirect || ('verify_activation.php?email=' + encodeURIComponent(regForm.email));
                     } else {
-                        setRegForm(prev => ({ ...prev, loading: false, error: data.error || 'Đăng ký không thành công' }));
+                        setRegForm(prev => ({ ...prev, loading: false, error: data.message || 'Đăng ký không thành công' }));
                     }
                 } catch (err) {
                     setRegForm(prev => ({ ...prev, loading: false, error: 'Không thể kết nối máy chủ. Vui lòng thử lại.' }));
