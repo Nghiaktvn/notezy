@@ -17,6 +17,8 @@ For an existing Render service, edit that service instead of creating a duplicat
 4. Download the database provider CA and add it as a Render **secret file** named
    `aiven-ca.pem`. Set `DB_SSL_REQUIRED=true` and `DB_SSL_CA=/etc/secrets/aiven-ca.pem`.
    Do not disable certificate verification to make a failed TLS connection pass.
+   At startup the root process copies this public CA to a root-owned, readable
+   file outside the document root so Apache's unprivileged workers can use it.
 5. Set `AI_AGENT_SHARED_SECRET` to a generated random value. Set
    `AUTO_INIT_DATABASE=true`; the CLI bootstrap imports the baseline only into an
    empty database, then applies the idempotent migrations. Existing data is kept.
