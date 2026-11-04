@@ -36,11 +36,11 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 <!-- File: contact.html -->
 <!-- File: contact.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notezy - Contact Us</title>
+  <title>Notezy - Liên hệ</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="CSS/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -69,11 +69,11 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy</a></li>
-                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>Giới thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Tính năng</a></li>
+                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Bảo mật</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Liên hệ</a></li>
                 </ul>
             </div>
         </div>
@@ -82,30 +82,30 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 
   <main class="py-5" style="margin-top: 80px;">
     <div class="container">
-      <h1 class="text-center mb-4">Contact Notezy</h1>
-      <p class="text-center text-muted mb-5">We'd love to hear from you. Feel free to reach out through any of the following methods:</p>
+      <h1 class="text-center mb-4">Liên hệ Notezy</h1>
+      <p class="text-center text-muted mb-5">Bạn có thể gửi góp ý cho nhóm phát triển qua những kênh liên hệ dưới đây.</p>
 
       <div class="row justify-content-center">
         <div class="col-lg-6">
           <div class="contact-box">
             <ul class="list-unstyled">
               <li class="mb-3 d-flex align-items-center">
-                <i class="fas fa-envelope contact-icon"></i> <span>Email: <strong>support@notezy.com</strong></span>
+                <i class="fas fa-envelope contact-icon"></i> <span>Thư điện tử: <strong>support@notezy.com</strong></span>
               </li>
               <li class="mb-3 d-flex align-items-center">
-                <i class="fas fa-link contact-icon"></i> <span>Link dự phòng: <a href="https://backup.notezy.com" target="_blank">backup.notezy.com</a></span>
+                <i class="fas fa-link contact-icon"></i> <span>Liên kết dự phòng: <a href="https://backup.notezy.com" target="_blank">backup.notezy.com</a></span>
               </li>
               <li class="mb-3 d-flex align-items-center">
-                <i class="fab fa-facebook-f contact-icon"></i> <span>Facebook: <em>(coming soon)</em></span>
+                <i class="fab fa-facebook-f contact-icon"></i> <span>Facebook: <em>(sẽ cập nhật)</em></span>
               </li>
               <li class="mb-3 d-flex align-items-center">
-                <i class="fas fa-comment-dots contact-icon"></i> <span>Zalo: <em>(coming soon)</em></span>
+                <i class="fas fa-comment-dots contact-icon"></i> <span>Zalo: <em>(sẽ cập nhật)</em></span>
               </li>
               <li class="mb-3 d-flex align-items-center">
-                <i class="fas fa-phone contact-icon"></i> <span>Phone: <em>(coming soon)</em></span>
+                <i class="fas fa-phone contact-icon"></i> <span>Điện thoại: <em>(sẽ cập nhật)</em></span>
               </li>
             </ul>
-            <p class="text-muted mt-4">All contact channels will be updated soon. Please check back later or follow our official announcements.</p>
+            <p class="text-muted mt-4">Các kênh liên hệ trong bản trình diễn sẽ được nhóm cập nhật.</p>
           </div>
         </div>
       </div>
@@ -117,26 +117,26 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
       <div class="row">
         <div class="col-md-4">
           <h5 class="text-white">Notezy</h5>
-          <p>Your smart note-taking partner.</p>
+          <p>Người bạn đồng hành trong việc ghi chú.</p>
         </div>
         <div class="col-md-4">
-          <h5 class="text-white">Links</h5>
+          <h5 class="text-white">Liên kết</h5>
           <ul class="list-unstyled">
-            <li><a href="index_notezy.php" class="text-white-50">Home</a></li>
-                    <li><a href="introduce.php" class="text-white-50">About Us</a></li>
-                    <li><a href="khampha.php" class="text-white-50">Explore Features</a></li>
-                    <li><a href="privacy.php" class="text-white-50">Privacy Policy</a></li>
-                    <li><a href="contact.php" class="text-white-50">Contact Us</a></li>
+            <li><a href="index_notezy.php" class="text-white-50">Trang chủ</a></li>
+                    <li><a href="introduce.php" class="text-white-50">Giới thiệu</a></li>
+                    <li><a href="khampha.php" class="text-white-50">Khám phá tính năng</a></li>
+                    <li><a href="privacy.php" class="text-white-50">Chính sách bảo mật</a></li>
+                    <li><a href="contact.php" class="text-white-50">Liên hệ</a></li>
           </ul>
         </div>
         <div class="col-md-4">
-          <h5 class="text-white">Contact</h5>
+          <h5 class="text-white">Liên hệ</h5>
           <p><i class="fas fa-envelope"></i> support@notezy.com</p>
           <p><i class="fas fa-phone"></i> +84 123 456 789</p>
         </div>
       </div>
       <div class="text-center border-top pt-3 mt-3">
-        <small>&copy; 2025 Notezy. All rights reserved.</small>
+        <small>&copy; 2025 Notezy. Bảo lưu mọi quyền.</small>
       </div>
     </div>
   </footer>

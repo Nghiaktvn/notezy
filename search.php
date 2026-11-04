@@ -30,7 +30,7 @@ try {
         LEFT JOIN note_shares ns ON n.note_id = ns.note_id AND ns.shared_with_user_id = ?
         WHERE (n.user_id = ? OR ns.note_id IS NOT NULL)
     ";
-    
+
     $params = [$user_id, $user_id, $user_id];
     $types = 'iii';
 
@@ -52,9 +52,9 @@ try {
         if (!empty($labels_array)) {
             $placeholders = implode(',', array_fill(0, count($labels_array), '?'));
             $sql .= " AND n.note_id IN (
-                        SELECT nl.note_id 
-                        FROM note_labels nl 
-                        JOIN labels l ON nl.label_id = l.label_id 
+                        SELECT nl.note_id
+                        FROM note_labels nl
+                        JOIN labels l ON nl.label_id = l.label_id
                         WHERE LOWER(l.name) IN ($placeholders)
                      )";
             foreach ($labels_array as $label) {
@@ -82,7 +82,7 @@ try {
 
     // Gắn các tham số
     $stmt->bind_param($types, ...$params);
-    
+
     if (!$stmt->execute()) {
         echo '<p class="text-danger">Lỗi thực thi truy vấn: ' . htmlspecialchars($stmt->error) . '</p>';
         exit;
@@ -95,7 +95,7 @@ try {
     }
 
     $notes = $result->fetch_all(MYSQLI_ASSOC);
-    
+
     // Xử lý nhãn
     foreach ($notes as &$row) {
         $row['labels'] = $row['labels'] ? explode(',', $row['labels']) : [];
@@ -121,16 +121,16 @@ if (empty($notes)) {
             echo '<span class="pin-icon" title="Ghi chú đã ghim"><i class="fas fa-thumbtack"></i></span>';
         }
         if (!empty($note['password_hash'])) {
-            echo '<span class="badge bg-secondary mb-1"><i class="fas fa-key me-1"></i>Pass</span> ';
+            echo '<span class="badge bg-secondary mb-1"><i class="fas fa-key me-1"></i>Mật khẩu</span> ';
         }
         echo '<h5 class="mb-2">' . htmlspecialchars($note['title']) . '</h5>';
-        
+
         if ($is_locked) {
             echo '<p class="text-muted fst-italic"><i class="fas fa-lock me-1"></i>[Ghi chú được bảo vệ. Nhấp Xem để mở khóa]</p>';
         } else {
             echo '<p>' . nl2br(htmlspecialchars($note['content'])) . '</p>';
         }
-        
+
         if (!empty($note['labels'])) {
             echo '<div class="note-labels">';
             foreach ($note['labels'] as $label) {
@@ -138,7 +138,7 @@ if (empty($notes)) {
             }
             echo '</div>';
         }
-        
+
         echo '<div class="text-end mt-2">';
         echo '<a href="notepass.php?id=' . urlencode($note['note_id']) . '" class="btn btn-sm btn-outline-primary">Xem</a> ';
         if ($note['ownership'] === 'own') {

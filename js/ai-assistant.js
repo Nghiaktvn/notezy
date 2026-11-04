@@ -11,32 +11,32 @@
     loading: false,
     conversationId: null,
     messages: [
-      { role: 'assistant', content: 'Xin chào! Tôi là trợ lý ghi chú Notezy. Bạn muốn tìm, tóm tắt hay tạo note?' }
+      { role: 'assistant', content: 'Xin chào! Tôi là trợ lý ghi chú Notezy. Bạn muốn tìm, tóm tắt hay tạo ghi chú?' }
     ]
   };
 
   root.innerHTML = `
-    <div class="notezy-ai-panel" id="notezyAiPanel" role="dialog" aria-label="Notezy AI">
+    <div class="notezy-ai-panel" id="notezyAiPanel" role="dialog" aria-label="Trợ lý Notezy">
       <div class="notezy-ai-header">
         <div class="notezy-ai-brand">
           <img src="assets/notezy-mascot-2026.png" alt="" aria-hidden="true">
-          <span>Notezy AI<small>Trợ lý ghi chú của bạn</small></span>
+          <span>Trợ lý Notezy<small>Trợ lý ghi chú của bạn</small></span>
         </div>
         <button type="button" id="notezyAiClose" aria-label="Đóng">✕</button>
       </div>
       <div class="notezy-ai-messages" id="notezyAiMessages"></div>
-      <div class="notezy-ai-quick-actions" aria-label="Gợi ý thao tác AI">
+      <div class="notezy-ai-quick-actions" aria-label="Gợi ý thao tác trợ lý">
         <button type="button" data-ai-prompt="Tóm tắt các ghi chú gần đây của tôi thành các ý chính ngắn gọn.">Tóm tắt</button>
-        <button type="button" data-ai-prompt="Tạo checklist học tập từ các ghi chú gần đây của tôi.">Checklist</button>
-        <button type="button" data-ai-prompt="Tạo 5 flashcard ôn tập từ ghi chú${quickNoteHint} của tôi.">Flashcard</button>
-        <button type="button" data-ai-prompt="Tạo một bài quiz 5 câu từ ghi chú${quickNoteHint} của tôi.">Quiz</button>
+        <button type="button" data-ai-prompt="Tạo checklist học tập từ các ghi chú gần đây của tôi.">Danh sách kiểm tra</button>
+        <button type="button" data-ai-prompt="Tạo 5 flashcard ôn tập từ ghi chú${quickNoteHint} của tôi.">Thẻ ghi nhớ</button>
+        <button type="button" data-ai-prompt="Tạo một bài quiz 5 câu từ ghi chú${quickNoteHint} của tôi.">Trắc nghiệm</button>
       </div>
       <div class="notezy-ai-input">
-        <textarea id="notezyAiInput" rows="1" placeholder="Nhắn với AI..."></textarea>
+        <textarea id="notezyAiInput" rows="1" placeholder="Nhắn với trợ lý..."></textarea>
         <button type="button" id="notezyAiSend">Gửi</button>
       </div>
     </div>
-    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Notezy AI" aria-expanded="false" aria-controls="notezyAiPanel">
+    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Trợ lý Notezy" aria-expanded="false" aria-controls="notezyAiPanel">
       <span class="notezy-ai-fab__prompt" aria-hidden="true">Hỏi mình nhé! ✦</span>
       <img src="assets/notezy-mascot-2026.png" alt="" aria-hidden="true">
     </button>
@@ -142,8 +142,8 @@
       <textarea class="form-control" data-ai-content rows="6">${esc(resp.content)}</textarea>
       <div class="notezy-ai-labels">${(resp.labels || []).map(l => '<span>' + esc(l) + '</span>').join('')}</div>
       <div class="notezy-ai-actions">
-        <button type="button" data-ai-confirm="${idx}">${resp.action === 'update_note' ? 'Update' : 'Create'}</button>
-        <button type="button" class="secondary" data-ai-cancel="${idx}">Cancel</button>
+        <button type="button" data-ai-confirm="${idx}">${resp.action === 'update_note' ? 'Cập nhật' : 'Tạo'}</button>
+        <button type="button" class="secondary" data-ai-cancel="${idx}">Hủy</button>
       </div>
     `;
     return wrap;
@@ -156,8 +156,8 @@
       <h4>${resp.action === 'delete_note' ? 'Xóa ghi chú?' : 'Xác nhận'}</h4>
       <p>${esc(resp.content)}</p>
       <div class="notezy-ai-actions">
-        <button type="button" class="${resp.action === 'delete_note' ? 'danger' : ''}" data-ai-confirm="${idx}">${resp.action === 'delete_note' ? 'Delete' : 'Confirm'}</button>
-        <button type="button" class="secondary" data-ai-cancel="${idx}">Cancel</button>
+        <button type="button" class="${resp.action === 'delete_note' ? 'danger' : ''}" data-ai-confirm="${idx}">${resp.action === 'delete_note' ? 'Xóa' : 'Xác nhận'}</button>
+        <button type="button" class="secondary" data-ai-cancel="${idx}">Hủy</button>
       </div>
     `;
     return wrap;
@@ -172,7 +172,7 @@
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.status === 'error') {
-      throw new Error(data.message || 'AI request failed');
+      throw new Error(data.message || 'Không thể gửi yêu cầu tới trợ lý');
     }
     return data;
   }

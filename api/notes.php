@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "Unauthorized — please login"]);
+    echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập — please login"]);
     exit();
 }
 $user_id = (int)$_SESSION['id'];
@@ -57,7 +57,7 @@ switch ($method) {
             $stmt->execute();
             $row = $stmt->get_result()->fetch_assoc();
             if (!$row) {
-                echo json_encode(["status" => "error", "message" => "Note not found or unauthorized"]);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy ghi chú hoặc bạn không có quyền truy cập"]);
                 exit();
             }
 
@@ -215,7 +215,7 @@ switch ($method) {
 
             echo json_encode([
                 "status"   => "success",
-                "message"  => "Note created successfully",
+                "message"  => "Đã tạo ghi chú",
                 "note_id"  => $note_id,
                 "updated_at" => $fresh_updated_at,
                 "version" => $fresh_updated_at,
@@ -223,14 +223,14 @@ switch ($method) {
                 "ai_tags"  => $ai_result['tags']
             ]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Failed to create note"]);
+            echo json_encode(["status" => "error", "message" => "Không thể tạo ghi chú"]);
         }
         break;
 
     case 'PUT':
         $data = json_decode(file_get_contents("php://input"), true);
         if (!isset($data['note_id'])) {
-            echo json_encode(["status" => "error", "message" => "Note ID required"]);
+            echo json_encode(["status" => "error", "message" => "Thiếu mã ghi chú"]);
             exit();
         }
         $note_id = (int)$data['note_id'];
@@ -241,7 +241,7 @@ switch ($method) {
         // Verify ownership OR write permission in note_shares
         $auth_stmt = $conn->prepare(
             "SELECT note_id, title, content, updated_at, password_hash, pin_hash FROM notes
-             WHERE note_id = ? 
+             WHERE note_id = ?
                AND (user_id = ? OR note_id IN (
                    SELECT note_id FROM note_shares WHERE shared_with_user_id = ? AND permission = 'write'
                ))"
@@ -251,7 +251,7 @@ switch ($method) {
         $auth_result = $auth_stmt->get_result();
         $current_note = $auth_result->fetch_assoc();
         if (!$current_note) {
-            echo json_encode(["status" => "error", "message" => "Unauthorized — bạn không có quyền chỉnh sửa ghi chú này"]);
+            echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập — bạn không có quyền chỉnh sửa ghi chú này"]);
             exit();
         }
         $auth_stmt->close();
@@ -268,7 +268,7 @@ switch ($method) {
             echo json_encode([
                 "status" => "error",
                 "conflict" => true,
-                "message" => "Note has been changed on another device.",
+                "message" => "Ghi chú đã được thay đổi trên thiết bị khác.",
                 "server_note" => [
                     "note_id" => $note_id,
                     "title" => $current_note['title'],
@@ -326,23 +326,23 @@ switch ($method) {
                 $ts_stmt->close();
                 echo json_encode([
                     "status" => "success",
-                    "message" => "Updated successfully",
+                    "message" => "Đã cập nhật",
                     "updated_at" => $ts_row['updated_at'] ?? null,
                     "version" => $ts_row['updated_at'] ?? null
                 ]);
             } else {
-                echo json_encode(["status" => "error", "message" => "Update failed: " . $conn->error]);
+                echo json_encode(["status" => "error", "message" => "Cập nhật thất bại: " . $conn->error]);
             }
             $stmt->close();
         } else {
-            echo json_encode(["status" => "error", "message" => "No fields to update"]);
+            echo json_encode(["status" => "error", "message" => "Không có nội dung cần cập nhật"]);
         }
         break;
 
     case 'DELETE':
         $note_id = isset($_GET['note_id']) ? (int)$_GET['note_id'] : 0;
         if (!$note_id) {
-            echo json_encode(["status" => "error", "message" => "Note ID required"]);
+            echo json_encode(["status" => "error", "message" => "Thiếu mã ghi chú"]);
             exit();
         }
         // Fetch image path first
@@ -352,7 +352,7 @@ switch ($method) {
         $img_row = $img_stmt->get_result()->fetch_assoc();
         if (!$img_row) {
             http_response_code(404);
-            echo json_encode(["status" => "error", "message" => "Note not found"]);
+            echo json_encode(["status" => "error", "message" => "Không tìm thấy ghi chú"]);
             exit();
         }
         if ((!empty($img_row['password_hash']) && empty($_SESSION['accessed_notes'][$note_id]))
@@ -369,9 +369,9 @@ switch ($method) {
         $del_stmt = $conn->prepare("DELETE FROM notes WHERE note_id = ? AND user_id = ?");
         $del_stmt->bind_param("ii", $note_id, $user_id);
         if ($del_stmt->execute() && $del_stmt->affected_rows > 0) {
-            echo json_encode(["status" => "success", "message" => "Note deleted"]);
+            echo json_encode(["status" => "success", "message" => "Đã xóa ghi chú"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Delete failed or note not found"]);
+            echo json_encode(["status" => "error", "message" => "Không thể xóa hoặc không tìm thấy ghi chú"]);
         }
         break;
 }

@@ -31,4 +31,4 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET') {
     ai_json(200, ['status' => 'success', 'conversations' => $conversations->listConversations()]);
 }
 
-ai_json(405, ['status' => 'error', 'message' => 'Method not allowed']);
+ai_json(405, ['status' => 'error', 'message' => 'Phương thức yêu cầu không được hỗ trợ']);

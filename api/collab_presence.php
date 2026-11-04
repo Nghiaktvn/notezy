@@ -11,7 +11,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
-    echo json_encode(["success" => false, "message" => "Unauthorized"]);
+    echo json_encode(["success" => false, "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
     exit();
 }
 
@@ -20,7 +20,7 @@ $note_id = isset($_REQUEST['note_id']) ? (int)$_REQUEST['note_id'] : 0;
 $is_typing = !empty($_REQUEST['is_typing']) ? 1 : 0;
 
 if (!$note_id) {
-    echo json_encode(["success" => false, "message" => "Missing note_id"]);
+    echo json_encode(["success" => false, "message" => "Thiếu mã ghi chú"]);
     exit();
 }
 

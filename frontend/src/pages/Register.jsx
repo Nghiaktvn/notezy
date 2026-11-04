@@ -60,7 +60,7 @@ export default function Register() {
           required
         />
         <Field
-          label="Email"
+          label="Thư điện tử"
           type="email"
           value={form.email}
           onChange={(v) => setForm((f) => ({ ...f, email: v }))}

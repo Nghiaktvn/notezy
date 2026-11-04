@@ -1,0 +1,13 @@
+services:
+  web:
+    command: ["/bin/bash", "/var/www/html/deploy/start-local-demo.sh"]
+    environment:
+      NOTEZY_DEMO_OTP: "true"
+      NOTEZY_DEMO_ADMIN_PASSWORD: ${NOTEZY_DEMO_ADMIN_PASSWORD:?Set the local demo admin password}
+      COLLAB_WS_PUBLIC_URL: ${COLLAB_WS_PUBLIC_URL:-ws://localhost:8766}
+      MAIL_HOST: "127.0.0.1"
+      MAIL_PORT: "1"
+      LLM_PROVIDER: "mock"
+  ai_agent:
+    environment:
+      LLM_PROVIDER: "mock"

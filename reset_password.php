@@ -17,7 +17,7 @@ if (isset($_SESSION['reset_otp_time']) && time() - $_SESSION['reset_otp_time'] >
         'reset_otp_email', 'reset_otp_username', 'reset_otp_sent_at', 'reset_otp_hash', 'reset_otp_time', 'reset_otp_attempts', 'reset_step', 'reset_verified'
     ]));
     $step  = 1;
-    $error = "Mã OTP đã hết hạn. Vui lòng thử lại.";
+    $error = "Mã xác thực đã hết hạn. Vui lòng thử lại.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['reset_step']     = 3;
             $_SESSION['reset_verified'] = true;
             $step    = 3;
-            $success = "Xác nhận OTP thành công. Vui lòng nhập mật khẩu mới.";
+            $success = "Xác nhận mã thành công. Vui lòng nhập mật khẩu mới.";
         } else {
             $inc = $conn->prepare('UPDATE users SET reset_otp_attempts = reset_otp_attempts + 1 WHERE username = ? AND email = ?');
             $inc->bind_param('ss', $_SESSION['reset_otp_username'], $_SESSION['reset_otp_email']);
@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input name="username" type="text" class="form-control" required id="reset-username-input" autocomplete="username">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Nhập Email của bạn</label>
+                        <label class="form-label">Nhập thư điện tử của bạn</label>
                         <input name="email" type="email" class="form-control" required id="reset-email-input">
                     </div>
                     <button class="btn btn-success w-100" id="btn-send-otp">Gửi mã OTP</button>
@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?php elseif ($step == 2): ?>
                 <!-- STEP 2: Enter OTP -->
-                <p class="text-muted small mb-3">Mã OTP đã được gửi đến email của bạn (hiệu lực 15 phút).</p>
+                <p class="text-muted small mb-3">Mã xác thực đã được gửi đến email của bạn (hiệu lực 15 phút).</p>
                 <form method="post" id="form-verify-reset-otp">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="action" value="verify_otp">
@@ -234,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input name="otp" type="text" class="form-control form-control-lg text-center"
                                placeholder="______" maxlength="6" required pattern="\d{6}" id="reset-otp-input">
                     </div>
-                    <button class="btn btn-primary w-100" id="btn-verify-reset-otp">Xác nhận OTP</button>
+                    <button class="btn btn-primary w-100" id="btn-verify-reset-otp">Xác nhận mã</button>
                 </form>
                 <form method="post" class="mt-3">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">

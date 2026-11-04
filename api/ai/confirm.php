@@ -11,7 +11,7 @@ $data = ai_read_json();
 $token = (string) ($data['confirmation_token'] ?? '');
 $edits = is_array($data['edits'] ?? null) ? $data['edits'] : [];
 if ($token === '' || strlen($token) > 128) {
-    ai_json(400, ['status' => 'error', 'message' => 'Invalid confirmation token']);
+    ai_json(400, ['status' => 'error', 'message' => 'Mã xác nhận không hợp lệ']);
 }
 
 $store = new AiPendingStore($conn, $user_id);
@@ -44,7 +44,7 @@ $result = $tools->execute($action, $payload);
 if (empty($result['ok'])) {
     ai_json(400, [
         'status' => 'error',
-        'message' => $result['error'] ?? 'Action failed',
+        'message' => $result['error'] ?? 'Thao tác không thành công',
         'conversation_id' => (int) $pending['conversation_id'],
     ]);
 }

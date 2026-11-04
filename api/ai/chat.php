@@ -11,10 +11,10 @@ $data = ai_read_json();
 $message = trim((string) ($data['message'] ?? ''));
 $max_chars = ai_env_int('AI_MAX_MESSAGE_CHARS', 4000);
 if ($message === '') {
-    ai_json(400, ['status' => 'error', 'message' => 'Message is required']);
+    ai_json(400, ['status' => 'error', 'message' => 'Vui lòng nhập tin nhắn']);
 }
 if (mb_strlen($message, 'UTF-8') > $max_chars) {
-    ai_json(400, ['status' => 'error', 'message' => 'Message is too long']);
+    ai_json(400, ['status' => 'error', 'message' => 'Tin nhắn quá dài']);
 }
 
 $client_context = is_array($data['context'] ?? null) ? $data['context'] : [];
@@ -62,7 +62,7 @@ function ai_local_fallback_response(array $context, string $message): array {
     if (!$notes) {
         return [
             'type' => 'message',
-            'content' => 'Trợ lý AI đang chuyển sang chế độ nội bộ. Bạn chưa có ghi chú nào để tóm tắt; hãy tạo một ghi chú rồi thử lại.',
+            'content' => 'Trợ lý thông minh đang chuyển sang chế độ nội bộ. Bạn chưa có ghi chú nào để tóm tắt; hãy tạo một ghi chú rồi thử lại.',
             'requires_confirmation' => false,
             'references' => [],
         ];
@@ -91,7 +91,7 @@ function ai_local_fallback_response(array $context, string $message): array {
     $intro = $isQuestion
         ? "Theo ghi chú « {$title} », bạn cần:\n"
         : "Tóm tắt « {$title} »:\n";
-    $content = "Trợ lý AI đang dùng chế độ nội bộ do dịch vụ AI tạm thời chưa sẵn sàng.\n\n"
+    $content = "Trợ lý thông minh đang dùng chế độ nội bộ do dịch vụ AI tạm thời chưa sẵn sàng.\n\n"
         . $intro
         . implode("\n", array_map(static fn(string $point, int $index): string => '- ' . ($index + 1) . '. ' . $point, $points, array_keys($points)));
 
@@ -184,7 +184,7 @@ for ($i = 0; $i < $max_loops; $i++) {
         if ($name === 'create_note') {
             // Auto-create: low risk (fully reversible via delete), so we execute
             // immediately instead of holding a pending confirmation token. This is
-            // what lets the assistant say "đã tạo note" in the same turn the user
+            // what lets the assistant say "đã tạo ghi chú" in the same turn the user
             // asked for it, instead of a manual "xác nhận" click.
             $result = $tools->execute('create_note', $args);
             if (!$result['ok']) {

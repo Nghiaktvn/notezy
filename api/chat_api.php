@@ -95,7 +95,7 @@ if (!$conn || $conn->connect_error) {
     if ($action === 'get_my_notes') {
         json_out(['success' => true, 'notes' => []]);
     }
-    json_out(['success' => false, 'message' => 'Chế độ offline chưa hỗ trợ thao tác này.'], 400);
+    json_out(['success' => false, 'message' => 'Chế độ ngoại tuyến chưa hỗ trợ thao tác này.'], 400);
 }
 
 if ($action === 'get_users') {
@@ -255,4 +255,4 @@ if ($action === 'share_note_chat') {
     json_out(['success' => $ok, 'message' => $ok ? 'Đã chia sẻ ghi chú vào cuộc trò chuyện.' : 'Đã chia sẻ ghi chú nhưng không thể gửi vào chat.']);
 }
 
-json_out(['success' => false, 'message' => 'Action không hợp lệ.'], 400);
+json_out(['success' => false, 'message' => 'Thao tác không hợp lệ.'], 400);

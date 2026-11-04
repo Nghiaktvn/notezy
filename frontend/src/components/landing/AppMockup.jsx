@@ -121,7 +121,7 @@ export default function AppMockup() {
                   Kế hoạch ra mắt sản phẩm Notezy 2026
                 </h4>
                 <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                  Cuộc họp thảo luận về bảo mật ghi chú bằng mã PIN 6 số, trợ lý AI hỗ trợ tóm tắt và giao diện màu dịu. Nhóm kỹ thuật cần hoàn thành tích hợp trong tuần này...
+                  Cuộc họp thảo luận về bảo mật ghi chú bằng mã bảo mật 6 số, trợ lý thông minh hỗ trợ tóm tắt và giao diện màu dịu. Nhóm kỹ thuật cần hoàn thành tích hợp trong tuần này...
                 </p>
               </div>
 
@@ -146,7 +146,7 @@ export default function AppMockup() {
                   </div>
                   <div className="flex items-start gap-2 text-xs font-medium text-gray-800 dark:text-gray-200">
                     <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-red-500 shrink-0 mt-0.5" />
-                    <span><strong>Trợ lý AI:</strong> Hỗ trợ tóm tắt, trích xuất việc cần làm và phân tích ý tưởng.</span>
+                    <span><strong>Trợ lý thông minh:</strong> Hỗ trợ tóm tắt, trích xuất việc cần làm và phân tích ý tưởng.</span>
                   </div>
                 </div>
               </div>

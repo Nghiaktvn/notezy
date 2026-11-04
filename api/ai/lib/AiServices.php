@@ -360,7 +360,7 @@ class AiNoteTools {
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         if (!$row) {
-            return ['ok' => false, 'error' => 'Note not found or unauthorized'];
+            return ['ok' => false, 'error' => 'Không tìm thấy ghi chú hoặc bạn không có quyền truy cập'];
         }
         if (!notezy_note_is_unlocked($row)) {
             return ['ok' => false, 'error' => 'Hãy mở khóa ghi chú trước khi sử dụng AI.'];
@@ -480,7 +480,7 @@ class AiNoteTools {
         );
         $stmt->bind_param('issssss', $this->user_id, $title, $content, $note_type, $background_color, $text_color, $reminder_at);
         if (!$stmt->execute()) {
-            return ['ok' => false, 'error' => 'Failed to create note'];
+            return ['ok' => false, 'error' => 'Không thể tạo ghi chú'];
         }
         $note_id = (int) $this->conn->insert_id;
         $this->attachLabels($note_id, $labels);
@@ -562,7 +562,7 @@ class AiNoteTools {
     private function updateNote(array $args): array {
         $note_id = (int) ($args['note_id'] ?? 0);
         if ($note_id <= 0 || !$this->ownsNote($note_id)) {
-            return ['ok' => false, 'error' => 'Note not found or unauthorized'];
+            return ['ok' => false, 'error' => 'Không tìm thấy ghi chú hoặc bạn không có quyền truy cập'];
         }
         $sets = [];
         $types = '';
@@ -628,7 +628,7 @@ class AiNoteTools {
             return ['ok' => false, 'error' => 'Invalid label name'];
         }
         if ($note_id > 0 && !$this->ownsNote($note_id)) {
-            return ['ok' => false, 'error' => 'Note not found or unauthorized'];
+            return ['ok' => false, 'error' => 'Không tìm thấy ghi chú hoặc bạn không có quyền truy cập'];
         }
         $label_id = $this->findOrCreateLabel($name);
         if ($note_id > 0) {
@@ -649,7 +649,7 @@ class AiNoteTools {
         $img_stmt->execute();
         $img_row = $img_stmt->get_result()->fetch_assoc();
         if (!$img_row) {
-            return ['ok' => false, 'error' => 'Note not found or unauthorized'];
+            return ['ok' => false, 'error' => 'Không tìm thấy ghi chú hoặc bạn không có quyền truy cập'];
         }
         if (!empty($img_row['image_path'])) {
             $full_path = __DIR__ . '/../../../' . $img_row['image_path'];
@@ -664,7 +664,7 @@ class AiNoteTools {
         if ($del->execute() && $del->affected_rows > 0) {
             return ['ok' => true, 'note_id' => $note_id];
         }
-        return ['ok' => false, 'error' => 'Delete failed or note not found'];
+        return ['ok' => false, 'error' => 'Không thể xóa hoặc không tìm thấy ghi chú'];
     }
 
     private function ownsNote(int $note_id): bool {
@@ -900,7 +900,7 @@ function ai_rate_limit(mysqli $conn, int $user_id): void {
         return;
     }
     if ((int) $row['request_count'] >= $max) {
-        ai_json(429, ['status' => 'error', 'message' => 'Too many AI requests. Please wait a minute.']);
+        ai_json(429, ['status' => 'error', 'message' => 'Bạn gửi quá nhiều yêu cầu. Vui lòng đợi một phút.']);
     }
     $upd = $conn->prepare('UPDATE ai_rate_limits SET request_count = request_count + 1 WHERE id = ?');
     $id = (int) $row['id'];
@@ -976,7 +976,7 @@ function ai_try_direct_gemini(array $payload): ?array {
         false, $context
     );
     if ($raw === false || !preg_match('~^HTTP/\S+ 2\d\d\b~', $http_response_header[0] ?? '')) {
-        error_log('Notezy AI: Gemini HTTPS request failed');
+        error_log('Trợ lý Notezy: Gemini HTTPS request failed');
         return null;
     }
     $data = json_decode($raw, true);

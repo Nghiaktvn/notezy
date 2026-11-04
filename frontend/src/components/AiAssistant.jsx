@@ -4,7 +4,7 @@ import { getAppUrl } from '../api/auth.js'
 
 const welcome = {
   role: 'assistant',
-  content: 'Xin chào! Tôi là trợ lý ghi chú Notezy. Bạn muốn tìm, tóm tắt hay tạo note?',
+  content: 'Xin chào! Tôi là trợ lý ghi chú Notezy. Bạn muốn tìm, tóm tắt hay tạo ghi chú?',
 }
 
 export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) {
@@ -68,8 +68,8 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
       {open && (
         <div className="notezy-react-ai-panel bg-white w-[min(420px,calc(100vw-24px))] h-[min(640px,70vh)] rounded-2xl shadow-2xl border border-gray-200 mb-4 overflow-hidden flex flex-col dark:bg-neutral-950 dark:border-white/10">
           <div className="notezy-react-ai-header text-white p-3 font-semibold flex justify-between items-center">
-            <span className="flex items-center gap-2"><img src="/assets/notezy-mascot-2026.png" alt="" width="37" height="37" /> Notezy AI</span>
-            <button type="button" onClick={() => setOpen(false)} className="text-white" aria-label="Đóng trợ lý AI">✕</button>
+            <span className="flex items-center gap-2"><img src="/assets/notezy-mascot-2026.png" alt="" width="37" height="37" /> Trợ lý Notezy</span>
+            <button type="button" onClick={() => setOpen(false)} className="text-white" aria-label="Đóng trợ lý thông minh">✕</button>
           </div>
           <div ref={listRef} className="flex-1 p-3 overflow-y-auto bg-gray-50 flex flex-col gap-3 dark:bg-black">
             {messages.map((msg, idx) => (
@@ -100,7 +100,7 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
           >
             <input
               className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm dark:border-white/15 dark:bg-neutral-900 dark:text-white dark:placeholder:text-gray-500"
-              placeholder="Nhắn với AI..."
+              placeholder="Nhắn với trợ lý..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
@@ -113,7 +113,7 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
       <button
         onClick={() => setOpen((v) => !v)}
         className="notezy-react-ai-fab"
-        aria-label={open ? 'Đóng Notezy AI' : 'Mở Notezy AI'}
+        aria-label={open ? 'Đóng Trợ lý Notezy' : 'Mở Trợ lý Notezy'}
         aria-expanded={open}
       >
         <img src="/assets/notezy-mascot-2026.png" alt="" width="56" height="56" />
@@ -160,9 +160,9 @@ function Message({ msg, onConfirm, onCancel }) {
         </div>
         <div className="flex gap-2">
           <button className="bg-green-600 text-white px-3 py-1 rounded transition-colors hover:bg-green-700 dark:bg-red-600 dark:hover:bg-red-500" onClick={() => onConfirm(msg, { title, content, labels: resp.labels })}>
-            {resp.action === 'update_note' ? 'Update' : 'Create'}
+            {resp.action === 'update_note' ? 'Cập nhật' : 'Tạo'}
           </button>
-          <button className="border px-3 py-1 rounded dark:border-white/20 dark:text-gray-200" onClick={onCancel}>Cancel</button>
+          <button className="border px-3 py-1 rounded dark:border-white/20 dark:text-gray-200" onClick={onCancel}>Hủy</button>
         </div>
       </div>
     )
@@ -175,9 +175,9 @@ function Message({ msg, onConfirm, onCancel }) {
         <p className="mb-3">{resp.content}</p>
         <div className="flex gap-2">
           <button className="bg-red-600 text-white px-3 py-1 rounded transition-colors hover:bg-red-700 dark:hover:bg-red-500" onClick={() => onConfirm(msg, {})}>
-            {resp.action === 'delete_note' ? 'Delete' : 'Confirm'}
+            {resp.action === 'delete_note' ? 'Xóa' : 'Xác nhận'}
           </button>
-          <button className="border px-3 py-1 rounded dark:border-white/20 dark:text-gray-200" onClick={onCancel}>Cancel</button>
+          <button className="border px-3 py-1 rounded dark:border-white/20 dark:text-gray-200" onClick={onCancel}>Hủy</button>
         </div>
       </div>
     )

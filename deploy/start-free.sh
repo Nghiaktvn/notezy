@@ -10,4 +10,7 @@ fi
 if [[ "${NOTEZY_SEED_EMPTY_DEMO:-false}" == "true" ]]; then
     php scripts/seed_empty_demo.php
 fi
+if [[ "${NOTEZY_SEED_DEMO_ADMIN:-false}" == "true" ]]; then
+    php scripts/seed_demo_admin.php
+fi
 exec /usr/bin/supervisord -c /etc/supervisor/notezy-free.conf

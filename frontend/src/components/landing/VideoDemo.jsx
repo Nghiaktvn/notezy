@@ -49,7 +49,7 @@ export default function VideoDemo() {
           Notezy trong một phút
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm sm:text-base text-gray-600 dark:text-gray-400">
-          Trải nghiệm mô phỏng cách ghi chú, bảo mật mã 6 số và trợ lý AI phối hợp trong khoảng 45 giây.
+          Trải nghiệm mô phỏng cách ghi chú, bảo mật mã 6 số và trợ lý thông minh phối hợp trong khoảng 45 giây.
         </p>
 
         {/* Video Frame */}
@@ -82,7 +82,7 @@ export default function VideoDemo() {
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-300">
                     {step === 1 && 'Bước 1/3: Ghi chú nhanh & Nhãn màu'}
                     {step === 2 && 'Bước 2/3: Khóa bảo mật sổ bằng mã 6 số'}
-                    {step === 3 && 'Bước 3/3: Trợ lý AI tóm tắt & lập danh sách việc'}
+                    {step === 3 && 'Bước 3/3: Trợ lý thông minh tóm tắt & lập danh sách việc'}
                   </span>
                 </div>
                 <div className="text-xs font-mono text-gray-400">

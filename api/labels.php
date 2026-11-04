@@ -24,7 +24,7 @@ notezy_session_start();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['id'])) {
-    echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+    echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
     exit();
 }
 $user_id = (int)$_SESSION['id'];
@@ -169,7 +169,7 @@ switch ($method) {
             $chk->bind_param("ii", $note_id, $user_id);
             $chk->execute();
             if ($chk->get_result()->num_rows === 0) {
-                echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+                echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
                 exit();
             }
         }
@@ -202,7 +202,7 @@ switch ($method) {
             $chk->bind_param("ii", $note_id, $user_id);
             $chk->execute();
             if ($chk->get_result()->num_rows === 0) {
-                echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+                echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
                 exit();
             }
             $chk->close();
@@ -219,7 +219,7 @@ switch ($method) {
         }
 
         if (!$label_id) {
-            echo json_encode(["status" => "error", "message" => "Label ID required"]);
+            echo json_encode(["status" => "error", "message" => "Thiếu mã nhãn"]);
             exit();
         }
 
@@ -304,6 +304,6 @@ switch ($method) {
 
     default:
         http_response_code(405);
-        echo json_encode(["status" => "error", "message" => "Method not allowed"]);
+        echo json_encode(["status" => "error", "message" => "Phương thức yêu cầu không được hỗ trợ"]);
 }
 ?>

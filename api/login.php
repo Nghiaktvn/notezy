@@ -14,7 +14,7 @@ function login_response(int $status, array $payload): void
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     header('Allow: POST, OPTIONS');
-    login_response(405, ['status' => 'error', 'message' => 'Method not allowed']);
+    login_response(405, ['status' => 'error', 'message' => 'Phương thức yêu cầu không được hỗ trợ']);
 }
 
 $data = json_decode((string) file_get_contents('php://input'), true);
@@ -45,7 +45,7 @@ if (is_array($result) && ($result['code'] ?? '') === 'not_activated') {
 }
 
 if (!is_array($result) || empty($result['success']) || empty($result['user'])) {
-    login_response(401, ['status' => 'error', 'message' => 'Email/tên tài khoản hoặc mật khẩu không đúng']);
+    login_response(401, ['status' => 'error', 'message' => 'Thư điện tử/tên tài khoản hoặc mật khẩu không đúng']);
 }
 
 $user = $result['user'];

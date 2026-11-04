@@ -26,7 +26,7 @@ if ($conn && !$conn->connect_error) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notezy - Chat & Chia sẻ ghi chú</title>
+    <title>Notezy - Trò chuyện và chia sẻ ghi chú</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
@@ -323,7 +323,7 @@ if ($conn && !$conn->connect_error) {
     <aside class="people-panel">
         <div class="people-top">
             <div class="brand-row">
-                <a href="index_notezy.php"><i class="fa-solid fa-arrow-left me-2"></i>Notezy Chat</a>
+                <a href="index_notezy.php"><i class="fa-solid fa-arrow-left me-2"></i>Trò chuyện Notezy</a>
                 <button class="icon-btn" type="button" onclick="loadUsers()" title="Làm mới"><i class="fa-solid fa-rotate"></i></button>
             </div>
             <div class="search-wrap">
@@ -334,8 +334,8 @@ if ($conn && !$conn->connect_error) {
         </div>
         <div class="tabs">
             <button type="button" class="active" data-filter="all">Tất cả tài khoản</button>
-            <button type="button" data-filter="contacts">Contacts</button>
-            <button type="button" data-filter="noncontacts">Non-contacts</button>
+            <button type="button" data-filter="contacts">Người đã liên hệ</button>
+            <button type="button" data-filter="noncontacts">Người chưa liên hệ</button>
         </div>
         <div class="people-list" id="peopleList"></div>
     </aside>
@@ -381,8 +381,8 @@ if ($conn && !$conn->connect_error) {
                     <div class="mb-0">
                         <label class="form-label fw-semibold">Quyền truy cập</label>
                         <select class="form-select" id="permissionSelect" name="permission">
-                            <option value="read">Viewer (Chỉ xem)</option>
-                            <option value="write">Editor (Chỉnh sửa)</option>
+                            <option value="read">Chỉ xem</option>
+                            <option value="write">Được chỉnh sửa</option>
                         </select>
                     </div>
                 </div>
@@ -441,8 +441,8 @@ if ($conn && !$conn->connect_error) {
             return;
         }
         const groups = activeFilter === 'all'
-            ? [['Contacts', list.filter(u => u.is_contact)], ['Non-contacts', list.filter(u => !u.is_contact)]]
-            : [[activeFilter === 'contacts' ? 'Contacts' : 'Non-contacts', list]];
+            ? [['Người đã liên hệ', list.filter(u => u.is_contact)], ['Người chưa liên hệ', list.filter(u => !u.is_contact)]]
+            : [[activeFilter === 'contacts' ? 'Người đã liên hệ' : 'Người chưa liên hệ', list]];
         peopleList.innerHTML = groups.map(([label, members]) => {
             if (!members.length) return '';
             return `<div class="group-label">${label}</div>` + members.map(user => `
@@ -501,7 +501,7 @@ if ($conn && !$conn->connect_error) {
             const mine = Number(row.sender_id) === currentUserId;
             const time = esc(row.created_at || '');
             if (row.message_type === 'note') {
-                const permission = row.permission === 'write' ? 'Editor' : 'Viewer';
+                const permission = row.permission === 'write' ? 'Được chỉnh sửa' : 'Chỉ xem';
                 const accessible = row.note_accessible !== false;
                 const url = Number(row.can_edit) === 1 ? `themghichu.php?id=${row.note_id}` : `notepass.php?id=${row.note_id}`;
                 const preview = !accessible ? 'Ghi chú không còn được chia sẻ với bạn hoặc đã bị xóa.'

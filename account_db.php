@@ -1,5 +1,6 @@
 <?php
 require_once('db.php');
+require_once __DIR__ . '/config/demo.php';
 
 function login($username, $password)
 {
@@ -87,7 +88,7 @@ function register($username, $firstname, $lastname, $email, $password)
     $existing = $userRow ?: $emailRow;
 
     $hashed  = password_hash($password, PASSWORD_DEFAULT);
-    $otp     = (string) random_int(100000, 999999);
+    $otp     = notezy_activation_otp();
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
     $expires = date('Y-m-d H:i:s', time() + 300); // 5 phút
     $activationToken = bin2hex(random_bytes(32));

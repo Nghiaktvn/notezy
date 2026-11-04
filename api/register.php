@@ -25,7 +25,7 @@ if ($username === '') {
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(["status" => "error", "message" => "Email không hợp lệ"]);
+    echo json_encode(["status" => "error", "message" => "Thư điện tử không hợp lệ"]);
     exit();
 }
 if (strlen($password) < 6) {
@@ -51,6 +51,10 @@ $payload = [
     "email"   => $email,
     "redirect" => "verify_activation.php?email=" . urlencode($email),
 ];
+if (notezy_demo_otp_enabled()) {
+    $payload['message'] = 'Đăng ký thành công. Chế độ trình diễn: nhập mã 123456 để kích hoạt, không gửi thư thật.';
+    $payload['demo_otp'] = '123456';
+}
 if ($mailResult !== true) {
     $payload["status"] = "warning";
     $payload["message"] = "Tài khoản đã được lưu. Không gửi được email OTP, vui lòng yêu cầu gửi lại.";

@@ -8,7 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['id'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'message' => 'Bạn chưa đăng nhập hoặc không có quyền truy cập']);
     exit;
 }
 $noteId = (int) ($_GET['note_id'] ?? 0);
@@ -19,7 +19,7 @@ $stmt->execute();
 $note = $stmt->get_result()->fetch_assoc();
 if (!$note) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập']);
     exit;
 }
 if (!notezy_note_is_unlocked($note)) {
@@ -30,7 +30,7 @@ if (!notezy_note_is_unlocked($note)) {
 $secret = (string) getenv('AI_AGENT_SHARED_SECRET');
 if ($secret === '') {
     http_response_code(503);
-    echo json_encode(['success' => false, 'message' => 'Collaboration service is not configured']);
+    echo json_encode(['success' => false, 'message' => 'Dịch vụ cộng tác chưa được cấu hình']);
     exit;
 }
 $expires = time() + 300;

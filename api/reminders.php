@@ -38,7 +38,7 @@ $conn->query("SET time_zone = '+07:00'");
 
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "Unauthorized — please login"]);
+    echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập — please login"]);
     exit();
 }
 $user_id = (int) $_SESSION['id'];
@@ -125,7 +125,7 @@ if ($method === 'POST') {
     $own->bind_param("ii", $note_id, $user_id);
     $own->execute();
     if ($own->get_result()->num_rows === 0) {
-        echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+        echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
         exit();
     }
     $reminder_at = isset($data['reminder_at']) && $data['reminder_at'] !== '' ? $data['reminder_at'] : null;
@@ -154,4 +154,4 @@ if ($method === 'POST') {
 }
 
 http_response_code(405);
-echo json_encode(["status" => "error", "message" => "Method not allowed"]);
+echo json_encode(["status" => "error", "message" => "Phương thức yêu cầu không được hỗ trợ"]);

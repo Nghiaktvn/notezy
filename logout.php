@@ -22,7 +22,7 @@ notezy_session_start();
     session_destroy();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <title>Bootstrap Example</title>
     <meta charset="utf-8" />

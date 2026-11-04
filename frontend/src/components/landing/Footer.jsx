@@ -7,9 +7,9 @@ const columns = [
   {
     title: 'Khám phá',
     links: [
-      { label: 'Home', href: '#top' },
-      { label: 'About', href: '#about' },
-      { label: 'Contact', href: '#contact' },
+      { label: 'Trang chủ', href: '#top' },
+      { label: 'Giới thiệu', href: '#about' },
+      { label: 'Liên hệ', href: '#contact' },
     ],
   },
   {
