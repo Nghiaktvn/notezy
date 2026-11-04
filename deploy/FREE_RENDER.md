@@ -46,7 +46,8 @@ Gemini key and uses `mock`.
 
 Email delivery is not enabled by this template. Render Free blocks outbound SMTP
 ports 25/465/587. Keep the existing email workflow pending until its owner provides
-a working HTTPS email service configuration. A registration saved without an OTP
+a working HTTPS email service configuration. New accounts must activate before
+signing in; registration does not grant an authenticated session. A registration saved without an OTP
 email is not a passed external email-delivery test. The seeded demo accounts are
 already activated and can demonstrate the other features meanwhile.
 

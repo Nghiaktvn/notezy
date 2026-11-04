@@ -35,6 +35,15 @@ try {
     login_response(503, ['status' => 'error', 'message' => 'Máy chủ đăng nhập tạm thời không khả dụng']);
 }
 
+if (is_array($result) && ($result['code'] ?? '') === 'not_activated') {
+    login_response(403, [
+        'status' => 'error',
+        'code' => 'not_activated',
+        'message' => 'Vui lòng kích hoạt tài khoản trước khi đăng nhập.',
+        'redirect' => 'verify_activation.php?email=' . urlencode((string) $result['email']),
+    ]);
+}
+
 if (!is_array($result) || empty($result['success']) || empty($result['user'])) {
     login_response(401, ['status' => 'error', 'message' => 'Email/tên tài khoản hoặc mật khẩu không đúng']);
 }
