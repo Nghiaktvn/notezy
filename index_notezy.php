@@ -160,6 +160,10 @@ try {
         // Bảo vệ nội dung chống rò rỉ khi chưa xác thực mật khẩu
         if ($row['is_pin_locked'] || $row['is_password_locked']) {
             $row['masked_content'] = '[Ghi chú này được bảo vệ. Vui lòng xác thực để xem hoặc chỉnh sửa.]';
+            // Hidden HTML is still readable in the browser's DOM/source.
+            // Keep protected bytes out of every grid/list template below.
+            $row['content'] = '';
+            $row['image_path'] = null;
         } else {
             $row['masked_content'] = $row['content'];
         }

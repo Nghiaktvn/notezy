@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/includes/session.php';
+require_once dirname(__DIR__) . '/includes/note_access.php';
 require_once __DIR__ . '/../db.php';
 notezy_session_start();
 
@@ -135,11 +136,17 @@ if ($action === 'get_users') {
 }
 
 if ($action === 'get_my_notes') {
-    $stmt = $conn->prepare("SELECT note_id, title, content FROM notes WHERE user_id = ? AND COALESCE(archived, 0) = 0 ORDER BY updated_at DESC, created_at DESC");
+    $stmt = $conn->prepare("SELECT note_id, title, content, password_hash, pin_hash FROM notes WHERE user_id = ? AND COALESCE(archived, 0) = 0 ORDER BY updated_at DESC, created_at DESC");
     $stmt->bind_param('i', $current_user_id);
     $stmt->execute();
     $notes = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
+    foreach ($notes as &$note) {
+        $note['is_locked'] = !notezy_note_is_unlocked($note);
+        if ($note['is_locked']) $note['content'] = '';
+        unset($note['password_hash'], $note['pin_hash']);
+    }
+    unset($note);
     json_out(['success' => true, 'notes' => $notes]);
 }
 
@@ -148,19 +155,40 @@ if ($action === 'get_messages') {
     if ($with_user_id <= 0) json_out(['success' => false, 'message' => 'Thiếu người nhận.'], 400);
 
     $sql = "SELECT cm.message_id, cm.sender_id, cm.receiver_id, cm.message_type, cm.message, cm.note_id, cm.permission, cm.created_at,
-                   n.title AS note_title, n.content AS note_content,
-                   CASE WHEN n.user_id = ? OR ns.permission = 'write' THEN 1 ELSE 0 END AS can_edit
+                   n.title AS note_title, n.content AS note_content, n.password_hash, n.pin_hash,
+                   CASE WHEN n.user_id = ? OR ns.permission = 'write' THEN 1 ELSE 0 END AS can_edit,
+                   CASE WHEN n.user_id = ? OR ns.note_id IS NOT NULL THEN 1 ELSE 0 END AS note_accessible,
+                   ns.permission AS current_permission
             FROM chat_messages cm
             LEFT JOIN notes n ON cm.note_id = n.note_id
-            LEFT JOIN note_shares ns ON ns.note_id = cm.note_id AND ns.shared_with_user_id = ? AND ns.shared_by_user_id = cm.sender_id
+            LEFT JOIN note_shares ns ON ns.note_id = cm.note_id AND ns.shared_with_user_id = ?
             WHERE (cm.sender_id = ? AND cm.receiver_id = ?)
                OR (cm.sender_id = ? AND cm.receiver_id = ?)
             ORDER BY cm.created_at ASC, cm.message_id ASC";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('iiiiii', $current_user_id, $current_user_id, $current_user_id, $with_user_id, $with_user_id, $current_user_id);
+    $stmt->bind_param('iiiiiii', $current_user_id, $current_user_id, $current_user_id, $current_user_id, $with_user_id, $with_user_id, $current_user_id);
     $stmt->execute();
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
+    foreach ($rows as &$row) {
+        if ($row['message_type'] === 'note') {
+            $row['note_accessible'] = (bool) $row['note_accessible'];
+            $row['is_locked'] = $row['note_accessible'] && !notezy_note_is_unlocked($row);
+            if (!$row['note_accessible'] || $row['is_locked']) {
+                $row['note_content'] = null;
+                $row['can_edit'] = 0;
+            }
+            if (!$row['note_accessible']) {
+                $row['note_title'] = null;
+                $row['permission'] = null;
+                $row['message'] = 'Ghi chú không còn được chia sẻ với bạn hoặc đã bị xóa.';
+            } elseif ($row['current_permission'] !== null) {
+                $row['permission'] = $row['current_permission'];
+            }
+        }
+        unset($row['password_hash'], $row['pin_hash'], $row['current_permission']);
+    }
+    unset($row);
     json_out(['success' => true, 'messages' => $rows]);
 }
 

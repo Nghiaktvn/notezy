@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
+require_once __DIR__ . '/includes/note_access.php';
 require_once('db.php');
 notezy_session_start();
 
@@ -20,7 +21,7 @@ try {
 
     // Xây dựng truy vấn SQL (tìm kiếm trên cả ghi chú cá nhân và ghi chú được chia sẻ)
     $sql = "
-        SELECT n.note_id, n.title, n.content, n.pinned, n.created_at, n.password_hash,
+        SELECT n.note_id, n.title, n.content, n.pinned, n.created_at, n.password_hash, n.pin_hash,
                GROUP_CONCAT(l.name SEPARATOR ',') AS labels,
                CASE WHEN n.user_id = ? THEN 'own' ELSE 'shared' END AS ownership
         FROM notes n
@@ -113,7 +114,7 @@ if (empty($notes)) {
     $unlocked_notes = isset($_SESSION['accessed_notes']) ? $_SESSION['accessed_notes'] : [];
     foreach ($notes as $note) {
         $nid = (int)$note['note_id'];
-        $is_locked = !empty($note['password_hash']) && empty($unlocked_notes[$nid]);
+        $is_locked = !notezy_note_is_unlocked($note);
 
         echo '<div class="note-item position-relative">';
         if (!empty($note['pinned'])) {
@@ -125,7 +126,7 @@ if (empty($notes)) {
         echo '<h5 class="mb-2">' . htmlspecialchars($note['title']) . '</h5>';
         
         if ($is_locked) {
-            echo '<p class="text-muted fst-italic"><i class="fas fa-lock me-1"></i>[Ghi chú được bảo vệ bằng mật khẩu. Nhấp Xem để mở khóa]</p>';
+            echo '<p class="text-muted fst-italic"><i class="fas fa-lock me-1"></i>[Ghi chú được bảo vệ. Nhấp Xem để mở khóa]</p>';
         } else {
             echo '<p>' . nl2br(htmlspecialchars($note['content'])) . '</p>';
         }

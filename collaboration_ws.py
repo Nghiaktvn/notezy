@@ -7,7 +7,7 @@ api/collab_token.php and messages are broadcast only to the same note room.
 import base64, hashlib, hmac, json, os, socket, struct, threading, time
 from urllib.parse import parse_qs, urlparse
 
-HOST, PORT = "0.0.0.0", int(os.getenv("COLLAB_WS_PORT", "8766"))
+HOST, PORT = os.getenv("COLLAB_WS_HOST", "0.0.0.0"), int(os.getenv("COLLAB_WS_PORT", "8766"))
 secret_value = os.getenv("COLLAB_SECRET")
 if not secret_value:
     raise RuntimeError("COLLAB_SECRET must be configured")

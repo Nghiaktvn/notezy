@@ -1,5 +1,16 @@
 # Notezy .htaccess
 # Protects sensitive files from direct web access
+Options -Indexes
+
+# Runtime state, Git metadata and initialization SQL are not public assets.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (^|/)\.git(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:storage|config|includes|scripts|services)(?:/|$) - [F,L,NC]
+</IfModule>
+<FilesMatch "(?i)(\.(sql|sqlite|sqlite3|log|bak)$|^\.env(?:\..*)?$|^Dockerfile(?:\..*)?$|^docker-compose.*\.ya?ml$)">
+    Require all denied
+</FilesMatch>
 
 # ── Block Python AI agent source ──────────────────────────────────────────
 <IfModule mod_rewrite.c>

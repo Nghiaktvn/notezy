@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__DIR__, 3) . '/includes/note_access.php';
 
 function ai_risk_for(string $tool): string {
     static $map = [
@@ -52,13 +53,6 @@ function ai_truncate(?string $text, int $max): string {
     return mb_substr($text, 0, $max, 'UTF-8') . '…';
 }
 
-function ai_note_unlocked(int $note_id, ?string $password_hash): bool {
-    if (!$password_hash) {
-        return true;
-    }
-    return !empty($_SESSION['accessed_notes'][$note_id]);
-}
-
 class AiNoteTools {
     private mysqli $conn;
     private int $user_id;
@@ -69,6 +63,12 @@ class AiNoteTools {
     }
 
     public function execute(string $name, array $args): array {
+        // Recheck at execution time as well as when showing a confirmation.
+        // A note may have been locked after the action was proposed.
+        if (in_array($name, ['update_note', 'delete_note'], true)) {
+            $current = $this->getNote(['note_id' => (int) ($args['note_id'] ?? 0)]);
+            if (empty($current['ok'])) return $current;
+        }
         switch ($name) {
             // ── Read tools ────────────────────────────────────────────────────
             case 'search_notes':
@@ -119,7 +119,7 @@ class AiNoteTools {
             return ['ok' => false, 'error' => 'Invalid search query'];
         }
         $like = '%' . $query . '%';
-        $sql = "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash,
+        $sql = "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash, n.pin_hash,
                        GROUP_CONCAT(l.name) AS labels
                 FROM notes n
                 LEFT JOIN note_labels nl ON n.note_id = nl.note_id
@@ -186,7 +186,7 @@ class AiNoteTools {
         if ($note_id <= 0) return ['ok' => false, 'error' => 'Invalid note_id'];
         $limit = min(10, max(1, (int) ($args['limit'] ?? 5)));
         $sql = "SELECT DISTINCT n.note_id, n.title, n.content, n.updated_at,
-                       n.password_hash, GROUP_CONCAT(l2.name) AS labels
+                       n.password_hash, n.pin_hash, GROUP_CONCAT(l2.name) AS labels
                 FROM note_labels nl1
                 JOIN note_labels nl2 ON nl1.label_id = nl2.label_id AND nl2.note_id != ?
                 JOIN notes n ON nl2.note_id = n.note_id
@@ -309,7 +309,7 @@ class AiNoteTools {
 
         // Get recent task-type notes as potential deadline holders
         $sql = "SELECT n.note_id, n.title, n.content, n.created_at, n.updated_at,
-                       n.password_hash, GROUP_CONCAT(l.name) AS labels
+                       n.password_hash, n.pin_hash, GROUP_CONCAT(l.name) AS labels
                 FROM notes n
                 LEFT JOIN note_labels nl ON n.note_id = nl.note_id
                 LEFT JOIN labels l ON nl.label_id = l.label_id
@@ -347,7 +347,7 @@ class AiNoteTools {
             return ['ok' => false, 'error' => 'Invalid note_id'];
         }
         $stmt = $this->conn->prepare(
-            "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash,
+            "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash, n.pin_hash,
                     GROUP_CONCAT(l.name) AS labels
              FROM notes n
              LEFT JOIN note_labels nl ON n.note_id = nl.note_id
@@ -362,13 +362,16 @@ class AiNoteTools {
         if (!$row) {
             return ['ok' => false, 'error' => 'Note not found or unauthorized'];
         }
+        if (!notezy_note_is_unlocked($row)) {
+            return ['ok' => false, 'error' => 'Hãy mở khóa ghi chú trước khi sử dụng AI.'];
+        }
         return ['ok' => true, 'note' => $this->publicNote($row, false)];
     }
 
     private function getRecentNotes(array $args): array {
         $limit = min(10, max(1, (int) ($args['limit'] ?? 5)));
         $stmt = $this->conn->prepare(
-            "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash,
+            "SELECT n.note_id, n.title, n.content, n.updated_at, n.password_hash, n.pin_hash,
                     GROUP_CONCAT(l.name) AS labels
              FROM notes n
              LEFT JOIN note_labels nl ON n.note_id = nl.note_id
@@ -672,8 +675,8 @@ class AiNoteTools {
     }
 
     private function publicNote(array $row, bool $preview): array {
-        $locked = !ai_note_unlocked((int) $row['note_id'], $row['password_hash'] ?? null);
-        $content = $locked ? '[Password protected note]' : (string) $row['content'];
+        $locked = !notezy_note_is_unlocked($row);
+        $content = $locked ? '[Protected note: unlock it before using AI]' : (string) $row['content'];
         return [
             'note_id'            => (int) $row['note_id'],
             'title'              => $row['title'],
@@ -682,6 +685,7 @@ class AiNoteTools {
             'updated_at'         => $row['updated_at'] ?? null,
             'created_at'         => $row['created_at'] ?? null,
             'password_protected' => $locked,
+            'is_locked'          => $locked,
         ];
     }
 

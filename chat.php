@@ -502,14 +502,18 @@ if ($conn && !$conn->connect_error) {
             const time = esc(row.created_at || '');
             if (row.message_type === 'note') {
                 const permission = row.permission === 'write' ? 'Editor' : 'Viewer';
-                const url = row.permission === 'write' || Number(row.can_edit) === 1 ? `themghichu.php?id=${row.note_id}` : `notepass.php?id=${row.note_id}`;
+                const accessible = row.note_accessible !== false;
+                const url = Number(row.can_edit) === 1 ? `themghichu.php?id=${row.note_id}` : `notepass.php?id=${row.note_id}`;
+                const preview = !accessible ? 'Ghi chú không còn được chia sẻ với bạn hoặc đã bị xóa.'
+                    : row.is_locked ? 'Ghi chú đang khóa. Mở ghi chú để xác minh PIN hoặc mật khẩu.'
+                    : (row.note_content || row.message || '');
                 return `<div class="bubble-row ${mine ? 'me' : ''}">
                     <div class="note-card-chat">
                         <div class="note-card-title"><i class="fa-solid fa-note-sticky text-primary"></i>${esc(row.note_title || 'Ghi chú được chia sẻ')}</div>
-                        <div class="note-card-body">${esc(row.note_content || row.message || '')}</div>
+                        <div class="note-card-body">${esc(preview)}</div>
                         <div class="d-flex align-items-center justify-content-between gap-2 mt-3">
-                            <span class="badge ${row.permission === 'write' ? 'text-bg-success' : 'text-bg-primary'}">${permission}</span>
-                            <a class="btn btn-sm btn-outline-primary" href="${url}">Xem ghi chú</a>
+                            <span class="badge ${row.permission === 'write' ? 'text-bg-success' : 'text-bg-primary'}">${accessible ? permission : 'Đã thu hồi'}</span>
+                            ${accessible ? `<a class="btn btn-sm btn-outline-primary" href="${url}">Xem ghi chú</a>` : ''}
                         </div>
                         <span class="bubble-time">${time}</span>
                     </div>
