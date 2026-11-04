@@ -9,7 +9,7 @@
  * They are fetched from the network without being written to the Cache API.
  */
 
-const CACHE_VERSION = 'notezy-v7';
+const CACHE_VERSION = 'notezy-v8';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 // Static, mostly-immutable assets safe to precache.

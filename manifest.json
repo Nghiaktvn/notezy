@@ -1,7 +1,7 @@
 {
   "name": "Notezy - Ứng dụng ghi chú",
   "short_name": "Notezy",
-  "description": "Ghi chú trực tuyến đơn giản, có thể dùng offline.",
+  "description": "Ghi chú trực tuyến đơn giản, hỗ trợ chế độ ngoại tuyến.",
   "start_url": "index_notezy.php",
   "scope": "./",
   "display": "standalone",
