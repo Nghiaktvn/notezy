@@ -403,7 +403,7 @@ if ($conn && !$conn->connect_error) {
                 <div class="col-lg-7 col-md-9">
                     <div class="card card-custom p-4">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-user-plus me-2"></i>➕ Add User (Thêm người dùng mới)</h4>
+                            <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-user-plus me-2"></i>➕ Thêm người dùng mới</h4>
                             <a href="admin_users.php" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i> Hủy
                             </a>
@@ -416,11 +416,11 @@ if ($conn && !$conn->connect_error) {
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Họ (Firstname)</label>
+                                    <label class="form-label fw-semibold">Họ</label>
                                     <input type="text" class="form-control" name="firstname" placeholder="VD: Nguyễn Văn" value="<?= htmlspecialchars($_POST['firstname'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Tên (Lastname)</label>
+                                    <label class="form-label fw-semibold">Tên</label>
                                     <input type="text" class="form-control" name="lastname" placeholder="VD: An" value="<?= htmlspecialchars($_POST['lastname'] ?? '') ?>">
                                 </div>
                             </div>
@@ -441,7 +441,7 @@ if ($conn && !$conn->connect_error) {
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Vai trò (Role)</label>
+                                    <label class="form-label fw-semibold">Vai trò</label>
                                     <select class="form-select" name="role">
                                         <option value="user" selected>User (Người dùng thường)</option>
                                         <option value="admin">Admin (Quản trị viên)</option>
@@ -465,7 +465,7 @@ if ($conn && !$conn->connect_error) {
                 <div class="col-lg-7 col-md-9">
                     <div class="card card-custom p-4">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold text-warning text-dark"><i class="fas fa-user-edit me-2"></i>✏️ Edit User #<?= $edit_user['id'] ?></h4>
+                            <h4 class="mb-0 fw-bold text-warning text-dark"><i class="fas fa-user-edit me-2"></i>✏️ Sửa người dùng #<?= $edit_user['id'] ?></h4>
                             <a href="admin_users.php" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i> Hủy
                             </a>
@@ -478,11 +478,11 @@ if ($conn && !$conn->connect_error) {
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Họ (Firstname)</label>
+                                    <label class="form-label fw-semibold">Họ</label>
                                     <input type="text" class="form-control" name="firstname" value="<?= htmlspecialchars($edit_user['firstname'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Tên (Lastname)</label>
+                                    <label class="form-label fw-semibold">Tên</label>
                                     <input type="text" class="form-control" name="lastname" value="<?= htmlspecialchars($edit_user['lastname'] ?? '') ?>">
                                 </div>
                             </div>
@@ -503,7 +503,7 @@ if ($conn && !$conn->connect_error) {
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Vai trò (Role)</label>
+                                    <label class="form-label fw-semibold">Vai trò</label>
                                     <select class="form-select" name="role">
                                         <option value="user" <?= ($edit_user['role'] ?? 'user') === 'user' ? 'selected' : '' ?>>Người dùng</option>
                                         <option value="admin" <?= ($edit_user['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Quản trị viên</option>
@@ -526,11 +526,11 @@ if ($conn && !$conn->connect_error) {
             <div class="card card-custom p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                     <div>
-                        <h4 class="fw-bold mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Danh Sách Người Dùng (User Management)</h4>
+                        <h4 class="fw-bold mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Danh sách người dùng</h4>
                         <p class="text-muted small mb-0">Quản lý tài khoản, trạng thái kích hoạt và phân quyền người dùng Notezy.</p>
                     </div>
                     <a href="admin_users.php?action=add" class="btn btn-add">
-                        <i class="fas fa-user-plus me-1"></i> ➕ Add User
+                        <i class="fas fa-user-plus me-1"></i> ➕ Thêm người dùng
                     </a>
                 </div>
 
@@ -551,7 +551,7 @@ if ($conn && !$conn->connect_error) {
                                 <tr>
                                     <td colspan="6" class="text-center py-5 text-muted">
                                         <i class="fas fa-user-slash fs-2 mb-2 d-block text-secondary"></i>
-                                        Chưa có người dùng nào trong cơ sở dữ liệu. Nhấn <strong>➕ Add User</strong> để thêm mới.
+                                        Chưa có người dùng nào trong cơ sở dữ liệu. Nhấn <strong>➕ Thêm người dùng</strong> để thêm mới.
                                     </td>
                                 </tr>
                             <?php else: ?>

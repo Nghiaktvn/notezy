@@ -150,7 +150,7 @@ function Message({ msg, onConfirm, onCancel }) {
   if (resp?.type === 'note_preview') {
     return (
       <div className="bg-white border rounded-xl p-3 text-sm dark:bg-neutral-950 dark:border-white/10 dark:text-white">
-        <div className="font-semibold mb-2">Note Preview</div>
+        <div className="font-semibold mb-2">Xem trước ghi chú</div>
         <input className="w-full border rounded p-2 mb-2 dark:border-white/15 dark:bg-neutral-900 dark:text-white" value={title} onChange={(e) => setTitle(e.target.value)} />
         <textarea className="w-full border rounded p-2 min-h-[120px] dark:border-white/15 dark:bg-neutral-900 dark:text-white" value={content} onChange={(e) => setContent(e.target.value)} />
         <div className="flex flex-wrap gap-2 my-2">

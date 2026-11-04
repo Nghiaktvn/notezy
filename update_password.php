@@ -165,7 +165,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
             <div class="row text-center text-md-start">
                 <div class="col-md-4 mb-4">
                     <div class="footer-logo text-white fw-bold mb-2">Notezy</div>
-                    <p>Take notes online – simple and free.</p>
+                    <p>Ghi chú trực tuyến, đơn giản và miễn phí.</p>
                     <div class="social-links d-flex justify-content-center justify-content-md-start gap-3">
                         <a href="#" class="text-white-50"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" class="text-white-50"><i class="fab fa-instagram"></i></a>

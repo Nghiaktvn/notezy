@@ -137,7 +137,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'notezy-ai-card';
     wrap.innerHTML = `
-      <h4>Note Preview</h4>
+      <h4>Xem trước ghi chú</h4>
       <input class="form-control mb-2" data-ai-title value="${esc(resp.title)}">
       <textarea class="form-control" data-ai-content rows="6">${esc(resp.content)}</textarea>
       <div class="notezy-ai-labels">${(resp.labels || []).map(l => '<span>' + esc(l) + '</span>').join('')}</div>
