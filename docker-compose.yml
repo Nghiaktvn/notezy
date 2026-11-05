@@ -26,6 +26,7 @@ services:
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Notezy}
       # The application talks directly to the Python orchestration service.
       AI_AGENT_URL: http://ai_agent:8765
+      AI_AGENT_TIMEOUT_SECONDS: ${AI_AGENT_TIMEOUT_SECONDS:-30}
       LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       AI_AGENT_SHARED_SECRET: ${AI_AGENT_SHARED_SECRET:?Set AI_AGENT_SHARED_SECRET in .env before starting Docker}

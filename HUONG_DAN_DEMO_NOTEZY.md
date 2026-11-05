@@ -285,12 +285,18 @@ Bộ mô phỏng có tập mẫu lệnh giới hạn; không phải mọi câu h
 
 ## 11. Chatbot Gemini thật và kịch bản demo mới
 
-Cấu hình localhost trong file `.env` (không commit file này), rồi khởi động lại dịch vụ `ai_agent`. Trên Render sửa Environment và triển khai lại để tiến trình nhận biến mới:
+Với cách chạy demo ở mục 5, đặt các biến dưới đây trong `.env.demo` (không commit). Nếu chạy Compose mặc định không có `--env-file`, dùng `.env`. Trên Render sửa Environment và triển khai lại để tiến trình nhận biến mới:
 
 - `LLM_PROVIDER=gemini`
 - `GEMINI_MODEL=gemini-3.5-flash-lite`
 - `GEMINI_API_KEY`: khóa Gemini riêng của bạn, không chép vào tài liệu/GitHub.
 - `AI_AGENT_TIMEOUT_SECONDS=30`
+
+Sau khi sửa `.env.demo`, áp dụng cấu hình bằng lệnh (chỉ `restart` không nạp lại biến môi trường):
+
+```bash
+docker compose --env-file .env.demo -p notezy-demo -f docker-compose.yml -f docker-compose.demo.yml up -d --force-recreate web ai_agent
+```
 
 Gói miễn phí của Google có hạn mức, không phải gọi không giới hạn. Khi nhận lỗi 429, chờ rồi thử lại; không bật billing để demo. Không đổi sang mô hình khác chỉ vì tên có chữ Flash: phải kiểm tra mô hình đó khả dụng cho chính project/key.
 
