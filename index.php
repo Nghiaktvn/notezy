@@ -190,6 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
             const [loginSuccessMsg, setLoginSuccessMsg] = useState('');
             const [loginForm, setLoginForm] = useState({ username: '', password: '', error: '', loading: false });
             const [regForm, setRegForm] = useState({
+                username: '',
                 displayName: '',
                 email: '',
                 password: '',
@@ -341,6 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
 
                 try {
                     const formData = new URLSearchParams();
+                    formData.append('username', regForm.username);
                     formData.append('display_name', regForm.displayName);
                     formData.append('email', regForm.email);
                     formData.append('pass', regForm.password);
@@ -361,6 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                         }
                         setLoginSuccessMsg('🎉 Đăng ký thành công! Bạn đã được đăng nhập.');
                         setRegForm({
+                            username: '',
                             displayName: '',
                             email: '',
                             password: '',
@@ -583,6 +586,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 ) : (
                                     /* FORM ĐĂNG KÝ TRỰC TIẾP */
                                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">
+                                                Tên tài khoản
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                minLength={3}
+                                                maxLength={40}
+                                                pattern="[A-Za-z0-9_]+"
+                                                value={regForm.username}
+                                                onChange={(e) => setRegForm(prev => ({ ...prev, username: e.target.value }))}
+                                                placeholder="Ví dụ: nguyenvana"
+                                                className={`w-full rounded-xl border px-3.5 py-2 text-xs focus:outline-none ${
+                                                    isDark ? 'bg-neutral-900 border-white/10 text-white focus:border-red-500' : 'bg-gray-50 border-gray-300 text-gray-900 focus:border-green-600'
+                                                }`}
+                                            />
+                                        </div>
                                         <div>
                                             <label className="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">
                                                 Tên hiển thị

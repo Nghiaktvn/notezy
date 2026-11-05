@@ -116,9 +116,85 @@ function notezy_send_resend(string $email, string $subject, string $html, string
     return is_array($result) && !empty($result['id']);
 }
 
+/** Send through Gmail's HTTPS API using an offline OAuth refresh token. */
+function notezy_send_gmail_api(string $email, string $toName, string $subject, string $html, string $plain): bool
+{
+    $from = notezy_valid_email(getenv('MAIL_FROM_ADDRESS'));
+    $clientId = trim((string) (getenv('GMAIL_CLIENT_ID') ?: ''));
+    $clientSecret = trim((string) (getenv('GMAIL_CLIENT_SECRET') ?: ''));
+    $refreshToken = trim((string) (getenv('GMAIL_REFRESH_TOKEN') ?: ''));
+    if ($from === null || $clientId === '' || $clientSecret === '' || $refreshToken === '') {
+        error_log('Notezy mail: Gmail API configuration is incomplete');
+        return false;
+    }
+
+    $timeout = max(3, min((int) (getenv('MAIL_TIMEOUT_SECONDS') ?: 10), 30));
+    $tokenBody = http_build_query([
+        'client_id' => $clientId,
+        'client_secret' => $clientSecret,
+        'refresh_token' => $refreshToken,
+        'grant_type' => 'refresh_token',
+    ]);
+    $tokenContext = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+        'content' => $tokenBody,
+        'timeout' => $timeout,
+        'ignore_errors' => true,
+    ]]);
+    $tokenResponse = @file_get_contents('https://oauth2.googleapis.com/token', false, $tokenContext);
+    $tokenStatus = $http_response_header[0] ?? '';
+    $tokenData = $tokenResponse === false ? null : json_decode($tokenResponse, true);
+    if (!preg_match('~^HTTP/\S+ 2\d\d\b~', $tokenStatus)
+        || !is_array($tokenData) || empty($tokenData['access_token'])) {
+        error_log('Notezy mail: Gmail token refresh failed (' . preg_replace('/[^0-9 ]/', '', $tokenStatus) . ')');
+        return false;
+    }
+
+    try {
+        $mail = new PHPMailer(true);
+        $mail->CharSet = 'UTF-8';
+        $mail->setFrom($from, trim((string) (getenv('MAIL_FROM_NAME') ?: 'Notezy')));
+        $mail->addAddress($email, $toName);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $html;
+        $mail->AltBody = $plain;
+        if (!$mail->preSend()) {
+            return false;
+        }
+        $raw = rtrim(strtr(base64_encode($mail->getSentMIMEMessage()), '+/', '-_'), '=');
+    } catch (Throwable $e) {
+        error_log('Notezy mail: could not build Gmail message');
+        return false;
+    }
+
+    $sendContext = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => "Authorization: Bearer {$tokenData['access_token']}\r\nContent-Type: application/json\r\n",
+        'content' => json_encode(['raw' => $raw]),
+        'timeout' => $timeout,
+        'ignore_errors' => true,
+    ]]);
+    $sendResponse = @file_get_contents('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', false, $sendContext);
+    $sendStatus = $http_response_header[0] ?? '';
+    $sendData = $sendResponse === false ? null : json_decode($sendResponse, true);
+    if (!preg_match('~^HTTP/\S+ 2\d\d\b~', $sendStatus)
+        || !is_array($sendData) || empty($sendData['id'])) {
+        error_log('Notezy mail: Gmail send failed (' . preg_replace('/[^0-9 ]/', '', $sendStatus) . ')');
+        return false;
+    }
+    return true;
+}
+
 function notezy_send_message(string $email, string $toName, string $subject, string $html, string $plain)
 {
-    if (strtolower(trim((string) (getenv('MAIL_MAILER') ?: 'smtp'))) === 'resend') {
+    $mailer = strtolower(trim((string) (getenv('MAIL_MAILER') ?: 'smtp')));
+    if ($mailer === 'gmail_api') {
+        return notezy_send_gmail_api($email, $toName, $subject, $html, $plain)
+            ? true : 'Lỗi gửi email qua Gmail API. Vui lòng thử lại sau.';
+    }
+    if ($mailer === 'resend') {
         return notezy_send_resend($email, $subject, $html, $plain)
             ? true : 'Lỗi gửi email: không thể gửi qua dịch vụ HTTPS. Vui lòng thử lại sau.';
     }

@@ -47,13 +47,11 @@ $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
 $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($result['activation_token']);
 $mailResult = sendActivationEmail($email, $result['otp'], trim($firstname . ' ' . $lastname), $activationLink);
 notezy_session_start();
-session_regenerate_id(true);
-$_SESSION['id'] = (int) $result['user_id'];
 $payload = [
     "status"  => "success",
-    "message" => "Đăng ký thành công. Bạn đã được đăng nhập; hãy dùng liên kết email hoặc OTP để kích hoạt tài khoản.",
+    "message" => "Đăng ký thành công. Hãy dùng liên kết email hoặc OTP để kích hoạt tài khoản.",
     "email"   => $email,
-    "redirect" => "index_notezy.php?unverified=1",
+    "redirect" => "verify_activation.php?email=" . urlencode($email),
 ];
 if ($mailResult !== true) {
     $payload["status"] = "warning";

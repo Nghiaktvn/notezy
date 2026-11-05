@@ -16,6 +16,9 @@ $first_name = '';
 $last_name = '';
 $email = '';
 $user = '';
+$is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+    || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+    || isset($_POST['ajax']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $display_name = trim($_POST['display_name'] ?? '');
@@ -52,10 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $redirect_url = 'verify_activation.php?email=' . urlencode($email);
 
-            $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-                || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-                || isset($_POST['ajax']);
-
             if ($is_ajax) {
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode(['success' => true, 'redirect' => $redirect_url, 'email' => $email]);
@@ -67,15 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $error = is_array($result) ? ($result['error'] ?? 'Lỗi không xác định') : $result;
         
-        $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-            || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-            || isset($_POST['ajax']);
-
-        if ($is_ajax) {
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'error' => $error]);
-            exit();
-        }
+    }
+    if ($is_ajax && $error !== '') {
+        http_response_code(400);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => $error]);
+        exit();
     }
 }
 ?>
@@ -136,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <button type="submit" class="register-submit" id="register">Tạo tài khoản <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
         <p class="register-signin">Đã có tài khoản? <a href="index.php?auth=login">Đăng nhập</a></p>
+        <p class="register-signin"><a href="forgot.php">Quên mật khẩu?</a></p>
       </form>
     </section>
   </main>

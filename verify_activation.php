@@ -172,7 +172,8 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
 
           <?php if (empty($success) || $otpSent): ?>
           <p class="text-muted mb-3">
-            Mã OTP 6 số (hiệu lực 5 phút) đã được gửi đến email <strong><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></strong>.<br>
+            <?= $mailWarning !== '' ? 'Khi email được gửi thành công, mã OTP 6 số sẽ đến' : 'Mã OTP 6 số (hiệu lực 5 phút) đã được gửi đến' ?>
+            <strong><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></strong>.<br>
             Vui lòng kiểm tra hộp thư (và thư mục Spam).
           </p>
 
