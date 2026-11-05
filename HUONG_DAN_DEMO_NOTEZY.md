@@ -21,7 +21,7 @@ Cập nhật ngày 05/11/2026. Dành cho bản trên nhánh `main`.
 | `user2` | `Password123!` | Người dùng thường |
 | `admin` | `AdminDemo123!` | Quản trị viên |
 
-Trên Render, mật khẩu khởi tạo của `user1` và `user2` là như trên. Kiểm tra ngày 05/11/2026: `user1` đăng nhập được; `user2` không chấp nhận mật khẩu này. Không tự đặt lại mật khẩu của tài khoản đã có. Khi demo chia sẻ, bạn có thể đăng ký/kích hoạt tài khoản thứ hai bằng mã 123456. **Mật khẩu `admin` trên Render được cấp riêng trong cuộc trò chuyện khi cấu hình, không đăng công khai trong GitHub.** Mật khẩu quản trị trên đám mây được lưu ở biến `NOTEZY_DEMO_ADMIN_PASSWORD`. Giá trị localhost trong bảng không mặc nhiên là mật khẩu của bản công khai.
+Trên Render, mật khẩu khởi tạo của `user1` và `user2` là như trên. Kiểm tra ngày 05/11/2026: `user1` đăng nhập được; `user2` không chấp nhận mật khẩu này. Không tự đặt lại mật khẩu của tài khoản đã có. Khi demo chia sẻ, bạn có thể đăng ký/kích hoạt tài khoản thứ hai bằng mã nhận trong email (chỉ localhost ở chế độ mô phỏng mới dùng 123456). **Mật khẩu `admin` trên Render được cấp riêng trong cuộc trò chuyện khi cấu hình, không đăng công khai trong GitHub.** Mật khẩu quản trị trên đám mây được lưu ở biến `NOTEZY_DEMO_ADMIN_PASSWORD`. Giá trị localhost trong bảng không mặc nhiên là mật khẩu của bản công khai.
 
 Các script khởi động không đặt lại mật khẩu tài khoản sẵn có. Nếu đã đổi mật khẩu qua giao diện, lần mở lại vẫn dùng mật khẩu đã đổi. Script quản trị không biến một tài khoản thường có sẵn tên `admin` thành quản trị viên.
 
@@ -46,14 +46,16 @@ Quản trị viên có các chức năng cá nhân ở trên và truy cập `/ad
 
 Quản trị viên **không tự động có quyền đọc hoặc sửa mọi ghi chú riêng tư** qua API ghi chú. Quyền nội dung vẫn dựa trên chủ sở hữu và chia sẻ. Không thể tự xóa, tự hủy kích hoạt hoặc tự gỡ quyền quản trị của tài khoản đang dùng. Đổi trạng thái kích hoạt ảnh hưởng kiểm tra đăng nhập; không coi đây là chức năng chấm dứt mọi phiên đăng nhập đang mở.
 
-## 3. Đăng ký với mã xác thực mô phỏng
+## 3. Đăng ký và xác thực email
 
-Khi `NOTEZY_DEMO_OTP=true`, chỉ bước **kích hoạt tài khoản mới** sử dụng mã cố định `123456`; không gửi thư thật.
+Với cấu hình Gmail thật trên Render, đặt `NOTEZY_DEMO_OTP=false` và nhập mã nhận trong email; xem `HUONG_DAN_EMAIL_OTP.md`. Mã sai không kích hoạt được tài khoản và cần yêu cầu mã mới.
+
+Khi `NOTEZY_DEMO_OTP=true` ở localhost, chỉ bước **kích hoạt tài khoản mới** sử dụng mã cố định `123456`; không gửi thư thật.
 
 1. Chọn **Đăng ký** hoặc **Bắt đầu**.
 2. Nhập tên hiển thị, thư điện tử đúng định dạng và mật khẩu. Ở trang đăng ký riêng, nhập thêm tên tài khoản.
 3. Gửi biểu mẫu. Ứng dụng chuyển tới **Xác thực tài khoản**.
-4. Nhập `123456`, chọn **Xác nhận mã**.
+4. Nhập mã nhận trong email; chỉ chế độ mô phỏng mới nhập `123456`. Chọn **Xác nhận mã**.
 5. Đăng nhập bằng thư điện tử và mật khẩu vừa đặt, hoặc tên tài khoản đã chọn.
 
 Modal đăng ký trên trang chủ tự tạo tên tài khoản; dùng thư điện tử để đăng nhập là thuận tiện nhất. Mã có hiệu lực năm phút; hết hạn thì chọn **Gửi lại mã xác thực**, mã demo mới vẫn là `123456`. Nhập sai bị từ chối; sau nhiều lần sai cần yêu cầu lại mã.
@@ -196,7 +198,7 @@ Nếu Aiven bị tắt, vào **Actions → Power on service**, chờ Running r�
 | Render Environment | `APP_URL=https://notezy-jrq0.onrender.com`; thông tin `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` của Aiven |
 | TLS database | `DB_SSL_REQUIRED=true`; `DB_SSL_CA=/etc/secrets/aiven-ca.pem`; giữ Secret File `aiven-ca.pem` |
 | Khởi tạo | `AUTO_INIT_DATABASE=true`; `NOTEZY_SEED_EMPTY_DEMO=true` |
-| Demo mới | `NOTEZY_DEMO_OTP=true`; `NOTEZY_SEED_DEMO_ADMIN=true`; mật khẩu quản trị riêng trong `NOTEZY_DEMO_ADMIN_PASSWORD` |
+| Email thật | `NOTEZY_DEMO_OTP=false`; `NOTEZY_SEED_DEMO_ADMIN=true`; mật khẩu quản trị riêng trong `NOTEZY_DEMO_ADMIN_PASSWORD` |
 | Trợ lý và cộng tác | `LLM_PROVIDER=gemini; GEMINI_MODEL=gemini-3.5-flash-lite; GEMINI_API_KEY=<khóa riêng trong Environment>`; `AI_AGENT_URL=http://127.0.0.1:8765`; khóa nội bộ giữ nguyên; `COLLAB_WS_PUBLIC_URL=/ws` |
 
 Không đưa mật khẩu database, khóa nội bộ hay mật khẩu quản trị đám mây vào GitHub. Không tắt xác minh TLS để chữa lỗi kết nối. Có thể xem cấu trúc triển khai ở `deploy/FREE_RENDER.md`.

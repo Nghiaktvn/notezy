@@ -339,9 +339,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
 
                 setRegForm(prev => ({ ...prev, loading: true, error: '' }));
 
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 35000);
                 try {
                     const res = await fetch('api/register.php', {
                         method: 'POST',
+                        signal: controller.signal,
                         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             display_name: regForm.displayName,
@@ -357,8 +360,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                         setRegForm(prev => ({ ...prev, loading: false, error: data.message || 'Đăng ký không thành công' }));
                     }
                 } catch (err) {
-                    setRegForm(prev => ({ ...prev, loading: false, error: 'Không thể kết nối máy chủ. Vui lòng thử lại.' }));
-                }
+                    setRegForm(prev => ({ ...prev, loading: false, error: err.name === 'AbortError' ? 'Gửi thư mất quá lâu. Hãy mở trang xác thực và yêu cầu gửi lại mã.' : 'Không thể kết nối máy chủ. Vui lòng thử lại.' }));
+                } finally { clearTimeout(timeout); }
             };
 
             const isDark = theme === 'dark';

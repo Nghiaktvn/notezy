@@ -94,6 +94,37 @@ Không nhập mật khẩu vào GitHub hoặc commit file `.env`.
 
 **Email trên Render Free:** Render chặn SMTP ra ngoài trên cổng 25, 465 và 587;
 đổi `MAIL_PORT` không giải quyết được. Ứng dụng hỗ trợ gửi qua Resend HTTPS.
+Nếu muốn email OTP và quên mật khẩu **được gửi từ Gmail của bạn** trên Render Free,
+dùng Gmail API qua HTTPS:
+
+1. Trong Google Cloud Console, bật **Gmail API**, cấu hình OAuth consent screen,
+   tạo OAuth client (Web application) và cấp quyền `https://www.googleapis.com/auth/gmail.send`
+   cho chính tài khoản Gmail gửi thư. Yêu cầu `access_type=offline` để lấy refresh token.
+   Có thể dùng [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+   với tùy chọn **Use your own OAuth credentials** để thực hiện cấp quyền một lần.
+2. Trong Render → Web Service → Environment, đặt các biến sau rồi **Save and deploy**:
+
+```text
+APP_URL=https://notezy-jrq0.onrender.com
+MAIL_MAILER=gmail_api
+NOTEZY_DEMO_OTP=false
+MAIL_FROM_ADDRESS=<Gmail gửi thư đã cấp quyền OAuth>
+MAIL_FROM_NAME=Notezy
+GMAIL_CLIENT_ID=<OAuth client ID>
+GMAIL_CLIENT_SECRET=<OAuth client secret>
+GMAIL_REFRESH_TOKEN=<refresh token của chính tài khoản Gmail trên>
+```
+
+Không đưa client secret, refresh token hoặc mật khẩu ứng dụng vào GitHub. Nếu
+OAuth consent screen còn ở chế độ **Testing**, refresh token có thể hết hạn sau
+7 ngày; cần cấu hình trạng thái xuất bản phù hợp để sử dụng lâu dài. Khi Gmail
+API trả lỗi, xem Render logs với tiền tố `Notezy mail` (không ghi token vào log).
+Người dùng đăng ký qua trang chủ cần điền **Tên tài khoản**; sau đó nhập OTP tại
+trang xác thực. Liên kết **Quên mật khẩu?** trong trang đăng nhập/đăng ký dẫn đến
+`reset_password.php`, dùng cùng kênh gửi mail để gửi OTP đặt lại mật khẩu.
+
+Nếu dùng Resend thay vì Gmail API, địa chỉ gửi phải thuộc tên miền đã xác minh;
+không thể đặt một địa chỉ `@gmail.com` làm người gửi Resend.
 Tạo API key và xác minh tên miền gửi trong Resend, sau đó thêm vào Environment:
 
 ```text
@@ -295,3 +326,10 @@ docker compose --profile tools stop
 ```
 
 Không dùng `docker compose down -v` trừ khi chủ động muốn xóa toàn bộ dữ liệu trong Docker volumes. Các mục chưa kiểm tra trực tiếp trên môi trường demo không được xem là đã đạt điểm tối đa.
+
+
+### Luồng OTP thật trên nhánh sửa email
+
+Đặt `NOTEZY_DEMO_OTP=false` để gửi mã ngẫu nhiên; mã demo `123456` không được chấp nhận ở chế độ này. Tài khoản vẫn ở trạng thái chờ cho đến khi nhập đúng mã mới nhất. Không kích hoạt bằng liên kết thay cho OTP. Nhập sai mã thật yêu cầu gửi lại mã; mỗi lần gửi cách nhau ít nhất 60 giây. Mã mới có hiệu lực 5 phút và khác mã trước đó. Gửi thư thất bại không được báo đã gửi và không để lại mã có thể sử dụng.
+
+Không merge nhánh này vào main khi chưa xác minh gửi Gmail thật trên hosting, mã sai bị từ chối và mã đúng kích hoạt/đăng nhập thành công. Các bài test SMTP nội bộ chỉ chứng minh logic, không chứng minh thư đã tới Gmail.

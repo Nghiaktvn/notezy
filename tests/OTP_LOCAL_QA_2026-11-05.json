@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Random OTP registration reports successful delivery",
+    "passed": true
+  },
+  {
+    "name": "OTP is six random digits and not demo 123456",
+    "passed": true
+  },
+  {
+    "name": "OTP and password are absent from registration response",
+    "passed": true
+  },
+  {
+    "name": "Email contains no link that bypasses OTP",
+    "passed": true
+  },
+  {
+    "name": "Pending account cannot access notes",
+    "passed": true
+  },
+  {
+    "name": "Pending account cannot log in",
+    "passed": true
+  },
+  {
+    "name": "Repeated signup does not send another email or replace OTP",
+    "passed": true
+  },
+  {
+    "name": "Repeated signup does not replace original password",
+    "passed": true
+  },
+  {
+    "name": "Wrong code rejected and resend required",
+    "passed": true
+  },
+  {
+    "name": "Original code invalidated after a wrong attempt",
+    "passed": true
+  },
+  {
+    "name": "Wrong code never activates the account",
+    "passed": true
+  },
+  {
+    "name": "Resend cooldown enforced across requests",
+    "passed": true
+  },
+  {
+    "name": "Resend succeeds after cooldown",
+    "passed": true
+  },
+  {
+    "name": "Resend email captured",
+    "passed": true
+  },
+  {
+    "name": "Resend issues a fresh code",
+    "passed": true
+  },
+  {
+    "name": "Correct newest OTP activates",
+    "passed": true
+  },
+  {
+    "name": "Original password logs in after activation",
+    "passed": true
+  },
+  {
+    "name": "Authenticated account opens notes",
+    "passed": true
+  },
+  {
+    "name": "HTML signup redirects to OTP verification",
+    "passed": true
+  },
+  {
+    "name": "HTML signup delivers a random email OTP",
+    "passed": true
+  },
+  {
+    "name": "HTML signup grants no session",
+    "passed": true
+  },
+  {
+    "name": "HTML OTP submission redirects to activated login",
+    "passed": true
+  },
+  {
+    "name": "HTML activated account can log in",
+    "passed": true
+  },
+  {
+    "name": "Invalid HTML/AJAX signup returns JSON validation error",
+    "passed": true
+  }
+]

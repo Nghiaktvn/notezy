@@ -9,6 +9,7 @@ notezy_session_start();
 require_once('db.php');
 require_once('sendmail.php');
 require_once __DIR__ . '/config/demo.php';
+require_once __DIR__ . '/includes/activation.php';
 
 $error   = '';
 $success = '';
@@ -18,29 +19,10 @@ $activationToken = trim((string) ($_GET['token'] ?? ''));
 $mailWarning = $_SESSION['otp_mail_warning'] ?? '';
 unset($_SESSION['otp_mail_warning']);
 
-// Activation link flow: the raw token exists only in the email; the database
-// stores its SHA-256 digest and a 24-hour expiry.
+// Activation now requires the email OTP; an old link cannot bypass that check.
 if ($activationToken !== '') {
-    $conn = create_connect();
-    $tokenHash = hash('sha256', $activationToken);
-    $stmt = $conn->prepare('SELECT id, email, theme, language FROM users WHERE activation_token_hash = ? AND activation_token_expires_at >= NOW() LIMIT 1');
-    $stmt->bind_param('s', $tokenHash);
-    $stmt->execute();
-    $tokenUser = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if ($tokenUser) {
-        $activate = $conn->prepare('UPDATE users SET activated = 1, activation_token_hash = NULL, activation_token_expires_at = NULL, activation_otp_hash = NULL, activation_otp_expires_at = NULL, activation_otp_attempts = 0 WHERE id = ?');
-        $activate->bind_param('i', $tokenUser['id']);
-        if ($activate->execute()) {
-            header('Location: index.php?auth=login&activated=1');
-            exit();
-        }
-        $error = 'Không thể kích hoạt tài khoản. Vui lòng thử lại.';
-    } else {
-        $error = 'Liên kết kích hoạt không hợp lệ hoặc đã hết hạn.';
-    }
+    $error = 'Hãy mở trang xác thực bằng thư điện tử và nhập mã mới nhất trong thư.';
 }
-
 // A bad activation link is rendered as a friendly validation page instead of
 // terminating with a raw error. OTP flow still requires a valid email.
 if ((empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) && $activationToken === '') {
@@ -58,85 +40,33 @@ function getUserByEmail($conn, $email) {
     return $stmt->get_result()->fetch_assoc();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $action = $_POST['action'] ?? '';
-
+    $conn = create_connect();
     if ($action === 'verify_otp') {
-        $inputOtp = trim($_POST['otp'] ?? '');
-        $conn = create_connect();
-        $user = getUserByEmail($conn, $email);
-
-        if (!$user) {
-            $error = 'Thư điện tử không tồn tại.';
-        } elseif ($user['activated']) {
-            $success = 'Tài khoản đã được kích hoạt. <a href="index.php">Đăng nhập</a>';
-        } elseif ($user['activation_otp_attempts'] >= 5) {
-            $error = 'Bạn đã nhập sai OTP quá nhiều lần. Vui lòng yêu cầu gửi lại OTP.';
-        } elseif (empty($user['activation_otp_hash'])) {
-            $error = 'Không tìm thấy mã OTP. Vui lòng yêu cầu gửi lại OTP.';
-        } elseif (new DateTime() > new DateTime($user['activation_otp_expires_at'])) {
-            $error = 'Mã xác thực đã hết hạn. Vui lòng yêu cầu gửi lại OTP.';
-        } elseif (!password_verify($inputOtp, $user['activation_otp_hash'])) {
-            // Increment attempt count
-            $stmt = $conn->prepare("UPDATE users SET activation_otp_attempts = activation_otp_attempts + 1 WHERE id = ?");
-            $stmt->bind_param('i', $user['id']);
-            $stmt->execute();
-            $remaining = 4 - $user['activation_otp_attempts'];
-            $error = "Mã xác thực không đúng. Bạn còn " . max(0, $remaining) . " lần thử.";
-        } else {
-            // OTP correct — activate account and clear OTP fields
-            $stmt = $conn->prepare("UPDATE users SET activated = 1, activation_otp_hash = NULL, activation_otp_expires_at = NULL, activation_otp_attempts = 0, activated_tokens = NULL WHERE id = ?");
-            $stmt->bind_param('i', $user['id']);
-            if ($stmt->execute()) {
-                header('Location: index.php?auth=login&activated=1');
-                exit();
-            } else {
-                $error = 'Có lỗi xảy ra. Vui lòng thử lại.';
-            }
+        $result = notezy_activation_verify($conn, $email, trim((string)($_POST['otp'] ?? '')));
+        if ($result['status'] === 'success') {
+            header('Location: index.php?auth=login&activated=1');
+            exit();
         }
+        $error = $result['message'];
     } elseif ($action === 'resend_otp') {
-        // Resend OTP — cooldown check via session
-        $lastResend = $_SESSION['otp_resend_at_' . md5($email)] ?? 0;
-        if (time() - $lastResend < 60) {
-            $error = 'Vui lòng chờ 60 giây trước khi gửi lại OTP.';
-        } else {
-            $conn = create_connect();
-            $user = getUserByEmail($conn, $email);
-            if (!$user) {
-                $error = 'Thư điện tử không tồn tại.';
-            } elseif ($user['activated']) {
-                $success = 'Tài khoản đã được kích hoạt. <a href="index.php">Đăng nhập</a>';
-            } else {
-                // Generate new OTP (5 phút)
-                $otp     = notezy_activation_otp();
-                $otpHash = password_hash($otp, PASSWORD_DEFAULT);
-                $expires = date('Y-m-d H:i:s', time() + 300);
-
-                $token = bin2hex(random_bytes(32));
-                $tokenHash = hash('sha256', $token);
-                $tokenExpires = date('Y-m-d H:i:s', time() + 86400);
-                $stmt = $conn->prepare("UPDATE users SET activation_otp_hash = ?, activation_otp_expires_at = ?, activation_otp_attempts = 0, activation_token_hash = ?, activation_token_expires_at = ? WHERE id = ?");
-                $stmt->bind_param('ssssi', $otpHash, $expires, $tokenHash, $tokenExpires, $user['id']);
-                $stmt->execute();
-
-                $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
-                $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($token);
-                $mailResult = sendActivationEmail($email, $otp, $user['firstname'], $activationLink);
-                if ($mailResult === true) {
-                    $_SESSION['otp_resend_at_' . md5($email)] = time();
-                    $success = 'Đã gửi lại mã OTP mới (hiệu lực 5 phút) đến email của bạn.';
-                    $otpSent = true;
-                } else {
-                    $error = 'Không thể gửi email. ' . $mailResult;
-                }
-            }
-        }
+        $result = notezy_activation_resend($conn, $email);
+        if ($result['status'] === 'success') {
+            $success = $result['message'];
+            $otpSent = true;
+        } else $error = $result['message'];
     }
 }
 
 // Calculate remaining cooldown for client UI
-$lastResend = $_SESSION['otp_resend_at_' . md5($email)] ?? 0;
-$cooldownRemaining = max(0, 60 - (time() - $lastResend));
+$cooldownRemaining = 0;
+$verificationUser = null;
+if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $verificationUser = getUserByEmail(create_connect(), $email);
+    if ($verificationUser) $cooldownRemaining = notezy_activation_cooldown($verificationUser);
+}
+$deliveryUnavailable = !notezy_demo_otp_enabled() && $verificationUser && (empty($verificationUser['activation_otp_hash']) || (int)$verificationUser['activation_otp_attempts'] >= 5) && !(int)$verificationUser['activated'];
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -175,6 +105,8 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
           <p class="text-muted mb-3">
             <?php if (notezy_demo_otp_enabled()): ?>
             <strong>Chế độ trình diễn:</strong> Nhập <strong>123456</strong> để kích hoạt tài khoản. Không gửi thư thật. Mã có hiệu lực 5 phút; hết hạn thì chọn “Gửi lại mã xác thực”.
+            <?php elseif ($deliveryUnavailable): ?>
+            Tài khoản chưa được kích hoạt. Hãy chọn “Gửi lại mã xác thực”, đợi thư đến rồi nhập mã mới nhất.
             <?php else: ?>
             Mã xác thực 6 số (hiệu lực 5 phút) đã được gửi đến email <strong><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></strong>.<br>
             Vui lòng kiểm tra hộp thư (và thư rác).

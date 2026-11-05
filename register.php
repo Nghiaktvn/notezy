@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/session.php';
 require_once('account_db.php');
 require_once('sendmail.php');
+require_once __DIR__ . '/includes/activation.php';
 
 session_set_cookie_params([
     'httponly' => true,
@@ -17,6 +18,9 @@ $last_name = '';
 $email = '';
 $user = '';
 
+$is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+    || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') || isset($_POST['ajax']);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $display_name = trim($_POST['display_name'] ?? '');
     $first_name = $display_name;
@@ -31,30 +35,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!preg_match('/^[a-zA-Z0-9_]{3,40}$/', $user)) {
         $error = 'Tên tài khoản phải có 3–40 ký tự, chỉ gồm chữ, số và dấu gạch dưới.';
     } elseif (empty($email)) {
-        $error = 'Please enter your email';
+        $error = 'Vui lòng nhập thư điện tử';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'This is not a valid email address';
+        $error = 'Thư điện tử không hợp lệ';
     } elseif (empty($pass)) {
-        $error = 'Please enter your password';
+        $error = 'Vui lòng nhập mật khẩu';
     } elseif (strlen($pass) < 6) {
-        $error = 'Password must have at least 6 characters';
+        $error = 'Mật khẩu cần ít nhất 6 ký tự';
     } elseif ($pass !== $pass_confirm) {
-        $error = 'Password does not match';
+        $error = 'Mật khẩu xác nhận không khớp';
     } else {
         $result = register($user, $first_name, $last_name, $email, $pass);
         if (is_array($result) && !empty($result['success'])) {
             // Gửi OTP kích hoạt tài khoản
-            $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
-            $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($result['activation_token']);
-            $mailRes = sendActivationEmail($email, $result['otp'], $first_name, $activationLink);
-            if ($mailRes !== true) {
-                $_SESSION['otp_mail_warning'] = ' (Lưu ý hệ thống email: ' . $mailRes . ')';
-            }
+            $mailRes = !empty($result['pending']) ? true : notezy_activation_deliver(create_connect(), $email, $result['otp'], $first_name);
+            if ($mailRes !== true) $_SESSION['otp_mail_warning'] = 'Chưa gửi được thư xác thực. Tài khoản chưa kích hoạt; hãy yêu cầu gửi lại mã.';
             $redirect_url = 'verify_activation.php?email=' . urlencode($email);
-
-            $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-                || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-                || isset($_POST['ajax']);
 
             if ($is_ajax) {
                 header('Content-Type: application/json; charset=utf-8');
@@ -67,15 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $error = is_array($result) ? ($result['error'] ?? 'Lỗi không xác định') : $result;
 
-        $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-            || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-            || isset($_POST['ajax']);
-
-        if ($is_ajax) {
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'error' => $error]);
-            exit();
-        }
+    }
+    if ($is_ajax && $error !== '') {
+        http_response_code(400);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => $error]);
+        exit();
     }
 }
 ?>
