@@ -1,6 +1,6 @@
 # Hướng dẫn chạy và trình diễn Notezy
 
-Cập nhật ngày 05/11/2026. Dành cho bản trên nhánh `codex/fix-note-access-and-free-deploy`.
+Cập nhật ngày 05/11/2026. Dành cho bản trên nhánh `main`.
 
 ## 1. Chọn cách chạy trước khi bắt đầu
 
@@ -77,11 +77,11 @@ Chọn **Terminal → New Terminal**. Kiểm tra thư mục có `docker-compose.
 Cài Git, Docker Desktop và một trình soạn thảo. Mở Terminal ở thư mục muốn lưu rồi chạy:
 
 ```bash
-git clone --branch codex/fix-note-access-and-free-deploy https://github.com/Nghiaktvn/notezy.git
+git clone --branch main https://github.com/Nghiaktvn/notezy.git
 cd notezy
 ```
 
-Nếu đã clone, kiểm tra `git status` trước. Lưu thay đổi riêng rồi chuyển đúng nhánh và cập nhật; không ghi đè mã chưa lưu của mình. Nhánh `main` chưa mặc nhiên chứa các bản sửa trong nhánh demo.
+Nếu đã clone, kiểm tra `git status` trước. Lưu thay đổi riêng rồi chuyển đúng nhánh và cập nhật; không ghi đè mã chưa lưu của mình. Đảm bảo đã lấy commit mới nhất của nhánh `main` sau khi bản sửa chatbot được merge.
 
 ## 5. Chạy localhost lần đầu bằng Docker
 
@@ -166,7 +166,7 @@ Chỉ mở https://notezy-jrq0.onrender.com/ . Không cần mở Docker. Render 
 
 - Render: **Notezy**, địa chỉ `notezy-jrq0.onrender.com`, gói **Free**.
 - Aiven: **mysql-158fddf6**, project **trangiatrieu2001-7d00**, gói **Free-1-1gb**.
-- Source triển khai: nhánh `codex/fix-note-access-and-free-deploy`.
+- Source triển khai: nhánh `main`.
 - Dockerfile trên Render: `Dockerfile.render`; health check: `/health.php`.
 - Tự triển khai đang tắt; thay đổi trên GitHub không tự xuất hiện trên website cho tới khi triển khai thủ công.
 
@@ -197,7 +197,7 @@ Nếu Aiven bị tắt, vào **Actions → Power on service**, chờ Running r�
 | TLS database | `DB_SSL_REQUIRED=true`; `DB_SSL_CA=/etc/secrets/aiven-ca.pem`; giữ Secret File `aiven-ca.pem` |
 | Khởi tạo | `AUTO_INIT_DATABASE=true`; `NOTEZY_SEED_EMPTY_DEMO=true` |
 | Demo mới | `NOTEZY_DEMO_OTP=true`; `NOTEZY_SEED_DEMO_ADMIN=true`; mật khẩu quản trị riêng trong `NOTEZY_DEMO_ADMIN_PASSWORD` |
-| Trợ lý và cộng tác | `LLM_PROVIDER=mock`; `AI_AGENT_URL=http://127.0.0.1:8765`; khóa nội bộ giữ nguyên; `COLLAB_WS_PUBLIC_URL=/ws` |
+| Trợ lý và cộng tác | `LLM_PROVIDER=gemini; GEMINI_MODEL=gemini-3.5-flash-lite; GEMINI_API_KEY=<khóa riêng trong Environment>`; `AI_AGENT_URL=http://127.0.0.1:8765`; khóa nội bộ giữ nguyên; `COLLAB_WS_PUBLIC_URL=/ws` |
 
 Không đưa mật khẩu database, khóa nội bộ hay mật khẩu quản trị đám mây vào GitHub. Không tắt xác minh TLS để chữa lỗi kết nối. Có thể xem cấu trúc triển khai ở `deploy/FREE_RENDER.md`.
 
@@ -281,3 +281,38 @@ Bộ mô phỏng có tập mẫu lệnh giới hạn; không phải mọi câu h
 - `config/demo.php`: công tắc OTP kích hoạt mô phỏng.
 - `scripts/seed_empty_demo.php`, `scripts/seed_demo_admin.php`: tạo tài khoản khi phù hợp, giữ tài khoản đã có.
 - `tests/demo_flow_regression.py`, `tests/note_access_regression.py`: kiểm tra luồng demo và bảo vệ ghi chú.
+
+
+## 11. Chatbot Gemini thật và kịch bản demo mới
+
+Cấu hình localhost trong file `.env` (không commit file này), rồi khởi động lại dịch vụ `ai_agent`. Trên Render sửa Environment và triển khai lại để tiến trình nhận biến mới:
+
+- `LLM_PROVIDER=gemini`
+- `GEMINI_MODEL=gemini-3.5-flash-lite`
+- `GEMINI_API_KEY`: khóa Gemini riêng của bạn, không chép vào tài liệu/GitHub.
+- `AI_AGENT_TIMEOUT_SECONDS=30`
+
+Gói miễn phí của Google có hạn mức, không phải gọi không giới hạn. Khi nhận lỗi 429, chờ rồi thử lại; không bật billing để demo. Không đổi sang mô hình khác chỉ vì tên có chữ Flash: phải kiểm tra mô hình đó khả dụng cho chính project/key.
+
+Sau khi đăng nhập user1, mở trợ lý và thử lần lượt:
+
+1. `Tạo ghi chú có tiêu đề Kế hoạch demo và nội dung Học kiểm thử vào thứ sáu.`
+2. Mở ghi chú vừa tạo; yêu cầu `Đọc ghi chú đang mở và cho biết nội dung hiện tại.`
+3. `Sửa ghi chú đang mở: đổi tiêu đề thành Kế hoạch mới và nội dung Ôn chương 2.` → đọc bản xem trước → **Xác nhận** → mở lại ghi chú kiểm tra.
+4. `Chia sẻ ghi chú đang mở cho user2 với quyền chỉ xem.` → **Xác nhận** → ở trình duyệt user2 mở mục được chia sẻ. Người nhận phải là tài khoản Notezy đã kích hoạt; quyền chỉ xem không được sửa.
+5. `Tôi muốn đổi mật khẩu` → biểu mẫu hiện mật khẩu hiện tại, mật khẩu mới, xác nhận → **Lưu mật khẩu**. Dùng tài khoản thử riêng nếu không muốn đổi mật khẩu demo chung. Đăng xuất rồi đăng nhập bằng mật khẩu mới để chứng minh đã lưu.
+6. `Xóa ghi chú đang mở.` → **Xác nhận** → kiểm tra cả chủ sở hữu và người nhận không còn mở được.
+
+Không nhập mật khẩu trong tin nhắn chatbot. Biểu mẫu gửi trực tiếp tới Notezy, kiểm tra mật khẩu cũ, băm mật khẩu mới và lưu database; không gửi các trường này sang Gemini. Thao tác sửa/xóa/chia sẻ cần xác nhận. Tạo ghi chú mới được thực hiện ngay theo yêu cầu.
+
+### RAG có cần thiết không?
+
+Để tạo/sửa/xóa/chia sẻ cần **function calling**: Gemini đề xuất công cụ; PHP kiểm tra người đăng nhập, quyền sở hữu, trạng thái khóa và thực thi. RAG chỉ hỗ trợ trả lời dựa trên dữ liệu tìm được; không thay thế quyền truy cập hay công cụ thay đổi dữ liệu.
+
+Bản này dùng công cụ tìm/đọc ghi chú bằng SQL để đưa nội dung được phép truy cập vào Gemini khi cần. Đây là truy xuất dữ liệu có kiểm soát, phù hợp quy mô demo; không cần thêm vector database trả phí. Chưa nên mô tả trong báo cáo là đã có pipeline vector RAG hoàn chỉnh. Việc sinh embedding ở mọi câu hỏi đã được bỏ để tránh tốn thời gian và quota.
+
+### Merge có tự cập nhật hosting không?
+
+Render chỉ tự triển khai khi **Auto-Deploy bật** và commit được đưa vào **đúng nhánh dịch vụ đang theo dõi**. Merge vào main không cập nhật dịch vụ còn theo dõi nhánh khác. Nếu Auto-Deploy Off: **Manual Deploy → Deploy latest commit**, chờ **Live**, rồi tải lại trang. Thay đổi Environment cũng cần triển khai/restart tiến trình; merge không tự thêm API key.
+
+Tham khảo chính thức: [Gemini function calling](https://ai.google.dev/gemini-api/docs/function-calling), [Gemini pricing](https://aistudio.google.com/docs/pricing), [Render deploys](https://render.com/docs/deploys).

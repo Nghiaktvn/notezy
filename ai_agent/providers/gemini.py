@@ -34,7 +34,7 @@ class GeminiProvider(LlmProvider):
         self.base_url = os.environ.get(
             "GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"
         ).rstrip("/")
-        self.model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+        self.model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
         self.embed_model = os.environ.get("GEMINI_EMBED_MODEL", "gemini-embedding-001")
         self.timeout = int(os.environ.get("LLM_TIMEOUT_SECONDS", "45"))
 
@@ -68,23 +68,24 @@ class GeminiProvider(LlmProvider):
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=min(self.timeout, 12)) as resp:
+            with urllib.request.urlopen(req, timeout=max(3, min(self.timeout, 25))) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             return _from_gemini_response(data)
         except urllib.error.HTTPError as exc:
-            try:
-                detail = exc.read().decode("utf-8", "replace")[:1200]
-            except Exception:
-                detail = ""
-            sys.stderr.write(f"[notezy-ai] Gemini API unavailable (HTTP {exc.code}: {detail}), fallback to MockProvider\n")
-            from .mock import MockProvider
-            return MockProvider().complete(messages, tools)
-        except Exception as exc:
-            # When external network fails/times out, seamlessly fallback to MockProvider
-            # so Notezy AI assistant works reliably under all network conditions.
-            sys.stderr.write(f"[notezy-ai] Gemini API unavailable ({exc}), fallback to MockProvider\n")
-            from .mock import MockProvider
-            return MockProvider().complete(messages, tools)
+            # Never silently switch a failed real-model request to fake mutations.
+            message = {
+                400: "Yêu cầu Gemini không hợp lệ. Vui lòng kiểm tra cấu hình mô hình.",
+                401: "Gemini từ chối khóa truy cập.",
+                403: "Khóa Gemini chưa được cấp quyền cho yêu cầu này.",
+                404: "Mô hình Gemini được cấu hình không khả dụng.",
+                429: "Gemini đã hết hạn mức hoặc đang giới hạn lượt gọi. Vui lòng thử lại sau.",
+            }.get(exc.code, "Dịch vụ Gemini tạm thời không khả dụng.")
+            sys.stderr.write(f"[notezy-ai] Gemini HTTP {exc.code}\n")
+            raise LlmError(message, 429 if exc.code == 429 else 503) from None
+        except LlmError:
+            raise
+        except Exception:
+            raise LlmError("Không kết nối được Gemini trong thời gian cho phép. Vui lòng thử lại.", 503) from None
 
     # ------------------------------------------------------------------
     # Embeddings
@@ -151,7 +152,11 @@ def _to_gemini_contents(messages: list[dict]) -> tuple[str, list[dict]]:
             if content:
                 parts.append({"text": content})
             for call in msg.get("tool_calls") or []:
-                fn = call.get("function") or {}
+                # PHP uses normalized calls; provider tests may use OpenAI shape.
+                if isinstance(call.get("gemini_part"), dict):
+                    parts.append(call["gemini_part"])
+                    continue
+                fn = call.get("function") or call
                 name = fn.get("name") or ""
                 raw_args = fn.get("arguments") or "{}"
                 try:
@@ -240,14 +245,15 @@ def _from_gemini_response(data: dict) -> dict:
     tool_calls: list[dict] = []
 
     for idx, part in enumerate(parts):
-        if "text" in part and part["text"]:
+        if "text" in part and part["text"] and not part.get("thought"):
             text_chunks.append(part["text"])
         fc = part.get("functionCall")
         if fc and fc.get("name"):
             tool_calls.append(
                 {
-                    "id": f"call_{fc['name']}_{idx}",
+                    "id": fc.get("id") or f"call_{fc['name']}_{idx}",
                     "type": "function",
+                    "gemini_part": part,
                     "function": {
                         "name": fc["name"],
                         "arguments": json.dumps(fc.get("args") or {}, ensure_ascii=False),

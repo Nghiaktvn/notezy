@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { chat, confirmAction } from '../api/ai.js'
+import { chat, confirmAction, changePassword } from '../api/ai.js'
 import { getAppUrl } from '../api/auth.js'
 
 const welcome = {
@@ -15,6 +15,29 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
   const [conversationId, setConversationId] = useState(null)
   const [messages, setMessages] = useState([welcome])
   const listRef = useRef(null)
+  const passwordDialog = useRef(null)
+  const [passwordToken, setPasswordToken] = useState(null)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  useEffect(() => {
+    if (passwordToken && passwordDialog.current && !passwordDialog.current.open) passwordDialog.current.showModal()
+  }, [passwordToken])
+  async function savePassword(event) {
+    event.preventDefault()
+    const form = event.currentTarget
+    setPasswordSaving(true)
+    setPasswordError('')
+    try {
+      const fields = Object.fromEntries(new FormData(form))
+      if (fields.new_password !== fields.confirm_password) throw new Error('Hai lần nhập mật khẩu mới chưa khớp.')
+      const result = await changePassword({...fields, form_token:passwordToken})
+      form.reset()
+      passwordDialog.current.close()
+      setPasswordToken(null)
+      setMessages(prev => [...prev, {role:'assistant', content:result.message}])
+    } catch (err) { setPasswordError(err.message) }
+    finally { setPasswordSaving(false) }
+  }
 
   useEffect(() => {
     if (listRef.current) {
@@ -33,7 +56,11 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
         page,
         current_note_id: currentNoteId,
       })
-      setConversationId(data.conversation_id)
+      if (data.conversation_id) setConversationId(data.conversation_id)
+      if (data.response?.type === 'password_change_form') {
+        setPasswordError('')
+        setPasswordToken(data.response.form_token)
+      }
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: data.response?.content || '', response: data.response },
@@ -65,6 +92,18 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
+      <dialog ref={passwordDialog} className="rounded-2xl p-6 w-[min(94vw,440px)] backdrop:bg-black/50" onClose={() => {passwordDialog.current.querySelector('form').reset(); setPasswordToken(null)}}>
+        <form onSubmit={savePassword} className="grid gap-3">
+          <h3 className="text-xl font-bold">Đổi mật khẩu tài khoản</h3>
+          <p className="text-sm">Thông tin này gửi trực tiếp tới Notezy, không gửi vào mô hình AI.</p>
+          <label>Mật khẩu hiện tại<input className="border rounded p-2 w-full" name="current_password" type="password" autoComplete="current-password" required /></label>
+          <label>Mật khẩu mới<input className="border rounded p-2 w-full" name="new_password" type="password" autoComplete="new-password" minLength={6} maxLength={72} required /></label>
+          <label>Xác nhận mật khẩu mới<input className="border rounded p-2 w-full" name="confirm_password" type="password" autoComplete="new-password" minLength={6} maxLength={72} required /></label>
+          <p role="status" className="text-red-600">{passwordError}</p>
+          <button className="bg-purple-700 text-white rounded p-2" disabled={passwordSaving}>Lưu mật khẩu</button>
+          <button type="button" onClick={() => passwordDialog.current.close()}>Hủy</button>
+        </form>
+      </dialog>
       {open && (
         <div className="notezy-react-ai-panel bg-white w-[min(420px,calc(100vw-24px))] h-[min(640px,70vh)] rounded-2xl shadow-2xl border border-gray-200 mb-4 overflow-hidden flex flex-col dark:bg-neutral-950 dark:border-white/10">
           <div className="notezy-react-ai-header text-white p-3 font-semibold flex justify-between items-center">
@@ -77,6 +116,7 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
                 key={idx}
                 msg={msg}
                 onConfirm={onConfirm}
+                onPasswordOpen={token => {setPasswordError(''); setPasswordToken(token)} }
                 onCancel={() =>
                   setMessages((prev) => [...prev, { role: 'assistant', content: 'Đã hủy thao tác.' }])
                 }
@@ -122,7 +162,8 @@ export default function AiAssistant({ currentNoteId = 0, page = 'notes_list' }) 
   )
 }
 
-function Message({ msg, onConfirm, onCancel }) {
+function Message({ msg, onConfirm, onCancel, onPasswordOpen }) {
+  if (msg.response?.type === 'password_change_form') return <button type="button" className="border rounded p-3" onClick={() => onPasswordOpen(msg.response.form_token)}>Mở biểu mẫu đổi mật khẩu</button>
   const resp = msg.response
   const [title, setTitle] = useState(resp?.title || '')
   const [content, setContent] = useState(resp?.content || '')

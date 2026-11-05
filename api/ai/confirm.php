@@ -59,6 +59,7 @@ $summary = match ($action) {
     'update_note' => 'Đã cập nhật ghi chú #' . ($result['note_id'] ?? ''),
     'delete_note' => 'Đã xóa ghi chú #' . ($result['note_id'] ?? ''),
     'create_label' => 'Đã tạo nhãn: ' . ($result['name'] ?? ''),
+    'share_note' => 'Đã chia sẻ ghi chú #' . ($result['note_id'] ?? '') . ' cho ' . ($result['recipient'] ?? '') . '.',
     default => 'Đã thực hiện thao tác.',
 };
 $conversations->addMessage((int) $pending['conversation_id'], 'assistant', $summary, [

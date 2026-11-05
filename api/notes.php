@@ -361,17 +361,28 @@ switch ($method) {
             echo json_encode(["status" => "error", "message" => "Hãy mở khóa ghi chú trước khi xóa."]);
             exit();
         }
-        if (!empty($img_row['image_path'])) {
-            $full_path = __DIR__ . '/../' . $img_row['image_path'];
-            if (file_exists($full_path)) @unlink($full_path);
-        }
-
-        $del_stmt = $conn->prepare("DELETE FROM notes WHERE note_id = ? AND user_id = ?");
-        $del_stmt->bind_param("ii", $note_id, $user_id);
-        if ($del_stmt->execute() && $del_stmt->affected_rows > 0) {
+        $conn->begin_transaction();
+        try {
+            $shares = $conn->prepare('DELETE FROM note_shares WHERE note_id = ?');
+            $shares->bind_param('i', $note_id);
+            $shares->execute();
+            $del_stmt = $conn->prepare('DELETE FROM notes WHERE note_id = ? AND user_id = ?');
+            $del_stmt->bind_param('ii', $note_id, $user_id);
+            $del_stmt->execute();
+            if ($del_stmt->affected_rows !== 1) {
+                throw new RuntimeException('Không thể xóa ghi chú');
+            }
+            $conn->commit();
+            $uploads = realpath(__DIR__ . '/../uploads');
+            $image = !empty($img_row['image_path']) ? realpath(__DIR__ . '/../' . $img_row['image_path']) : false;
+            if ($uploads && $image && str_starts_with($image, $uploads . DIRECTORY_SEPARATOR) && is_file($image)) {
+                @unlink($image);
+            }
             echo json_encode(["status" => "success", "message" => "Đã xóa ghi chú"]);
-        } else {
-            echo json_encode(["status" => "error", "message" => "Không thể xóa hoặc không tìm thấy ghi chú"]);
+        } catch (Throwable $error) {
+            $conn->rollback();
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Không thể xóa ghi chú. Vui lòng thử lại."]);
         }
         break;
 }

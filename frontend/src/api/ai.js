@@ -28,3 +28,7 @@ export function confirmAction(confirmationToken, edits = {}) {
     edits,
   })
 }
+
+export function changePassword(fields) {
+  return postJson('change_password.php', fields)
+}

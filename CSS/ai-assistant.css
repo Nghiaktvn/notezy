@@ -211,3 +211,12 @@
 @keyframes notezy-ai-pop { from { opacity:0; transform:translateY(15px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
 @media (max-width:576px) { .notezy-ai-fab__prompt { display:none; } }
 @media (prefers-reduced-motion:reduce) { .notezy-ai-fab::before,.notezy-ai-fab img,.notezy-ai-fab__prompt,.notezy-ai-brand img,.notezy-ai-panel.open,.notezy-ai-panel.is-thinking .notezy-ai-brand img { animation:none !important; } }
+
+.notezy-ai-password-dialog { width:min(94vw,440px); max-height:90vh; overflow:auto; padding:26px; border:1px solid #ddd4e8; border-radius:20px; background:#fffdfb; color:#343344; box-shadow:0 24px 90px #0004; }
+.notezy-ai-password-dialog::backdrop { background:#221c3488; }
+.notezy-ai-password-dialog h3 { margin:0 0 12px; font-size:1.3rem; }
+.notezy-ai-password-dialog p { font-size:.87rem; line-height:1.5; }
+.notezy-ai-password-dialog label { display:grid; gap:6px; margin:14px 0; font-weight:650; }
+.notezy-ai-password-dialog input[type=password] { width:100%; border:1px solid #c9bfd4; border-radius:9px; padding:10px; }
+.notezy-ai-password-dialog button { border:0; border-radius:9px; padding:10px 15px; background:#756c91; color:white; cursor:pointer; }
+#notezyAiPasswordStatus { color:#ad233b; }
