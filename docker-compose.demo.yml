@@ -7,7 +7,7 @@ services:
       COLLAB_WS_PUBLIC_URL: ${COLLAB_WS_PUBLIC_URL:-ws://localhost:8766}
       MAIL_HOST: "127.0.0.1"
       MAIL_PORT: "1"
-      LLM_PROVIDER: "mock"
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
   ai_agent:
     environment:
-      LLM_PROVIDER: "mock"
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
