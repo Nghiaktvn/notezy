@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: notezy-free-demo
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: codex/fix-note-access-and-free-deploy
+    dockerfilePath: ./Dockerfile.render
+    healthCheckPath: /health.php
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: AI_AGENT_SHARED_SECRET
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL_REQUIRED
+        value: 'true'
+      - key: DB_SSL_CA
+        value: /etc/secrets/aiven-ca.pem
+      - key: AUTO_INIT_DATABASE
+        value: 'true'
+      - key: NOTEZY_SEED_EMPTY_DEMO
+        value: 'true'
+      - key: LLM_PROVIDER
+        value: mock

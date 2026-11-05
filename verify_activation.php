@@ -8,6 +8,7 @@ session_set_cookie_params([
 notezy_session_start();
 require_once('db.php');
 require_once('sendmail.php');
+require_once __DIR__ . '/config/demo.php';
 
 $error   = '';
 $success = '';
@@ -66,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = getUserByEmail($conn, $email);
 
         if (!$user) {
-            $error = 'Email không tồn tại.';
+            $error = 'Thư điện tử không tồn tại.';
         } elseif ($user['activated']) {
             $success = 'Tài khoản đã được kích hoạt. <a href="index.php">Đăng nhập</a>';
         } elseif ($user['activation_otp_attempts'] >= 5) {
@@ -74,14 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (empty($user['activation_otp_hash'])) {
             $error = 'Không tìm thấy mã OTP. Vui lòng yêu cầu gửi lại OTP.';
         } elseif (new DateTime() > new DateTime($user['activation_otp_expires_at'])) {
-            $error = 'Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại OTP.';
+            $error = 'Mã xác thực đã hết hạn. Vui lòng yêu cầu gửi lại OTP.';
         } elseif (!password_verify($inputOtp, $user['activation_otp_hash'])) {
             // Increment attempt count
             $stmt = $conn->prepare("UPDATE users SET activation_otp_attempts = activation_otp_attempts + 1 WHERE id = ?");
             $stmt->bind_param('i', $user['id']);
             $stmt->execute();
             $remaining = 4 - $user['activation_otp_attempts'];
-            $error = "Mã OTP không đúng. Bạn còn " . max(0, $remaining) . " lần thử.";
+            $error = "Mã xác thực không đúng. Bạn còn " . max(0, $remaining) . " lần thử.";
         } else {
             // OTP correct — activate account and clear OTP fields
             $stmt = $conn->prepare("UPDATE users SET activated = 1, activation_otp_hash = NULL, activation_otp_expires_at = NULL, activation_otp_attempts = 0, activated_tokens = NULL WHERE id = ?");
@@ -102,12 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn = create_connect();
             $user = getUserByEmail($conn, $email);
             if (!$user) {
-                $error = 'Email không tồn tại.';
+                $error = 'Thư điện tử không tồn tại.';
             } elseif ($user['activated']) {
                 $success = 'Tài khoản đã được kích hoạt. <a href="index.php">Đăng nhập</a>';
             } else {
                 // Generate new OTP (5 phút)
-                $otp     = (string) random_int(100000, 999999);
+                $otp     = notezy_activation_otp();
                 $otpHash = password_hash($otp, PASSWORD_DEFAULT);
                 $expires = date('Y-m-d H:i:s', time() + 300);
 
@@ -164,7 +165,7 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
           <?php endif; ?>
           <?php if (!empty($mailWarning)): ?>
-            <div class="alert alert-warning">Tài khoản đã được lưu. Nếu chưa nhận được email, hãy bấm Gửi lại OTP. <?= htmlspecialchars($mailWarning) ?></div>
+            <div class="alert alert-warning">Tài khoản đã được lưu. Nếu chưa nhận được email, hãy bấm Gửi lại mã xác thực. <?= htmlspecialchars($mailWarning) ?></div>
           <?php endif; ?>
           <?php if (!empty($success)): ?>
             <div class="alert alert-success"><?= $success ?></div>
@@ -172,8 +173,12 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
 
           <?php if (empty($success) || $otpSent): ?>
           <p class="text-muted mb-3">
-            Mã OTP 6 số (hiệu lực 5 phút) đã được gửi đến email <strong><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></strong>.<br>
-            Vui lòng kiểm tra hộp thư (và thư mục Spam).
+            <?php if (notezy_demo_otp_enabled()): ?>
+            <strong>Chế độ trình diễn:</strong> Nhập <strong>123456</strong> để kích hoạt tài khoản. Không gửi thư thật. Mã có hiệu lực 5 phút; hết hạn thì chọn “Gửi lại mã xác thực”.
+            <?php else: ?>
+            Mã xác thực 6 số (hiệu lực 5 phút) đã được gửi đến email <strong><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></strong>.<br>
+            Vui lòng kiểm tra hộp thư (và thư rác).
+            <?php endif; ?>
           </p>
 
           <!-- Verify OTP form -->
@@ -181,12 +186,12 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
             <input type="hidden" name="action" value="verify_otp">
             <input type="hidden" name="email" value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
             <div class="mb-3">
-              <label for="otp-input" class="form-label">Mã OTP</label>
+              <label for="otp-input" class="form-label">Mã xác thực</label>
               <input type="text" name="otp" id="otp-input" class="form-control form-control-lg text-center fw-bold"
                      placeholder="______" maxlength="6" autocomplete="one-time-code" required
                      pattern="\d{6}" title="Nhập đúng 6 chữ số" autofocus>
             </div>
-            <button type="submit" class="btn btn-success w-100 mb-2" id="btn-verify-otp">Xác nhận OTP</button>
+            <button type="submit" class="btn btn-success w-100 mb-2" id="btn-verify-otp">Xác nhận mã</button>
           </form>
 
           <!-- Resend OTP form with 60s cooldown -->
@@ -194,7 +199,7 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
             <input type="hidden" name="action" value="resend_otp">
             <input type="hidden" name="email" value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
             <button type="submit" class="btn btn-outline-secondary w-100" id="btn-resend-otp">
-              <?= $cooldownRemaining > 0 ? "Gửi lại OTP ({$cooldownRemaining}s)" : "Gửi lại OTP" ?>
+              <?= $cooldownRemaining > 0 ? "Gửi lại mã xác thực ({$cooldownRemaining}s)" : "Gửi lại mã xác thực" ?>
             </button>
           </form>
           <?php endif; ?>
@@ -218,9 +223,9 @@ $cooldownRemaining = max(0, 60 - (time() - $lastResend));
           if (cooldown <= 0) {
             clearInterval(interval);
             resendBtn.disabled = false;
-            resendBtn.textContent = 'Gửi lại OTP';
+            resendBtn.textContent = 'Gửi lại mã xác thực';
           } else {
-            resendBtn.textContent = `Gửi lại OTP (${cooldown}s)`;
+            resendBtn.textContent = `Gửi lại mã xác thực (${cooldown}s)`;
           }
         }, 1000);
       }

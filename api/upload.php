@@ -5,14 +5,14 @@ notezy_session_start();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['id'])) {
-    echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+    echo json_encode(["status" => "error", "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
     exit();
 }
 
 $user_id = (int)$_SESSION['id'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['image'], $_POST['note_id'])) {
-    echo json_encode(["status" => "error", "message" => "Invalid request"]);
+    echo json_encode(["status" => "error", "message" => "Yêu cầu không hợp lệ"]);
     exit();
 }
 
@@ -23,7 +23,7 @@ $chk = $conn->prepare("SELECT note_id FROM notes WHERE note_id = ? AND user_id =
 $chk->bind_param("ii", $note_id, $user_id);
 $chk->execute();
 if ($chk->get_result()->num_rows === 0) {
-    echo json_encode(["status" => "error", "message" => "Note not found or unauthorized"]);
+    echo json_encode(["status" => "error", "message" => "Không tìm thấy ghi chú hoặc bạn không có quyền truy cập"]);
     exit();
 }
 
@@ -32,7 +32,7 @@ $file = $_FILES['image'];
 // ── Size validation (max 5 MB) ────────────────────────────────────────────
 $max_bytes = 5 * 1024 * 1024;
 if ($file['size'] > $max_bytes) {
-    echo json_encode(["status" => "error", "message" => "File quá lớn. Tối đa 5 MB."]);
+    echo json_encode(["status" => "error", "message" => "Tệp quá lớn. Tối đa 5 MB."]);
     exit();
 }
 if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -40,7 +40,7 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     switch ($file['error']) {
         case UPLOAD_ERR_INI_SIZE:
         case UPLOAD_ERR_FORM_SIZE:
-            $error_msg = 'File quá lớn.';
+            $error_msg = 'Tệp quá lớn.';
             break;
         case UPLOAD_ERR_PARTIAL:
             $error_msg = 'File chỉ được tải lên một phần.';
@@ -58,7 +58,7 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
             $error_msg = 'Một phần mở rộng PHP đã chặn upload file.';
             break;
     }
-    echo json_encode(["status" => "error", "message" => "Upload lỗi: " . $error_msg]);
+    echo json_encode(["status" => "error", "message" => "Lỗi tải lên: " . $error_msg]);
     exit();
 }
 
@@ -76,7 +76,7 @@ $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mime  = finfo_file($finfo, $file['tmp_name']);
 finfo_close($finfo);
 if (!in_array($mime, $allowed_mimes, true)) {
-    echo json_encode(["status" => "error", "message" => "File không phải ảnh hợp lệ (MIME không được phép)."]);
+    echo json_encode(["status" => "error", "message" => "Tệp không phải ảnh hợp lệ (MIME không được phép)."]);
     exit();
 }
 
@@ -110,10 +110,10 @@ if ($old_row && !empty($old_row['image_path'])) {
 $upd = $conn->prepare("UPDATE notes SET image_path = ? WHERE note_id = ?");
 $upd->bind_param("si", $image_path, $note_id);
 if ($upd->execute()) {
-    echo json_encode(["status" => "success", "message" => "Image uploaded", "image_path" => $image_path]);
+    echo json_encode(["status" => "success", "message" => "Đã tải ảnh lên", "image_path" => $image_path]);
 } else {
     // Roll back file on DB failure
     @unlink($target_file);
-    echo json_encode(["status" => "error", "message" => "Failed to update DB"]);
+    echo json_encode(["status" => "error", "message" => "Không thể cập nhật dữ liệu"]);
 }
 ?>

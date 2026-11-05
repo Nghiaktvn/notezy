@@ -6,6 +6,7 @@
  * or GET:    ?action=resend&email=...
  */
 require_once 'db.php';
+require_once dirname(__DIR__) . '/config/demo.php';
 header('Content-Type: application/json');
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -26,11 +27,11 @@ if ($method === 'GET') {
     $user = $stmt->get_result()->fetch_assoc();
 
     if (!$user || $user['activated']) {
-        echo json_encode(["status" => "error", "message" => "Email không hợp lệ hoặc đã kích hoạt"]);
+        echo json_encode(["status" => "error", "message" => "Thư điện tử không hợp lệ hoặc đã kích hoạt"]);
         exit();
     }
 
-    $otp     = (string) random_int(100000, 999999);
+    $otp     = notezy_activation_otp();
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
     $expires = date('Y-m-d H:i:s', time() + 300);
 
@@ -52,7 +53,7 @@ if ($method === 'GET') {
 // ── VERIFY OTP (POST) ─────────────────────────────────────────────────────
 if ($method !== 'POST') {
     http_response_code(405);
-    echo json_encode(["status" => "error", "message" => "Method not allowed"]);
+    echo json_encode(["status" => "error", "message" => "Phương thức yêu cầu không được hỗ trợ"]);
     exit();
 }
 
@@ -61,7 +62,7 @@ $email = trim($data['email'] ?? '');
 $otp   = trim($data['otp']   ?? '');
 
 if (empty($email) || empty($otp)) {
-    echo json_encode(["status" => "error", "message" => "Email và OTP là bắt buộc"]);
+    echo json_encode(["status" => "error", "message" => "Thư điện tử và mã xác thực là bắt buộc"]);
     exit();
 }
 
@@ -71,7 +72,7 @@ $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 
 if (!$user) {
-    echo json_encode(["status" => "error", "message" => "Email không tồn tại"]);
+    echo json_encode(["status" => "error", "message" => "Thư điện tử không tồn tại"]);
     exit();
 }
 if ($user['activated']) {

@@ -73,7 +73,7 @@
     <div class="offline-header">
       <img src="logo.svg" alt="Notezy" onerror="this.style.display='none'">
       <div><span class="offline-badge"><i class="fas fa-wifi-slash"></i> Đang ở Chế độ Ngoại Tuyến</span></div>
-      <h2 class="fw-bold mb-2">Notezy Offline Workspace</h2>
+      <h2 class="fw-bold mb-2">Không gian ghi chú ngoại tuyến Notezy</h2>
       <p class="text-muted small mb-3">
         Không có kết nối Internet. Bạn vẫn có thể xem các ghi chú đã lưu trong bộ nhớ đệm (IndexedDB) và tạo ghi chú mới ngoại tuyến. Hệ thống sẽ tự động đồng bộ ngay khi có mạng trở lại!
       </p>
@@ -82,7 +82,7 @@
           <i class="fas fa-sync-alt me-1"></i> Thử kết nối lại
         </button>
         <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="document.getElementById('offlineCreateForm').scrollIntoView({behavior:'smooth'})">
-          <i class="fas fa-plus me-1"></i> Tạo ghi chú offline
+          <i class="fas fa-plus me-1"></i> Tạo ghi chú ngoại tuyến
         </button>
       </div>
     </div>
@@ -110,7 +110,7 @@
     </div>
   </div>
 
-  <script src="js/offline-store.js"></script>
+  <script src="js/offline-store.js?v=20261105"></script>
   <script>
     async function renderOfflineNotes() {
       const container = document.getElementById('localNotesList');

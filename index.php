@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         }
     </style>
     <link rel="stylesheet" href="CSS/landing-refresh.css?v=1" />
-    <link rel="stylesheet" href="CSS/landing-rebuild.css?v=6" />
+    <link rel="stylesheet" href="CSS/landing-rebuild.css?v=7" />
 </head>
 <body class="landing-refresh text-gray-900 antialiased">
     <div id="root"></div>
@@ -340,36 +340,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                 setRegForm(prev => ({ ...prev, loading: true, error: '' }));
 
                 try {
-                    const formData = new URLSearchParams();
-                    formData.append('display_name', regForm.displayName);
-                    formData.append('email', regForm.email);
-                    formData.append('pass', regForm.password);
-                    formData.append('pass-confirm', regForm.passwordConfirm);
-                    formData.append('ajax', '1');
-
-                    const res = await fetch('register.php', {
+                    const res = await fetch('api/register.php', {
                         method: 'POST',
-                        headers: { 'Accept': 'application/json' },
-                        body: formData
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            display_name: regForm.displayName,
+                            email: regForm.email,
+                            password: regForm.password
+                        })
                     });
                     const data = await res.json();
 
-                    if (data.success) {
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
-                            return;
-                        }
-                        setLoginSuccessMsg('🎉 Đăng ký thành công! Bạn đã được đăng nhập.');
-                        setRegForm({
-                            displayName: '',
-                            email: '',
-                            password: '',
-                            passwordConfirm: '',
-                            error: '',
-                            loading: false
-                        });
+                    if (data.status === 'success' || data.status === 'warning') {
+                        window.location.href = data.redirect || ('verify_activation.php?email=' + encodeURIComponent(regForm.email));
                     } else {
-                        setRegForm(prev => ({ ...prev, loading: false, error: data.error || 'Đăng ký không thành công' }));
+                        setRegForm(prev => ({ ...prev, loading: false, error: data.message || 'Đăng ký không thành công' }));
                     }
                 } catch (err) {
                     setRegForm(prev => ({ ...prev, loading: false, error: 'Không thể kết nối máy chủ. Vui lòng thử lại.' }));
@@ -392,17 +377,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                 <NotezyLogo className="h-8 w-8" />
                                 <span className="font-display text-lg font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-1.5">
                                     Notezy
-                                    <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full font-bold bg-purple-100/90 text-purple-700 border border-purple-200/90">
-                                        AI
-                                    </span>
+                                    <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full font-bold bg-purple-100/90 text-purple-700 border border-purple-200/90">Trợ lý</span>
                                 </span>
                             </a>
 
                             {/* Menu links */}
                             <div className="notezy-main-links flex items-center gap-8" aria-label="Điều hướng trang chủ">
-                                <a href="#home">Home</a>
-                                <a href="#contact">Contact</a>
-                                <a href="#about">About</a>
+                                <a href="#home">Trang chủ</a>
+                                <a href="#contact">Liên hệ</a>
+                                <a href="#about">Giới thiệu</a>
                             </div>
 
                             {/* Right actions: Login + Start */}
@@ -454,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
                                         {authMode === 'login' ? 'Đăng nhập Notezy' : 'Tạo tài khoản mới'}
                                     </h3>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {authMode === 'login' ? 'Chào mừng bạn quay trở lại với không gian ghi chú' : 'Khám phá trợ lý AI và bảo mật 6 số ngay'}
+                                        {authMode === 'login' ? 'Chào mừng bạn quay trở lại với không gian ghi chú' : 'Khám phá trợ lý thông minh và bảo mật 6 số ngay'}
                                     </p>
                                 </div>
 
@@ -601,7 +584,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
 
                                         <div>
                                             <label className="block text-xs font-bold mb-1 text-gray-700 dark:text-gray-300">
-                                                Email
+                                                Thư điện tử
                                             </label>
                                             <input
                                                 type="email"

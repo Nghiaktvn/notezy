@@ -11,7 +11,7 @@ $data = ai_read_json();
 $token = (string) ($data['confirmation_token'] ?? '');
 $edits = is_array($data['edits'] ?? null) ? $data['edits'] : [];
 if ($token === '' || strlen($token) > 128) {
-    ai_json(400, ['status' => 'error', 'message' => 'Invalid confirmation token']);
+    ai_json(400, ['status' => 'error', 'message' => 'Mã xác nhận không hợp lệ']);
 }
 
 $store = new AiPendingStore($conn, $user_id);
@@ -44,7 +44,7 @@ $result = $tools->execute($action, $payload);
 if (empty($result['ok'])) {
     ai_json(400, [
         'status' => 'error',
-        'message' => $result['error'] ?? 'Action failed',
+        'message' => $result['error'] ?? 'Thao tác không thành công',
         'conversation_id' => (int) $pending['conversation_id'],
     ]);
 }
@@ -59,6 +59,7 @@ $summary = match ($action) {
     'update_note' => 'Đã cập nhật ghi chú #' . ($result['note_id'] ?? ''),
     'delete_note' => 'Đã xóa ghi chú #' . ($result['note_id'] ?? ''),
     'create_label' => 'Đã tạo nhãn: ' . ($result['name'] ?? ''),
+    'share_note' => 'Đã chia sẻ ghi chú #' . ($result['note_id'] ?? '') . ' cho ' . ($result['recipient'] ?? '') . '.',
     default => 'Đã thực hiện thao tác.',
 };
 $conversations->addMessage((int) $pending['conversation_id'], 'assistant', $summary, [

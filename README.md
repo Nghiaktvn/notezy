@@ -65,6 +65,11 @@ docker compose -f docker-compose.yml -f docker-compose.services.yml ps
 
 ## Triển khai trên Render
 
+**Bản demo miễn phí có PHP + Python AI + WebSocket trong một dịch vụ:** xem
+[`deploy/FREE_RENDER.md`](deploy/FREE_RENDER.md), `Dockerfile.render` và
+`render.yaml`. MySQL vẫn cần dịch vụ riêng. Cấu hình này có bootstrap schema
+và hỗ trợ TLS cho managed MySQL; AI mặc định là `mock` cho đến khi có key thật.
+
 Render Web Service chỉ chạy container PHP của `Dockerfile`; nó không tự khởi động
 MySQL trong `compose.yaml`. Cần có một MySQL truy cập được từ Render và đặt các
 biến môi trường sau trong **Render → Web Service → Environment**:

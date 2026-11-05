@@ -24,17 +24,17 @@ function ai_json(int $code, array $payload): void {
 
 function ai_require_post(): void {
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-        ai_json(405, ['status' => 'error', 'message' => 'Method not allowed']);
+        ai_json(405, ['status' => 'error', 'message' => 'Phương thức yêu cầu không được hỗ trợ']);
     }
 }
 
 function ai_require_auth(): int {
     if (!isset($_SESSION['id'])) {
-        ai_json(401, ['status' => 'error', 'message' => 'Unauthorized — please login']);
+        ai_json(401, ['status' => 'error', 'message' => 'Bạn chưa đăng nhập hoặc không có quyền truy cập — please login']);
     }
     $user_id = (int) $_SESSION['id'];
     if ($user_id <= 0) {
-        ai_json(401, ['status' => 'error', 'message' => 'Unauthorized — please login']);
+        ai_json(401, ['status' => 'error', 'message' => 'Bạn chưa đăng nhập hoặc không có quyền truy cập — please login']);
     }
     return $user_id;
 }
@@ -60,7 +60,7 @@ function ai_check_origin(): void {
         }
     }
     if (!$ok) {
-        ai_json(403, ['status' => 'error', 'message' => 'Forbidden origin']);
+        ai_json(403, ['status' => 'error', 'message' => 'Bạn không có quyền truy cập origin']);
     }
 }
 
@@ -70,11 +70,11 @@ function ai_read_json(): array {
         return [];
     }
     if (strlen($raw) > 200000) {
-        ai_json(413, ['status' => 'error', 'message' => 'Request too large']);
+        ai_json(413, ['status' => 'error', 'message' => 'Yêu cầu vượt quá dung lượng cho phép']);
     }
     $data = json_decode($raw, true);
     if (!is_array($data)) {
-        ai_json(400, ['status' => 'error', 'message' => 'Invalid JSON']);
+        ai_json(400, ['status' => 'error', 'message' => 'Dữ liệu yêu cầu không hợp lệ']);
     }
     return $data;
 }

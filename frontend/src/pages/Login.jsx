@@ -36,7 +36,7 @@ export default function Login() {
     >
       <form className="notezy-auth-form" onSubmit={onSubmit}>
         <Field
-          label="Email hoặc tên tài khoản"
+          label="Thư điện tử hoặc tên tài khoản"
           type="text"
           value={form.username}
           onChange={(v) => setForm((f) => ({ ...f, username: v }))}

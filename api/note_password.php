@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/includes/session.php';
+require_once dirname(__DIR__) . '/includes/note_access.php';
 /**
  * api/note_password.php
  * Endpoint xử lý bảo mật mật khẩu cho ghi chú:
@@ -63,7 +64,7 @@ if ($action === 'verify') {
 
     // Kiểm tra quyền truy cập ghi chú (chủ note hoặc được share)
     $stmt = $conn->prepare("
-        SELECT n.note_id, n.title, n.content, n.image_path, n.password_hash
+        SELECT n.note_id, n.title, n.content, n.image_path, n.password_hash, n.pin_hash
         FROM notes n
         LEFT JOIN note_shares ns ON n.note_id = ns.note_id AND ns.shared_with_user_id = ?
         WHERE n.note_id = ? AND (n.user_id = ? OR ns.note_id IS NOT NULL)
@@ -79,24 +80,16 @@ if ($action === 'verify') {
         exit();
     }
 
-    if (empty($row['password_hash'])) {
-        // Ghi chú không có mật khẩu
-        $_SESSION['accessed_notes'][$note_id] = true;
-        echo json_encode([
-            "success" => true,
-            "message" => "Ghi chú này không yêu cầu mật khẩu.",
-            "data" => [
-                "note_id" => $row['note_id'],
-                "title" => htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'),
-                "content" => htmlspecialchars($row['content'], ENT_QUOTES, 'UTF-8'),
-                "image_path" => $row['image_path'] ? htmlspecialchars($row['image_path'], ENT_QUOTES, 'UTF-8') : null
-            ]
-        ]);
+    if (!empty($row['password_hash']) && !password_verify($password, $row['password_hash'])) {
+        echo json_encode(["success" => false, "message" => "Mật khẩu không chính xác. Vui lòng thử lại."]);
         exit();
     }
-
-    if (password_verify($password, $row['password_hash'])) {
-        $_SESSION['accessed_notes'][$note_id] = true;
+    $_SESSION['accessed_notes'][$note_id] = true;
+    if (!notezy_note_is_unlocked($row)) {
+        http_response_code(423);
+        echo json_encode(["success" => false, "password_verified" => true,
+            "message" => "Hãy nhập mã PIN để mở khóa ghi chú."]);
+    } else {
         echo json_encode([
             "success" => true,
             "message" => "Xác thực mật khẩu thành công!",
@@ -107,8 +100,6 @@ if ($action === 'verify') {
                 "image_path" => $row['image_path'] ? htmlspecialchars($row['image_path'], ENT_QUOTES, 'UTF-8') : null
             ]
         ]);
-    } else {
-        echo json_encode(["success" => false, "message" => "Mật khẩu không chính xác. Vui lòng thử lại."]);
     }
     exit();
 }

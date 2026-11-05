@@ -167,7 +167,7 @@
         tx.objectStore('sync_queue').put({
             ...item,
             retryCount,
-            lastError: errorMessage || 'Sync failed',
+            lastError: errorMessage || 'Đồng bộ thất bại',
             nextRetryAt: Date.now() + Math.min(BASE_BACKOFF_MS * Math.pow(2, retryCount - 1), 8000)
         });
         await txDone(tx);
@@ -263,7 +263,7 @@
                 credentials: 'same-origin',
                 body: JSON.stringify(payload)
             });
-            if (json.status !== 'success') throw new Error(json.message || 'Create failed');
+            if (json.status !== 'success') throw new Error(json.message || 'Không thể tạo');
             const local = await getNote(payload.client_temp_id);
             if (local) {
                 await putNote({ ...local, note_id: json.note_id, id: json.note_id, client_id: `server_${json.note_id}`, is_offline_created: false, sync_pending: false, updated_at: json.updated_at || nowSql() });
@@ -289,14 +289,14 @@
                 credentials: 'same-origin',
                 body: JSON.stringify(payload)
             });
-            if (json.status !== 'success') throw new Error(json.message || 'Update failed');
+            if (json.status !== 'success') throw new Error(json.message || 'Không thể cập nhật');
             const local = await getNote(payload.note_id);
             if (local) await putNote({ ...local, sync_pending: false, updated_at: json.updated_at || local.updated_at });
             return true;
         }
         if (item.action === 'DELETE_NOTE') {
             const json = await requestJson(`api/notes.php?note_id=${encodeURIComponent(payload.note_id)}`, { method: 'DELETE', credentials: 'same-origin' });
-            if (json.status !== 'success') throw new Error(json.message || 'Delete failed');
+            if (json.status !== 'success') throw new Error(json.message || 'Không thể xóa');
             return true;
         }
         if (item.action === 'ADD_LABEL') {
@@ -306,12 +306,12 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({ note_id: payload.note_id, name: payload.name })
             });
-            if (json.status !== 'success') throw new Error(json.message || 'Add label failed');
+            if (json.status !== 'success') throw new Error(json.message || 'Không thể thêm nhãn');
             return true;
         }
         if (item.action === 'REMOVE_LABEL') {
             const json = await requestJson(`api/labels.php?note_id=${encodeURIComponent(payload.note_id)}&name=${encodeURIComponent(payload.name)}`, { method: 'DELETE', credentials: 'same-origin' });
-            if (json.status !== 'success') throw new Error(json.message || 'Remove label failed');
+            if (json.status !== 'success') throw new Error(json.message || 'Không thể bỏ nhãn');
             return true;
         }
         throw new Error(`Unknown sync action: ${item.action}`);
@@ -345,15 +345,15 @@
     }
 
     function showConflictNotice(serverNote) {
-        const message = 'Note has been changed on another device.';
+        const message = 'Ghi chú đã được thay đổi trên thiết bị khác.';
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'warning',
                 title: 'Xung đột đồng bộ',
-                text: `${message} Chọn bản server hoặc mở ghi chú để giữ bản của bạn.`,
+                text: `${message} Chọn bản trên máy chủ hoặc mở ghi chú để giữ bản của bạn.`,
                 showCancelButton: true,
-                confirmButtonText: 'Keep Server Version',
-                cancelButtonText: 'Keep My Version'
+                confirmButtonText: 'Giữ bản trên máy chủ',
+                cancelButtonText: 'Giữ bản của tôi'
             }).then((result) => {
                 if (result.isConfirmed && serverNote) putNote(normalizeNote(serverNote));
             });
@@ -381,12 +381,12 @@
         const badge = document.getElementById('notezy_network_badge');
         if (!badge) return;
         const map = {
-            online: ['#0ea5e9', 'ONLINE', 'Dang ket noi server'],
-            offline: ['#dc2626', 'OFFLINE', 'Changes will be saved locally'],
-            offline_saved: ['#b45309', 'OFFLINE', 'Saved locally'],
-            syncing: ['#f59e0b', 'SYNCING', `${count || ''} changes waiting to sync`],
-            synced: ['#16a34a', 'SYNCED', 'All changes synced'],
-            sync_error: ['#be123c', 'SYNC ERROR', `${count || 1} changes waiting to sync`]
+            online: ['#0ea5e9', 'TRỰC TUYẾN', 'Đang kết nối máy chủ'],
+            offline: ['#dc2626', 'NGOẠI TUYẾN', 'Thay đổi sẽ được lưu trên thiết bị'],
+            offline_saved: ['#b45309', 'NGOẠI TUYẾN', 'Đã lưu trên thiết bị'],
+            syncing: ['#f59e0b', 'ĐANG ĐỒNG BỘ', `${count || ''} thay đổi đang chờ đồng bộ`],
+            synced: ['#16a34a', 'ĐÃ ĐỒNG BỘ', 'Đã đồng bộ mọi thay đổi'],
+            sync_error: ['#be123c', 'LỖI ĐỒNG BỘ', `${count || 1} thay đổi đang chờ đồng bộ`]
         };
         const [bg, label, text] = map[status] || map.online;
         badge.style.background = bg;
@@ -402,13 +402,13 @@
         if (!own.length) return;
         container.innerHTML = `
             <div class="d-flex align-items-center justify-content-between mb-3 w-100 col-12">
-                <h3 class="mb-0 fw-bold"><i class="fas fa-database text-danger me-2"></i>Ghi chú offline</h3>
-                <span class="badge bg-danger rounded-pill px-3 py-2">${own.length} cached</span>
+                <h3 class="mb-0 fw-bold"><i class="fas fa-database text-danger me-2"></i>Ghi chú ngoại tuyến</h3>
+                <span class="badge bg-danger rounded-pill px-3 py-2">${own.length} đã lưu tạm</span>
             </div>
             ${own.map(note => `
                 <div class="note-item position-relative" data-note-id="${escapeAttr(note.note_id)}" data-labels="${escapeAttr((note.labels || []).join(','))}">
                     ${note.pinned ? '<span class="pin-icon"><i class="fas fa-thumbtack text-warning"></i></span>' : ''}
-                    ${note.sync_pending ? '<span class="badge bg-warning text-dark mb-2">Saved locally</span>' : ''}
+                    ${note.sync_pending ? '<span class="badge bg-warning text-dark mb-2">Đã lưu trên thiết bị</span>' : ''}
                     <h5 class="mb-2 fw-bold text-truncate">${escapeHtml(note.title)}</h5>
                     <p class="note-body-text mb-2">${escapeHtml(note.content).replace(/\n/g, '<br>')}</p>
                     ${(note.labels || []).length ? `<div class="note-labels mb-2">${note.labels.map(l => `<span class="note-label">${escapeHtml(l)}</span>`).join('')}</div>` : ''}

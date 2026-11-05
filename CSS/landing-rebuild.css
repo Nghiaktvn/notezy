@@ -951,3 +951,8 @@
     display: none;
   }
 }
+
+/* Full-width dark footer, including narrow screens. */
+.nz2-footer { width:100%; margin-inline:0; border-radius:0; background:#17151e; color:#d5d0df; }
+.nz2-footer strong,.nz2-footer nav::before,.nz2-footer-contact > strong { color:#fff; }
+.nz2-footer a,.nz2-footer p,.nz2-footer small { color:#d5d0df; }

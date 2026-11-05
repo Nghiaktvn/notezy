@@ -2,7 +2,6 @@
 require_once 'db.php';
 require_once '../account_db.php';
 require_once '../sendmail.php';
-require_once '../includes/session.php';
 
 header('Content-Type: application/json');
 
@@ -26,7 +25,7 @@ if ($username === '') {
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(["status" => "error", "message" => "Email không hợp lệ"]);
+    echo json_encode(["status" => "error", "message" => "Thư điện tử không hợp lệ"]);
     exit();
 }
 if (strlen($password) < 6) {
@@ -46,15 +45,16 @@ if (!is_array($result) || empty($result['success'])) {
 $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
 $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($result['activation_token']);
 $mailResult = sendActivationEmail($email, $result['otp'], trim($firstname . ' ' . $lastname), $activationLink);
-notezy_session_start();
-session_regenerate_id(true);
-$_SESSION['id'] = (int) $result['user_id'];
 $payload = [
     "status"  => "success",
-    "message" => "Đăng ký thành công. Bạn đã được đăng nhập; hãy dùng liên kết email hoặc OTP để kích hoạt tài khoản.",
+    "message" => "Đăng ký thành công. Hãy dùng liên kết email hoặc OTP để kích hoạt tài khoản trước khi đăng nhập.",
     "email"   => $email,
-    "redirect" => "index_notezy.php?unverified=1",
+    "redirect" => "verify_activation.php?email=" . urlencode($email),
 ];
+if (notezy_demo_otp_enabled()) {
+    $payload['message'] = 'Đăng ký thành công. Chế độ trình diễn: nhập mã 123456 để kích hoạt, không gửi thư thật.';
+    $payload['demo_otp'] = '123456';
+}
 if ($mailResult !== true) {
     $payload["status"] = "warning";
     $payload["message"] = "Tài khoản đã được lưu. Không gửi được email OTP, vui lòng yêu cầu gửi lại.";

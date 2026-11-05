@@ -646,11 +646,11 @@ exit;
                 </label>
                 <div class="mb-2">
                     <select id="quickSelectLabel" class="form-select" onchange="if(this.value){ const l=document.getElementById('labels'); l.value = l.value ? (l.value + ', ' + this.value) : this.value; this.value=''; }">
-                        <option value="">Select Label [Chọn nhãn: Work, Study, Personal...] ▼</option>
-                        <option value="Work">💼 Work</option>
-                        <option value="Study">📚 Study</option>
-                        <option value="Personal">👤 Personal</option>
-                        <option value="Important">⭐ Important</option>
+                        <option value="">Chọn nhãn: Công việc, Học tập, Cá nhân... ▼</option>
+                        <option value="Work">💼 Công việc</option>
+                        <option value="Study">📚 Học tập</option>
+                        <option value="Personal">👤 Cá nhân</option>
+                        <option value="Important">⭐ Quan trọng</option>
                     </select>
                 </div>
                 <input type="text" class="form-control" id="labels" name="labels"
@@ -702,9 +702,9 @@ exit;
             <div class="mb-3">
                 <label for="font_family" class="form-label">Phông chữ</label>
                 <select class="form-select" id="font_family" name="font_family">
-                    <option value="Poppins" <?= ($note['font_family'] ?? '') == 'Poppins' ? 'selected' : '' ?>>Poppins</option>
-                    <option value="Roboto" <?= ($note['font_family'] ?? '') == 'Roboto' ? 'selected' : '' ?>>Roboto</option>
-                    <option value="Open Sans" <?= ($note['font_family'] ?? '') == 'Open Sans' ? 'selected' : '' ?>>Open Sans</option>
+                    <option value="Poppins" <?= ($note['font_family'] ?? '') == 'Poppins' ? 'selected' : '' ?>>Chữ tròn</option>
+                    <option value="Roboto" <?= ($note['font_family'] ?? '') == 'Roboto' ? 'selected' : '' ?>>Chữ hiện đại</option>
+                    <option value="Open Sans" <?= ($note['font_family'] ?? '') == 'Open Sans' ? 'selected' : '' ?>>Chữ dễ đọc</option>
                 </select>
             </div>
             <div class="mb-3">
@@ -722,7 +722,7 @@ exit;
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="js/offline-store.js"></script>
+    <script src="js/offline-store.js?v=20261105"></script>
     <script src="js/collaboration-ws.js"></script>
     <script>
         const noteId = <?= $note_id ?>;
@@ -1027,7 +1027,7 @@ exit;
                 });
                 lastKnownTitle = title;
                 lastKnownContent = content;
-                showStatus('Saved locally', '#b45309', 'fas fa-wifi-slash');
+                showStatus('Đã lưu trên thiết bị', '#b45309', 'fas fa-wifi-slash');
                 isSaving = false;
                 return;
             }
@@ -1055,7 +1055,7 @@ exit;
                     });
                     lastKnownTitle = title;
                     lastKnownContent = content;
-                    showStatus('Saved locally', '#b45309', 'fas fa-wifi-slash');
+                    showStatus('Đã lưu trên thiết bị', '#b45309', 'fas fa-wifi-slash');
                 } else {
                     showStatus('Mất kết nối server', '#dc3545', 'fas fa-wifi-slash');
                 }
@@ -1190,7 +1190,7 @@ exit;
                     content: document.getElementById('content').value.trim(),
                     client_updated_at: lastKnownUpdatedAt
                 });
-                Swal.fire('Saved locally', 'Thay đổi sẽ được đồng bộ khi có mạng.', 'info');
+                Swal.fire('Đã lưu trên thiết bị', 'Thay đổi sẽ được đồng bộ khi có mạng.', 'info');
                 btn.disabled = false;
                 btn.textContent = 'Lưu thay đổi';
                 return;

@@ -40,6 +40,27 @@ if (!defined('HOST')) define('HOST', DB_HOST);
 if (!defined('USER')) define('USER', DB_USER);
 if (!defined('PASS')) define('PASS', DB_PASS);
 
+/** Open local MySQL or a managed MySQL endpoint with verified TLS. */
+function notezy_open_database(string $database): ?mysqli {
+    $connection = mysqli_init();
+    if (!$connection) return null;
+    $connection->options(MYSQLI_OPT_CONNECT_TIMEOUT, 5);
+    $ca = trim((string) (getenv('DB_SSL_CA') ?: ''));
+    $tls = filter_var(getenv('DB_SSL_REQUIRED') ?: 'false', FILTER_VALIDATE_BOOLEAN) || $ca !== '';
+    $flags = 0;
+    if ($tls) {
+        if ($ca !== '' && !is_readable($ca)) {
+            error_log('Notezy DB Error: configured DB_SSL_CA is not readable.');
+            return null;
+        }
+        $connection->ssl_set(null, null, $ca !== '' ? $ca : null, null, null);
+        $connection->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+        $flags = MYSQLI_CLIENT_SSL;
+    }
+    @$connection->real_connect(DB_HOST, DB_USER, DB_PASS, $database, (int) DB_PORT, null, $flags);
+    return $connection;
+}
+
 /**
  * Returns active database connection.
  * Gracefully checks for mysqli extension and handles connection failures
@@ -73,17 +94,16 @@ function create_connect($fatal = false) {
     }
 
     // 2. Thử kết nối cơ sở dữ liệu
-    $primary_port = (int)DB_PORT;
-    $attempt = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, $primary_port);
+    $attempt = notezy_open_database(DB_NAME);
 
-    if ($attempt->connect_error) {
-        $error_msg = $attempt->connect_error;
+    if (!$attempt || $attempt->connect_error) {
+        $error_msg = $attempt ? $attempt->connect_error : 'Database connection configuration is invalid';
         error_log('Notezy DB Connect Error: ' . $error_msg);
 
         if ($fatal || (defined('NOTEZY_REQUIRE_DB') && NOTEZY_REQUIRE_DB)) {
             // Kiểm tra xem máy chủ MySQL có chạy không (chỉ thiếu DB hay sập cả MySQL)
-            $server_check = @new mysqli(DB_HOST, DB_USER, DB_PASS, '', (int)DB_PORT);
-            if (!$server_check->connect_error) {
+            $server_check = notezy_open_database('');
+            if ($server_check && !$server_check->connect_error) {
                 $server_check->close();
                 notezy_render_diagnostic(
                     'DB_NOT_FOUND',

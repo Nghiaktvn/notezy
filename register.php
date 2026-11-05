@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         $error = is_array($result) ? ($result['error'] ?? 'Lỗi không xác định') : $result;
-        
+
         $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
             || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
             || isset($_POST['ajax']);
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <section class="register-story" aria-labelledby="registerStoryTitle">
       <span class="register-eyebrow">NOTEZY · GHI CHÚ THÔNG MINH</span>
       <h1 id="registerStoryTitle">Một nơi dịu dàng<br>cho mọi <em>ý tưởng.</em></h1>
-      <p>Sắp xếp những điều quan trọng, chia sẻ với bạn bè và khám phá thêm góc nhìn cùng trợ lý AI.</p>
+      <p>Sắp xếp những điều quan trọng, chia sẻ với bạn bè và khám phá thêm góc nhìn cùng trợ lý thông minh.</p>
       <img src="assets/notezy-notebooks-2026.png" alt="Những cuốn sổ tay Notezy với gam màu dịu" width="1536" height="1024">
     </section>
     <section class="register-form-panel" aria-labelledby="registerTitle">
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input value="<?= htmlspecialchars($display_name, ENT_QUOTES, 'UTF-8') ?>" name="display_name" required class="form-control" type="text" placeholder="Tên bạn muốn hiển thị" id="display_name" autocomplete="name">
         </div>
         <div class="register-field">
-          <label for="email">Email</label>
+          <label for="email">Thư điện tử</label>
           <input value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>" name="email" required class="form-control" type="email" placeholder="ban@example.com" id="email" autocomplete="email">
         </div>
         <div class="register-field">

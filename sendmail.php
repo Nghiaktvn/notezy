@@ -155,6 +155,8 @@ function notezy_mail_error_message(Throwable $e): string {
  * @return true|string   true nếu gửi thành công, string lỗi nếu thất bại
  */
 function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLink = '') {
+    require_once __DIR__ . '/config/demo.php';
+    if (notezy_demo_otp_enabled()) return true;
     $email = notezy_valid_email($email);
     if ($email === null) {
         return 'Lỗi gửi email: địa chỉ nhận không hợp lệ';
@@ -173,7 +175,7 @@ function sendActivationEmail($email, $otp = '', $toName = 'User', $activationLin
                        . "<p>Mã có hiệu lực trong <strong>5 phút</strong>.</p>"
                        . "<p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.</p>"
                        . "<p>-- Đội ngũ Notezy</p>";
-        $plain = ($safeLink !== '' ? "Kích hoạt tài khoản: $safeLink\n" : '') . "Mã OTP kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
+        $plain = ($safeLink !== '' ? "Kích hoạt tài khoản: $safeLink\n" : '') . "Mã xác thực kích hoạt tài khoản: $otp (hiệu lực 5 phút)";
         return notezy_send_message($email, (string) $toName, 'Kích hoạt tài khoản Notezy', $html, $plain);
     } catch (Throwable $e) {
         return notezy_mail_error_message($e);
@@ -192,12 +194,12 @@ function sendResetPasswordEmail($email, $otp = '', $toName = 'User') {
     try {
         $safeName = htmlspecialchars((string) $toName, ENT_QUOTES, 'UTF-8');
         $html = "Chào <b>$safeName</b>,<br><br>"
-                       . "Mã OTP đặt lại mật khẩu của bạn là:<br>"
+                       . "Mã xác thực đặt lại mật khẩu của bạn là:<br>"
                        . "<h2 style='letter-spacing:4px;color:#dc2626;'>$otp</h2>"
                        . "<p>Mã có hiệu lực trong <strong>15 phút</strong>.</p>"
                        . "<p>Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>"
                        . "<p>-- Đội ngũ Notezy</p>";
-        $plain = "Mã OTP đặt lại mật khẩu: $otp (hiệu lực 15 phút)";
+        $plain = "Mã xác thực đặt lại mật khẩu: $otp (hiệu lực 15 phút)";
         return notezy_send_message($email, (string) $toName, 'Khôi phục mật khẩu Notezy', $html, $plain);
     } catch (Throwable $e) {
         return notezy_mail_error_message($e);

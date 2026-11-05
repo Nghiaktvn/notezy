@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit();
     }
 
-    // Kiểm tra ghi chú thuộc về người dùng hiện tại (Owner)
+    // Kiểm tra ghi chú thuộc về người dùng hiện tại (chủ sở hữu)
     $chk = $conn->prepare("SELECT note_id, title FROM notes WHERE note_id = ? AND user_id = ?");
     $chk->bind_param('ii', $note_id, $current_user_id);
     $chk->execute();
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(403);
         echo json_encode([
             'success' => false,
-            'message' => 'Bạn không phải chủ sở hữu (Owner) của ghi chú này nên không thể chia sẻ.'
+            'message' => 'Bạn không phải chủ sở hữu (chủ sở hữu) của ghi chú này nên không thể chia sẻ.'
         ]);
         exit();
     }
@@ -151,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw_permission = trim($_POST['permission'] ?? 'read');
 
     if ($target_input === '') {
-        echo json_encode(['success' => false, 'message' => 'Vui lòng nhập Email hoặc Tên người dùng cần chia sẻ.']);
+        echo json_encode(['success' => false, 'message' => 'Vui lòng nhập Thư điện tử hoặc tên tài khoản cần chia sẻ.']);
         exit();
     }
 
@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $existing_share = $stmt_check->get_result()->fetch_assoc();
     $stmt_check->close();
 
-    $perm_label = ($permission === 'write') ? 'Editor (Chỉnh sửa)' : 'Viewer (Chỉ đọc)';
+    $perm_label = ($permission === 'write') ? 'Được chỉnh sửa' : 'Chỉ xem';
 
     if ($existing_share) {
         // Đã chia sẻ trước đó -> Cập nhật quyền mới
