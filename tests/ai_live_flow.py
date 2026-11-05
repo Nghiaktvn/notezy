@@ -48,7 +48,11 @@ def main():
     check('Activate test account',req(owner,'/api/activate.php',dict(email=email,otp='123456'))[1]['status']=='success')
     logged = req(owner,'/api/login.php',dict(username=username,password=old))[1]
     check('Login test account',logged['status']=='success')
-    check('Login recipient',req(recipient,'/api/login.php',dict(username='user2',password='Password123!'))[1]['status']=='success')
+    recipient_name = 'ai_recv_'+suffix
+    recipient_email = recipient_name+'@example.com'
+    check('Register dedicated recipient',req(recipient,'/api/register.php',dict(username=recipient_name,display_name='Người nhận thử',email=recipient_email,password=old))[1]['status']=='success')
+    check('Activate dedicated recipient',req(recipient,'/api/activate.php',dict(email=recipient_email,otp='123456'))[1]['status']=='success')
+    check('Login recipient',req(recipient,'/api/login.php',dict(username=recipient_name,password=old))[1]['status']=='success')
     conversation = None
     def chat(message, note=0):
         nonlocal conversation
@@ -69,7 +73,7 @@ def main():
     check('Edited title persisted',req(owner,'/api/notes.php?note_id='+str(note))[1]['data']['title']=='Đã sửa '+suffix)
     summary = chat('Đọc ghi chú đang mở và cho biết nội dung hiện tại trong database.',note)
     check('AI reads persisted content through authorized tools', 'Nội dung đã được sửa' in summary.get('content','') or 'Nội dung đã được sửa' in summary.get('summary',''))
-    shared = chat('Chia sẻ ghi chú đang mở cho user2 với quyền chỉ xem.',note)
+    shared = chat('Chia sẻ ghi chú đang mở cho tài khoản '+recipient_name+' với quyền chỉ xem.',note)
     check('Share requires confirmation',shared['type']=='action_confirmation' and shared['action']=='share_note')
     check('No share before confirmation',req(recipient,'/api/notes.php?note_id='+str(note))[1]['status']=='error')
     check('Confirm AI share',req(owner,'/api/ai/confirm.php',dict(confirmation_token=shared['confirmation_token']))[1]['status']=='success')
@@ -85,7 +89,7 @@ def main():
     check('Password saved to database',req(owner,'/api/ai/change_password.php',dict(form_token=token,current_password=old,new_password=new,confirm_password=new,user_id=1))[1]['status']=='success')
     check('Old password no longer logs in',req(client(),'/api/login.php',dict(username=username,password=old))[0]==401)
     check('New password logs in with fresh session',req(client(),'/api/login.php',dict(username=username,password=new))[1]['status']=='success')
-    check('User1 password unchanged',req(client(),'/api/login.php',dict(username='user1',password='Password123!'))[1]['status']=='success')
+    check('Recipient password unchanged',req(client(),'/api/login.php',dict(username=recipient_name,password=old))[1]['status']=='success')
     check('Password form token consumed',req(owner,'/api/ai/change_password.php',dict(form_token=token,current_password=new,new_password=old,confirm_password=old))[0]==403)
     history = req(owner,'/api/ai/conversations.php?id='+str(conversation))[1]
     check('Conversation messages actually retrieved', bool(history.get('messages')))

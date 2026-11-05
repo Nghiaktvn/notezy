@@ -21,7 +21,7 @@ Cập nhật ngày 05/11/2026. Dành cho bản trên nhánh `main`.
 | `user2` | `Password123!` | Người dùng thường |
 | `admin` | `AdminDemo123!` | Quản trị viên |
 
-Trên Render, `user1` và `user2` dùng mật khẩu như trên. **Mật khẩu `admin` trên Render được cấp riêng trong cuộc trò chuyện khi cấu hình, không đăng công khai trong GitHub.** Mật khẩu quản trị trên đám mây được lưu ở biến `NOTEZY_DEMO_ADMIN_PASSWORD`. Giá trị localhost trong bảng không mặc nhiên là mật khẩu của bản công khai.
+Trên Render, mật khẩu khởi tạo của `user1` và `user2` là như trên. Kiểm tra ngày 05/11/2026: `user1` đăng nhập được; `user2` không chấp nhận mật khẩu này. Không tự đặt lại mật khẩu của tài khoản đã có. Khi demo chia sẻ, bạn có thể đăng ký/kích hoạt tài khoản thứ hai bằng mã 123456. **Mật khẩu `admin` trên Render được cấp riêng trong cuộc trò chuyện khi cấu hình, không đăng công khai trong GitHub.** Mật khẩu quản trị trên đám mây được lưu ở biến `NOTEZY_DEMO_ADMIN_PASSWORD`. Giá trị localhost trong bảng không mặc nhiên là mật khẩu của bản công khai.
 
 Các script khởi động không đặt lại mật khẩu tài khoản sẵn có. Nếu đã đổi mật khẩu qua giao diện, lần mở lại vẫn dùng mật khẩu đã đổi. Script quản trị không biến một tài khoản thường có sẵn tên `admin` thành quản trị viên.
 
@@ -316,3 +316,14 @@ Bản này dùng công cụ tìm/đọc ghi chú bằng SQL để đưa nội du
 Render chỉ tự triển khai khi **Auto-Deploy bật** và commit được đưa vào **đúng nhánh dịch vụ đang theo dõi**. Merge vào main không cập nhật dịch vụ còn theo dõi nhánh khác. Nếu Auto-Deploy Off: **Manual Deploy → Deploy latest commit**, chờ **Live**, rồi tải lại trang. Thay đổi Environment cũng cần triển khai/restart tiến trình; merge không tự thêm API key.
 
 Tham khảo chính thức: [Gemini function calling](https://ai.google.dev/gemini-api/docs/function-calling), [Gemini pricing](https://aistudio.google.com/docs/pricing), [Render deploys](https://render.com/docs/deploys).
+
+
+### Kết quả kiểm thử ngày 05/11/2026
+
+- Localhost: 43/43 bước với Gemini thật; 5/5 kiểm thử giao thức; 2/2 kiểm thử khóa và thu hồi chia sẻ.
+- Hosting Render + Aiven: 45/45 bước với Gemini thật, dùng hai tài khoản thử được đăng ký riêng.
+- Xác minh tạo/sửa/đọc/chia sẻ/xóa dựa trên kết quả API và dữ liệu đọc lại; quyền chỉ xem không sửa được; xác nhận không dùng lại được.
+- Đổi mật khẩu: từ chối mật khẩu cũ sai, xác nhận không khớp, thiếu token; lưu thành công; mật khẩu cũ không đăng nhập được, mật khẩu mới đăng nhập được; mật khẩu không xuất hiện trong lịch sử chat.
+- Giao diện PHP: hộp thoại mở đủ ba trường và nút lưu/hủy. Phần lưu mật khẩu được kiểm thử qua API trên tài khoản thử.
+- `npm run build` của frontend React thành công. Các kết quả chi tiết không chứa mật khẩu/key nằm trong `tests/AI_LOCAL_QA_2026-11-05.json` và `tests/AI_PUBLIC_QA_2026-11-05.json`.
+- Đây là kết quả của các luồng đã kiểm thử, không phải cam kết mọi câu lệnh ngôn ngữ tự nhiên đều thành công. Có thể cần chỉ rõ ghi chú/người nhận; Gemini Free có giới hạn và có thể trả lỗi 429.

@@ -41,8 +41,12 @@ deterministic demo provider, not a real large language model. To enable Gemini,
 set `LLM_PROVIDER=gemini`, `GEMINI_API_KEY` and a supported `GEMINI_MODEL` privately.
 Check the actual Google AI Studio project's **Plan**; a model name or environment
 variable cannot prove its billing tier. Do not enable billing or top up credits
-when the requirement is zero cost. The currently reviewed local `.env` has no
-Gemini key and uses `mock`.
+when the requirement is zero cost. The Notezy deployment updated on 2026-11-05 uses real Gemini with
+`GEMINI_MODEL=gemini-3.5-flash-lite` and `AI_AGENT_TIMEOUT_SECONDS=30`.
+Its key is stored privately in Render Environment and the ignored local `.env`.
+The matching Google AI Studio project was checked as Free tier; billing was not enabled.
+If cloning this template, explicitly configure these values to enable real AI.
+See `HUONG_DAN_DEMO_NOTEZY.md` for the confirmed note actions and private password form.
 
 Email delivery is not enabled by this template. Render Free blocks outbound SMTP
 ports 25/465/587. Keep the existing email workflow pending until its owner provides
