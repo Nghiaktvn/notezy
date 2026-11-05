@@ -79,7 +79,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Notezy - Change Password</title>
+  <title>Notezy - Đổi mật khẩu</title>
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -107,11 +107,11 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
-                        <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
-                        <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Explore Features</a></li>
-                        <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy Policy</a></li>
-                        <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact Us</a></li>
+                        <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Trang chủ</a></li>
+                        <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>Giới thiệu</a></li>
+                        <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Khám phá tính năng</a></li>
+                        <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Chính sách bảo mật</a></li>
+                        <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Liên hệ</a></li>
                     </ul>
                 </div>
             </div>
@@ -133,12 +133,12 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
                         <div class="form-group">
                             <label for="pass">Mật khẩu hiện tại</label>
                             <input name="pass" class="form-control bg-dark text-warning" type="password" id="pass" autocomplete="current-password" required>
-                            <div class="invalid-feedback">Password is not valid.</div>
+                            <div class="invalid-feedback">Mật khẩu không hợp lệ.</div>
                         </div>
                         <div class="form-group">
                             <label for="pass2">Mật khẩu mới (ít nhất 6 ký tự)</label>
                             <input name="pass_new" class="form-control bg-dark text-warning" type="password" id="pass2" autocomplete="new-password" minlength="6" required>
-                            <div class="invalid-feedback">Password is not valid.</div>
+                            <div class="invalid-feedback">Mật khẩu không hợp lệ.</div>
                         </div>
                         <div class="form-group">
                             <label for="pass3">Xác nhận mật khẩu mới</label>
@@ -165,7 +165,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
             <div class="row text-center text-md-start">
                 <div class="col-md-4 mb-4">
                     <div class="footer-logo text-white fw-bold mb-2">Notezy</div>
-                    <p>Take notes online – simple and free.</p>
+                    <p>Ghi chú trực tuyến, đơn giản và miễn phí.</p>
                     <div class="social-links d-flex justify-content-center justify-content-md-start gap-3">
                         <a href="#" class="text-white-50"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" class="text-white-50"><i class="fab fa-instagram"></i></a>
@@ -174,17 +174,17 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'password_changed') {
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5 class="text-white">Links</h5>
+                    <h5 class="text-white">Liên kết</h5>
                     <ul class="list-unstyled">
-                        <li><a href="index_notezy.php" class="text-white-50">Home</a></li>
-                        <li><a href="introduce.php" class="text-white-50">About Us</a></li>
-                        <li><a href="khampha.php" class="text-white-50">Explore Features</a></li>
-                        <li><a href="privacy.php" class="text-white-50">Privacy Policy</a></li>
-                        <li><a href="contact.php" class="text-white-50">Contact Us</a></li>
+                        <li><a href="index_notezy.php" class="text-white-50">Trang chủ</a></li>
+                        <li><a href="introduce.php" class="text-white-50">Giới thiệu</a></li>
+                        <li><a href="khampha.php" class="text-white-50">Khám phá tính năng</a></li>
+                        <li><a href="privacy.php" class="text-white-50">Chính sách bảo mật</a></li>
+                        <li><a href="contact.php" class="text-white-50">Liên hệ</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5 class="text-white">Contact</h5>
+                    <h5 class="text-white">Liên hệ</h5>
                     <p><i class="fas fa-envelope"></i> support@notezy.com</p>
                     <p><i class="fas fa-phone"></i> +84 123 456 789</p>
                 </div>

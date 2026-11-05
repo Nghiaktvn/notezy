@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/includes/session.php';
+require_once dirname(__DIR__) . '/includes/note_access.php';
 /**
  * api/note_pin.php — 6-digit PIN / Security Code lock for notebooks (sổ ghi chú).
  *
@@ -39,7 +40,7 @@ function respond($ok, $message, $extra = []) {
 }
 
 function get_owned_note($conn, $note_id, $user_id) {
-    $stmt = $conn->prepare("SELECT note_id, title, content, pin_hash, background_color, text_color, font_family, reminder_at FROM notes WHERE note_id = ? AND user_id = ?");
+    $stmt = $conn->prepare("SELECT note_id, title, content, pin_hash, password_hash, background_color, text_color, font_family, reminder_at FROM notes WHERE note_id = ? AND user_id = ?");
     $stmt->bind_param("ii", $note_id, $user_id);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -49,7 +50,7 @@ function get_owned_note($conn, $note_id, $user_id) {
 
 function get_shared_note($conn, $note_id, $user_id) {
     $stmt = $conn->prepare(
-        "SELECT n.note_id, n.title, n.content, n.pin_hash, n.background_color, n.text_color, n.font_family, n.reminder_at
+        "SELECT n.note_id, n.title, n.content, n.pin_hash, n.password_hash, n.background_color, n.text_color, n.font_family, n.reminder_at
          FROM notes n
          INNER JOIN note_shares ns ON ns.note_id = n.note_id
          WHERE n.note_id = ? AND ns.shared_with_user_id = ?"
@@ -185,6 +186,11 @@ switch ($action) {
 
         if (empty($note['pin_hash'])) {
             $_SESSION['pin_unlocked_notes'][$note_id] = true;
+            if (!notezy_note_is_unlocked($note)) {
+                respond(true, "Hãy nhập mật khẩu để mở khóa ghi chú.", [
+                    "pin_locked" => false, "unlocked" => false, "requires_password" => true
+                ]);
+            }
             respond(true, "Ghi chú này không có khóa bảo mật.", [
                 "pin_locked" => false,
                 "unlocked" => true,
@@ -217,6 +223,12 @@ switch ($action) {
         $ins->execute();
         $ins->close();
 
+        if (!notezy_note_is_unlocked($note)) {
+            respond(true, "Đã xác minh PIN. Hãy nhập mật khẩu để mở khóa ghi chú.", [
+                "pin_locked" => true, "pin_unlocked" => true,
+                "unlocked" => false, "requires_password" => true
+            ]);
+        }
         respond(true, "Mở khóa sổ ghi chú thành công!", [
             "pin_locked" => true,
             "unlocked" => true,

@@ -6,11 +6,11 @@ export default function Navbar() {
   return (
     <header className="notezy-nav-wrap">
       <nav className="notezy-nav" aria-label="Điều hướng chính">
-        <Link to="/" className="notezy-nav__brand"><NotezyLogo className="h-9 w-9" /><span>Notezy <small>AI</small></span></Link>
+        <Link to="/" className="notezy-nav__brand"><NotezyLogo className="h-9 w-9" /><span>Notezy <small>Trợ lý</small></span></Link>
         <div className="notezy-nav__links">
-          <a href="#top" className="notezy-nav__home">Home</a>
-          <a href="#contact">Contact</a>
-          <a href="#about">About</a>
+          <a href="#top" className="notezy-nav__home">Trang chủ</a>
+          <a href="#contact">Liên hệ</a>
+          <a href="#about">Giới thiệu</a>
         </div>
         <div className="notezy-nav__actions">
           <Link to="/login" className="notezy-button notezy-button--primary notezy-nav__login">Đăng nhập</Link>

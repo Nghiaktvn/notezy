@@ -1,0 +1,21 @@
+FROM php:8.2-apache
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libicu-dev libonig-dev curl ca-certificates python3 supervisor \
+    && docker-php-ext-install mysqli pdo_mysql mbstring intl \
+    && rm -rf /var/lib/apt/lists/*
+RUN a2enmod rewrite proxy proxy_http proxy_wstunnel \
+    && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+RUN printf 'upload_max_filesize=25M\npost_max_size=256M\nmax_file_uploads=20\nmax_execution_time=120\n' \
+    > /usr/local/etc/php/conf.d/notezy-uploads.ini
+WORKDIR /var/www/html
+COPY . /var/www/html/
+COPY deploy/apache-free.conf /etc/apache2/conf-enabled/notezy-free.conf
+COPY deploy/supervisord-free.conf /etc/supervisor/notezy-free.conf
+RUN mkdir -p uploads storage ai_agent/storage \
+    && chown -R www-data:www-data /var/www/html
+ENV AI_AGENT_URL=http://127.0.0.1:8765 \
+    AI_AGENT_HOST=127.0.0.1 AI_AGENT_PORT=8765 \
+    COLLAB_WS_HOST=127.0.0.1 COLLAB_WS_PORT=8766 \
+    COLLAB_WS_PUBLIC_URL=/ws LLM_PROVIDER=mock \
+    PYTHONUNBUFFERED=1
+CMD ["/bin/bash", "deploy/start-free.sh"]

@@ -517,3 +517,12 @@ FROM `users`
 -- Other registered users remain available in the normal `users` table to an
 -- authorised administrator, but are not displayed during a presentation.
 WHERE `username` IN ('user1', 'user2');
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+ message_id INT AUTO_INCREMENT PRIMARY KEY,
+ sender_id INT NOT NULL, receiver_id INT NOT NULL,
+ message_type ENUM('text','note') NOT NULL DEFAULT 'text',
+ message TEXT NULL, note_id INT NULL, permission ENUM('read','write') NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_chat_pair (sender_id, receiver_id, created_at), INDEX idx_chat_note (note_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

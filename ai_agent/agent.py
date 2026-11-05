@@ -79,7 +79,9 @@ class AiAgent:
         enriched_ctx = _ctx_builder.build(raw_context, messages_in, conv_mem, user_id)
 
         # ── 5. Retrieval hints ───────────────────────────────────────────────
-        retrieval = _retriever.build_query_hints(last_user_text)
+        # Retrieval is requested by a tool, not an embedding API call on every
+        # greeting or mutation. SQL keyword retrieval is the default for this demo.
+        retrieval = {"mode": "keyword", "query": last_user_text[:200]}
 
         # ── 6. Build LLM messages ────────────────────────────────────────────
         # Optional user memory hint in system
@@ -126,6 +128,8 @@ class AiAgent:
         return {
             "content": content,
             "tool_calls": tool_calls,
+            "provider": "mock" if self.provider.__class__.__name__ == "MockProvider" else "gemini",
+            "model": getattr(self.provider, "model", None),
             "retrieval": retrieval,
             "intent": {
                 "intent": intent.intent,
@@ -164,6 +168,7 @@ def _sanitize_tool_calls(raw: list) -> list[dict]:
                 "id": str(call.get("id") or name)[:64],
                 "name": name,
                 "arguments": args,
+                **({"gemini_part": call["gemini_part"]} if isinstance(call.get("gemini_part"), dict) else {}),
             }
         )
     return cleaned

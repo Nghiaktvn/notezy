@@ -11,12 +11,12 @@ notezy_session_start();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['id'])) {
-    echo json_encode(["success" => false, "message" => "Unauthorized"]);
+    echo json_encode(["success" => false, "message" => "Bạn chưa đăng nhập hoặc không có quyền truy cập"]);
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(["success" => false, "message" => "POST required"]);
+    echo json_encode(["success" => false, "message" => "Yêu cầu gửi biểu mẫu không hợp lệ"]);
     exit();
 }
 
@@ -26,7 +26,7 @@ $title   = isset($_POST['title'])   ? trim($_POST['title'])   : null;
 $content = isset($_POST['content']) ? trim($_POST['content']) : null;
 
 if (!$note_id) {
-    echo json_encode(["success" => false, "message" => "Missing note_id"]);
+    echo json_encode(["success" => false, "message" => "Thiếu mã ghi chú"]);
     exit();
 }
 
@@ -96,7 +96,7 @@ if ($content !== null) {
 }
 
 if (empty($sets)) {
-    echo json_encode(["success" => false, "message" => "Nothing to save"]);
+    echo json_encode(["success" => false, "message" => "Không có thay đổi cần lưu"]);
     exit();
 }
 
@@ -130,6 +130,6 @@ if ($stmt->execute()) {
         "saved_by" => $u_row['username'] ?? 'Bạn'
     ]);
 } else {
-    echo json_encode(["success" => false, "message" => "DB error: " . $conn->error]);
+    echo json_encode(["success" => false, "message" => "Lỗi dữ liệu: " . $conn->error]);
 }
 $stmt->close();

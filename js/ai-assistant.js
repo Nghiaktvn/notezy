@@ -11,35 +11,47 @@
     loading: false,
     conversationId: null,
     messages: [
-      { role: 'assistant', content: 'Xin chào! Tôi là trợ lý ghi chú Notezy. Bạn muốn tìm, tóm tắt hay tạo note?' }
+      { role: 'assistant', content: 'Xin chào! Tôi là trợ lý ghi chú Notezy. Bạn muốn tìm, tóm tắt hay tạo ghi chú?' }
     ]
   };
 
   root.innerHTML = `
-    <div class="notezy-ai-panel" id="notezyAiPanel" role="dialog" aria-label="Notezy AI">
+    <div class="notezy-ai-panel" id="notezyAiPanel" role="dialog" aria-label="Trợ lý Notezy">
       <div class="notezy-ai-header">
         <div class="notezy-ai-brand">
           <img src="assets/notezy-mascot-2026.png" alt="" aria-hidden="true">
-          <span>Notezy AI<small>Trợ lý ghi chú của bạn</small></span>
+          <span>Trợ lý Notezy<small id="notezyAiProvider">Trợ lý ghi chú của bạn</small></span>
         </div>
         <button type="button" id="notezyAiClose" aria-label="Đóng">✕</button>
       </div>
       <div class="notezy-ai-messages" id="notezyAiMessages"></div>
-      <div class="notezy-ai-quick-actions" aria-label="Gợi ý thao tác AI">
+      <div class="notezy-ai-quick-actions" aria-label="Gợi ý thao tác trợ lý">
         <button type="button" data-ai-prompt="Tóm tắt các ghi chú gần đây của tôi thành các ý chính ngắn gọn.">Tóm tắt</button>
-        <button type="button" data-ai-prompt="Tạo checklist học tập từ các ghi chú gần đây của tôi.">Checklist</button>
-        <button type="button" data-ai-prompt="Tạo 5 flashcard ôn tập từ ghi chú${quickNoteHint} của tôi.">Flashcard</button>
-        <button type="button" data-ai-prompt="Tạo một bài quiz 5 câu từ ghi chú${quickNoteHint} của tôi.">Quiz</button>
+        <button type="button" data-ai-prompt="Tạo checklist học tập từ các ghi chú gần đây của tôi.">Danh sách kiểm tra</button>
+        <button type="button" data-ai-prompt="Tạo 5 flashcard ôn tập từ ghi chú${quickNoteHint} của tôi.">Thẻ ghi nhớ</button>
+        <button type="button" data-ai-prompt="Tạo một bài quiz 5 câu từ ghi chú${quickNoteHint} của tôi.">Trắc nghiệm</button>
       </div>
       <div class="notezy-ai-input">
-        <textarea id="notezyAiInput" rows="1" placeholder="Nhắn với AI..."></textarea>
+        <textarea id="notezyAiInput" rows="1" placeholder="Nhắn với trợ lý..."></textarea>
         <button type="button" id="notezyAiSend">Gửi</button>
       </div>
     </div>
-    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Notezy AI" aria-expanded="false" aria-controls="notezyAiPanel">
+    <button type="button" class="notezy-ai-fab" id="notezyAiFab" aria-label="Mở Trợ lý Notezy" aria-expanded="false" aria-controls="notezyAiPanel">
       <span class="notezy-ai-fab__prompt" aria-hidden="true">Hỏi mình nhé! ✦</span>
       <img src="assets/notezy-mascot-2026.png" alt="" aria-hidden="true">
     </button>
+    <dialog id="notezyAiPasswordDialog" class="notezy-ai-password-dialog" aria-labelledby="notezyAiPasswordTitle">
+      <form id="notezyAiPasswordForm">
+        <h3 id="notezyAiPasswordTitle">Đổi mật khẩu tài khoản</h3>
+        <p>Mật khẩu được gửi trực tiếp tới Notezy, không gửi vào cuộc trò chuyện hoặc Gemini.</p>
+        <input type="hidden" name="form_token">
+        <label>Mật khẩu hiện tại<input name="current_password" type="password" autocomplete="current-password" required></label>
+        <label>Mật khẩu mới<input name="new_password" type="password" autocomplete="new-password" minlength="6" maxlength="72" required></label>
+        <label>Xác nhận mật khẩu mới<input name="confirm_password" type="password" autocomplete="new-password" minlength="6" maxlength="72" required></label>
+        <p id="notezyAiPasswordStatus" role="status"></p>
+        <div class="notezy-ai-actions"><button type="submit">Lưu mật khẩu</button><button type="button" id="notezyAiPasswordCancel">Hủy</button></div>
+      </form>
+    </dialog>
   `;
 
   const panel = document.getElementById('notezyAiPanel');
@@ -68,6 +80,13 @@
     root.querySelector('#notezyAiFab').setAttribute('aria-expanded', String(state.open));
     messagesEl.innerHTML = '';
     state.messages.forEach((msg, idx) => {
+      if (msg.response && msg.response.type === 'password_change_form') {
+        const card = document.createElement('div');
+        card.className = 'notezy-ai-card';
+        card.innerHTML = '<p>Đổi mật khẩu trong biểu mẫu riêng.</p><button type="button" data-password-open="'+idx+'">Mở biểu mẫu đổi mật khẩu</button>';
+        messagesEl.appendChild(card);
+        return;
+      }
       if (msg.response && msg.response.type === 'note_created') {
         messagesEl.appendChild(createdCard(msg.response));
         return;
@@ -137,13 +156,13 @@
     const wrap = document.createElement('div');
     wrap.className = 'notezy-ai-card';
     wrap.innerHTML = `
-      <h4>Note Preview</h4>
+      <h4>Xem trước ghi chú</h4>
       <input class="form-control mb-2" data-ai-title value="${esc(resp.title)}">
       <textarea class="form-control" data-ai-content rows="6">${esc(resp.content)}</textarea>
       <div class="notezy-ai-labels">${(resp.labels || []).map(l => '<span>' + esc(l) + '</span>').join('')}</div>
       <div class="notezy-ai-actions">
-        <button type="button" data-ai-confirm="${idx}">${resp.action === 'update_note' ? 'Update' : 'Create'}</button>
-        <button type="button" class="secondary" data-ai-cancel="${idx}">Cancel</button>
+        <button type="button" data-ai-confirm="${idx}">${resp.action === 'update_note' ? 'Cập nhật' : 'Tạo'}</button>
+        <button type="button" class="secondary" data-ai-cancel="${idx}">Hủy</button>
       </div>
     `;
     return wrap;
@@ -156,26 +175,59 @@
       <h4>${resp.action === 'delete_note' ? 'Xóa ghi chú?' : 'Xác nhận'}</h4>
       <p>${esc(resp.content)}</p>
       <div class="notezy-ai-actions">
-        <button type="button" class="${resp.action === 'delete_note' ? 'danger' : ''}" data-ai-confirm="${idx}">${resp.action === 'delete_note' ? 'Delete' : 'Confirm'}</button>
-        <button type="button" class="secondary" data-ai-cancel="${idx}">Cancel</button>
+        <button type="button" class="${resp.action === 'delete_note' ? 'danger' : ''}" data-ai-confirm="${idx}">${resp.action === 'delete_note' ? 'Xóa' : 'Xác nhận'}</button>
+        <button type="button" class="secondary" data-ai-cancel="${idx}">Hủy</button>
       </div>
     `;
     return wrap;
   }
 
   async function post(path, body) {
-    const res = await fetch(apiBase + '/' + path, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.status === 'error') {
-      throw new Error(data.message || 'AI request failed');
-    }
-    return data;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 65000);
+    try {
+      const res = await fetch(apiBase + '/' + path, {
+        method: 'POST', credentials: 'include', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || data.status === 'error') {
+        throw new Error((data && data.message) || 'Trợ lý trả phản hồi không hợp lệ. Vui lòng thử lại.');
+      }
+      return data;
+    } catch (error) {
+      if (error.name === 'AbortError') throw new Error('Yêu cầu mất quá nhiều thời gian. Hãy kiểm tra ghi chú trước khi gửi lại thao tác tạo.');
+      throw error;
+    } finally { clearTimeout(timeout); }
   }
+
+  const passwordDialog = document.getElementById('notezyAiPasswordDialog');
+  const passwordForm = document.getElementById('notezyAiPasswordForm');
+  const passwordStatus = document.getElementById('notezyAiPasswordStatus');
+  function openPasswordDialog(token) {
+    passwordForm.reset();
+    passwordStatus.textContent = '';
+    passwordForm.elements.form_token.value = token;
+    if (!passwordDialog.open) passwordDialog.showModal();
+  }
+  passwordDialog.addEventListener('close', () => passwordForm.reset());
+  document.getElementById('notezyAiPasswordCancel').addEventListener('click', () => passwordDialog.close());
+  passwordForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submit = passwordForm.querySelector('[type="submit"]');
+    submit.disabled = true;
+    passwordStatus.textContent = 'Đang lưu...';
+    try {
+      const fields = Object.fromEntries(new FormData(passwordForm));
+      if (fields.new_password !== fields.confirm_password) throw new Error('Hai lần nhập mật khẩu mới chưa khớp.');
+      const result = await post('change_password.php', fields);
+      passwordForm.reset();
+      passwordDialog.close();
+      state.messages.push({role:'assistant', content:result.message});
+      render();
+    } catch (error) { passwordStatus.textContent = error.message; }
+    finally { submit.disabled = false; }
+  });
 
   async function send(text) {
     if (!text.trim() || state.loading) return;
@@ -191,8 +243,11 @@
           current_note_id: cfg.currentNoteId || 0
         }
       });
-      state.conversationId = data.conversation_id;
+      if (!data.response) throw new Error('Trợ lý chưa trả nội dung. Vui lòng thử lại.');
+      if (data.conversation_id) state.conversationId = data.conversation_id;
+      if (data.provider) document.getElementById('notezyAiProvider').textContent = data.provider === 'gemini' ? 'Đang dùng Gemini' : 'Chế độ mô phỏng';
       state.messages.push({ role: 'assistant', content: data.response.content || '', response: data.response });
+      if (data.response.type === 'password_change_form') openPasswordDialog(data.response.form_token);
     } catch (err) {
       state.messages.push({ role: 'assistant', content: err.message, error: true });
     } finally {
@@ -241,6 +296,12 @@
     }
   });
   messagesEl.addEventListener('click', (e) => {
+    const passwordBtn = e.target.closest('[data-password-open]');
+    if (passwordBtn) {
+      const message = state.messages[Number(passwordBtn.dataset.passwordOpen)];
+      if (message && message.response) openPasswordDialog(message.response.form_token);
+      return;
+    }
     const confirmBtn = e.target.closest('[data-ai-confirm]');
     const cancelBtn = e.target.closest('[data-ai-cancel]');
     if (cancelBtn) {

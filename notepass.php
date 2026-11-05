@@ -490,11 +490,11 @@ if ($is_owner && $_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['revoke'])
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-star me-1"></i>Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-shield-alt me-1"></i>Privacy</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-envelope me-1"></i>Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i>Giới thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-star me-1"></i>Tính năng</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-shield-alt me-1"></i>Bảo mật</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-envelope me-1"></i>Liên hệ</a></li>
                     <li class="nav-item dropdown avatar-container ms-2">
                         <a class="nav-link dropdown-toggle p-0" href="#" id="avatarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="/api/placeholder/40/40" alt="Avatar" class="avatar">
@@ -726,7 +726,7 @@ $sql = "
                         title: 'Lỗi!',
                         text: `Không thể xóa ghi chú: ${data.message}`,
                         icon: 'error',
-                        confirmButtonText: 'OK',
+                        confirmButtonText: 'Đã hiểu',
                         customClass: {
                             popup: 'animated shake'
                         }
@@ -738,7 +738,7 @@ $sql = "
                     title: 'Lỗi!',
                     text: 'Đã có lỗi xảy ra, vui lòng thử lại sau.',
                     icon: 'error',
-                    confirmButtonText: 'OK',
+                    confirmButtonText: 'Đã hiểu',
                     customClass: {
                         popup: 'animated shake'
                     }

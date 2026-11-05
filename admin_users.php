@@ -13,29 +13,29 @@ require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/db.php';
 notezy_session_start();
 
-// Helper: check if logged in as admin or allow quick demo access for grader
-$is_admin = false;
-if (isset($_SESSION['id'])) {
-    // If logged in, check role or allow
-    $is_admin = true;
+// Authorization is checked against the database on every request.
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    exit('Vui lòng đăng nhập tài khoản quản trị. <a href="/index.php?auth=login">Đăng nhập</a>');
 }
-
-// Quick demo login if requested
-if (isset($_GET['demo_admin_login'])) {
-    $_SESSION['id'] = 1;
-    $_SESSION['username'] = 'admin';
-    $_SESSION['email'] = 'admin@notezy.local';
-    $_SESSION['role'] = 'admin';
-    header('Location: admin_users.php');
-    exit;
+$conn = create_connect();
+if (!$conn || $conn->connect_error) { http_response_code(503); exit('Dịch vụ dữ liệu tạm thời không khả dụng.'); }
+notezy_ensure_user_role_column($conn);
+$auth = $conn->prepare('SELECT role, activated FROM users WHERE id = ?');
+$auth->bind_param('i', $_SESSION['id']);
+$auth->execute();
+$admin_account = $auth->get_result()->fetch_assoc();
+$auth->close();
+if (!$admin_account || $admin_account['role'] !== 'admin' || (int)$admin_account['activated'] !== 1) {
+    http_response_code(403);
+    exit('Bạn không có quyền quản trị. <a href="/index_notezy.php">Về trang chủ</a>');
 }
-
-$conn = null;
+$is_admin = true;
 $db_error = null;
-try {
-    $conn = create_connect();
-} catch (Throwable $e) {
-    $db_error = $e->getMessage();
+require_once __DIR__ . '/includes/csrf.php';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_check((string)($_POST['csrf_token'] ?? ''))) {
+    http_response_code(403);
+    exit('Phiên biểu mẫu không hợp lệ. Vui lòng tải lại trang.');
 }
 
 $action = isset($_GET['action']) ? trim($_GET['action']) : 'list';
@@ -89,6 +89,7 @@ if ($conn && !$conn->connect_error) {
 
 // ── 1. ACTION: DELETE USER ──────────────────────────────────────────────────
 if ($action === 'delete') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit('Vui lòng dùng nút xóa trên trang quản trị.'); }
     $del_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
     if ($del_id <= 0) {
         $_SESSION['flash_error'] = 'ID người dùng không hợp lệ.';
@@ -113,7 +114,7 @@ if ($action === 'delete') {
         } else {
             // Mock delete
             unset($_SESSION['mock_users'][$del_id]);
-            $_SESSION['flash_success'] = "Đã xóa thành công người dùng ID #$del_id (Offline Mode).";
+            $_SESSION['flash_success'] = "Đã xóa thành công người dùng ID #$del_id (chế độ ngoại tuyến).";
         }
     }
     header('Location: admin_users.php');
@@ -131,9 +132,9 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $role      = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'user';
 
     if (empty($username) || empty($email) || empty($password)) {
-        $flash_error = 'Vui lòng nhập đầy đủ Username, Email và Mật khẩu.';
+        $flash_error = 'Vui lòng nhập đầy đủ tên tài khoản, thư điện tử và Mật khẩu.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $flash_error = 'Định dạng Email không hợp lệ.';
+        $flash_error = 'Định dạng thư điện tử không hợp lệ.';
     } elseif ($conn) {
         // Check unique username and email
         $chk = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1");
@@ -143,7 +144,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk->close();
 
         if ($exists) {
-            $flash_error = 'Tên đăng nhập hoặc Email này đã tồn tại trong hệ thống.';
+            $flash_error = 'Tên đăng nhập hoặc thư điện tử này đã tồn tại trong hệ thống.';
         } else {
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $ins = $conn->prepare("INSERT INTO users (username, firstname, lastname, email, password_hash, activated, role) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -171,7 +172,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'activated' => $status,
             'role' => $role
         ];
-        $_SESSION['flash_success'] = "Đã thêm thành công người dùng '{$username}' (Offline Mode)!";
+        $_SESSION['flash_success'] = "Đã thêm thành công người dùng '{$username}' (chế độ ngoại tuyến)!";
         header('Location: admin_users.php');
         exit;
     }
@@ -189,9 +190,11 @@ if ($action === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $role      = isset($_POST['role']) && $_POST['role'] === 'admin' ? 'admin' : 'user';
 
     if (empty($username) || empty($email) || $edit_id <= 0) {
-        $flash_error = 'Vui lòng nhập đầy đủ Username và Email.';
+        $flash_error = 'Vui lòng nhập đầy đủ tên tài khoản và thư điện tử.';
+    } elseif ($edit_id === (int)$_SESSION['id'] && ($role !== 'admin' || $status !== 1)) {
+        $flash_error = 'Bạn không thể tự gỡ quyền quản trị hoặc hủy kích hoạt tài khoản đang dùng.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $flash_error = 'Định dạng Email không hợp lệ.';
+        $flash_error = 'Định dạng thư điện tử không hợp lệ.';
     } elseif ($conn && !$conn->connect_error) {
         // Check duplicate username/email for other users
         $chk = $conn->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ? LIMIT 1");
@@ -201,7 +204,7 @@ if ($action === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk->close();
 
         if ($dup) {
-            $flash_error = 'Tên đăng nhập hoặc Email này đã được sử dụng bởi tài khoản khác.';
+            $flash_error = 'Tên đăng nhập hoặc thư điện tử này đã được sử dụng bởi tài khoản khác.';
         } else {
             if (!empty($password)) {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -228,7 +231,7 @@ if ($action === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mock_users'][$edit_id]['email'] = $email;
             $_SESSION['mock_users'][$edit_id]['activated'] = $status;
             $_SESSION['mock_users'][$edit_id]['role'] = $role;
-            $_SESSION['flash_success'] = "Đã cập nhật thành công người dùng #{$edit_id} ({$username}) (Offline Mode)!";
+            $_SESSION['flash_success'] = "Đã cập nhật thành công người dùng #{$edit_id} ({$username}) (chế độ ngoại tuyến)!";
             header('Location: admin_users.php');
             exit;
         }
@@ -284,7 +287,7 @@ if ($conn && !$conn->connect_error) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notezy - Quản trị Người Dùng (Admin Users)</title>
+    <title>Notezy - Quản trị Người Dùng</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -362,19 +365,15 @@ if ($conn && !$conn->connect_error) {
         <div class="container">
             <div class="d-flex align-items-center gap-3">
                 <a href="index_notezy.php" class="navbar-brand fw-bold mb-0 d-flex align-items-center gap-2">
-                    <i class="fas fa-shield-alt text-primary fs-4"></i> Notezy Admin
+                    <i class="fas fa-shield-alt text-primary fs-4"></i> Quản trị Notezy
                 </a>
-                <span class="badge bg-primary">User Management</span>
+                <span class="badge bg-primary">Quản lý người dùng</span>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <a href="index_notezy.php" class="btn btn-sm btn-outline-light">
                     <i class="fas fa-arrow-left me-1"></i> Về Notezy
                 </a>
-                <?php if (!isset($_SESSION['id'])): ?>
-                    <a href="admin_users.php?demo_admin_login=1" class="btn btn-sm btn-warning">
-                        <i class="fas fa-key me-1"></i> Đăng nhập Demo Admin
-                    </a>
-                <?php endif; ?>
+
             </div>
         </div>
     </nav>
@@ -404,28 +403,29 @@ if ($conn && !$conn->connect_error) {
                 <div class="col-lg-7 col-md-9">
                     <div class="card card-custom p-4">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-user-plus me-2"></i>➕ Add User (Thêm người dùng mới)</h4>
+                            <h4 class="mb-0 fw-bold text-primary"><i class="fas fa-user-plus me-2"></i>➕ Thêm người dùng mới</h4>
                             <a href="admin_users.php" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i> Hủy
                             </a>
                         </div>
                         <form method="post" action="admin_users.php?action=add">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold">Tên tài khoản <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="username" required placeholder="VD: user1" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Họ (Firstname)</label>
+                                    <label class="form-label fw-semibold">Họ</label>
                                     <input type="text" class="form-control" name="firstname" placeholder="VD: Nguyễn Văn" value="<?= htmlspecialchars($_POST['firstname'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Tên (Lastname)</label>
+                                    <label class="form-label fw-semibold">Tên</label>
                                     <input type="text" class="form-control" name="lastname" placeholder="VD: An" value="<?= htmlspecialchars($_POST['lastname'] ?? '') ?>">
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold">Thư điện tử <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control" name="email" required placeholder="user1@example.com" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                             </div>
                             <div class="mb-3">
@@ -434,14 +434,14 @@ if ($conn && !$conn->connect_error) {
                             </div>
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Trạng thái (Status)</label>
+                                    <label class="form-label fw-semibold">Trạng thái</label>
                                     <select class="form-select" name="status">
-                                        <option value="1" selected>Active (Kích hoạt)</option>
-                                        <option value="0">Inactive (Chưa kích hoạt)</option>
+                                        <option value="1" selected>Đã kích hoạt</option>
+                                        <option value="0">Chưa kích hoạt</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Vai trò (Role)</label>
+                                    <label class="form-label fw-semibold">Vai trò</label>
                                     <select class="form-select" name="role">
                                         <option value="user" selected>User (Người dùng thường)</option>
                                         <option value="admin">Admin (Quản trị viên)</option>
@@ -465,28 +465,29 @@ if ($conn && !$conn->connect_error) {
                 <div class="col-lg-7 col-md-9">
                     <div class="card card-custom p-4">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold text-warning text-dark"><i class="fas fa-user-edit me-2"></i>✏️ Edit User #<?= $edit_user['id'] ?></h4>
+                            <h4 class="mb-0 fw-bold text-warning text-dark"><i class="fas fa-user-edit me-2"></i>✏️ Sửa người dùng #<?= $edit_user['id'] ?></h4>
                             <a href="admin_users.php" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i> Hủy
                             </a>
                         </div>
                         <form method="post" action="admin_users.php?action=edit&id=<?= $edit_user['id'] ?>">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold">Tên tài khoản <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="username" required value="<?= htmlspecialchars($edit_user['username']) ?>">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Họ (Firstname)</label>
+                                    <label class="form-label fw-semibold">Họ</label>
                                     <input type="text" class="form-control" name="firstname" value="<?= htmlspecialchars($edit_user['firstname'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Tên (Lastname)</label>
+                                    <label class="form-label fw-semibold">Tên</label>
                                     <input type="text" class="form-control" name="lastname" value="<?= htmlspecialchars($edit_user['lastname'] ?? '') ?>">
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold">Thư điện tử <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control" name="email" required value="<?= htmlspecialchars($edit_user['email']) ?>">
                             </div>
                             <div class="mb-3">
@@ -495,17 +496,17 @@ if ($conn && !$conn->connect_error) {
                             </div>
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Trạng thái (Status)</label>
+                                    <label class="form-label fw-semibold">Trạng thái</label>
                                     <select class="form-select" name="status">
-                                        <option value="1" <?= (int)$edit_user['activated'] === 1 ? 'selected' : '' ?>>Active (Kích hoạt)</option>
-                                        <option value="0" <?= (int)$edit_user['activated'] === 0 ? 'selected' : '' ?>>Inactive (Chưa kích hoạt)</option>
+                                        <option value="1" <?= (int)$edit_user['activated'] === 1 ? 'selected' : '' ?>>Đã kích hoạt</option>
+                                        <option value="0" <?= (int)$edit_user['activated'] === 0 ? 'selected' : '' ?>>Chưa kích hoạt</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Vai trò (Role)</label>
+                                    <label class="form-label fw-semibold">Vai trò</label>
                                     <select class="form-select" name="role">
-                                        <option value="user" <?= ($edit_user['role'] ?? 'user') === 'user' ? 'selected' : '' ?>>User</option>
-                                        <option value="admin" <?= ($edit_user['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+                                        <option value="user" <?= ($edit_user['role'] ?? 'user') === 'user' ? 'selected' : '' ?>>Người dùng</option>
+                                        <option value="admin" <?= ($edit_user['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Quản trị viên</option>
                                     </select>
                                 </div>
                             </div>
@@ -525,11 +526,11 @@ if ($conn && !$conn->connect_error) {
             <div class="card card-custom p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                     <div>
-                        <h4 class="fw-bold mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Danh Sách Người Dùng (User Management)</h4>
+                        <h4 class="fw-bold mb-1"><i class="fas fa-users-cog text-primary me-2"></i>Danh sách người dùng</h4>
                         <p class="text-muted small mb-0">Quản lý tài khoản, trạng thái kích hoạt và phân quyền người dùng Notezy.</p>
                     </div>
                     <a href="admin_users.php?action=add" class="btn btn-add">
-                        <i class="fas fa-user-plus me-1"></i> ➕ Add User
+                        <i class="fas fa-user-plus me-1"></i> ➕ Thêm người dùng
                     </a>
                 </div>
 
@@ -537,12 +538,12 @@ if ($conn && !$conn->connect_error) {
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th style="width: 70px;">ID</th>
-                                <th>Username / Name</th>
-                                <th>Email</th>
-                                <th style="width: 140px;">Status</th>
-                                <th style="width: 130px;">Online</th>
-                                <th style="width: 260px;" class="text-end">Action</th>
+                                <th style="width: 70px;">Mã</th>
+                                <th>Tài khoản / Họ tên</th>
+                                <th>Thư điện tử</th>
+                                <th style="width: 140px;">Trạng thái</th>
+                                <th style="width: 130px;">Đang trực tuyến</th>
+                                <th style="width: 260px;" class="text-end">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -550,7 +551,7 @@ if ($conn && !$conn->connect_error) {
                                 <tr>
                                     <td colspan="6" class="text-center py-5 text-muted">
                                         <i class="fas fa-user-slash fs-2 mb-2 d-block text-secondary"></i>
-                                        Chưa có người dùng nào trong cơ sở dữ liệu. Nhấn <strong>➕ Add User</strong> để thêm mới.
+                                        Chưa có người dùng nào trong cơ sở dữ liệu. Nhấn <strong>➕ Thêm người dùng</strong> để thêm mới.
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -570,7 +571,7 @@ $display_name = trim(($u['firstname'] ?? '') . ' ' . ($u['lastname'] ?? ''));
                                                 <small class="text-muted"><?= htmlspecialchars($display_name) ?></small>
                                             <?php endif; ?>
                                             <?php if (($u['role'] ?? '') === 'admin'): ?>
-                                                <span class="badge bg-dark ms-1" style="font-size: 0.65rem;">ADMIN</span>
+                                                <span class="badge bg-dark ms-1" style="font-size: 0.65rem;">QUẢN TRỊ</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
@@ -580,37 +581,36 @@ $display_name = trim(($u['firstname'] ?? '') . ' ' . ($u['lastname'] ?? ''));
                                         </td>
                                         <td>
                                             <?php if ($is_active): ?>
-                                                <span class="badge badge-active px-2 py-1"><i class="fas fa-check-circle me-1"></i>Active</span>
+                                                <span class="badge badge-active px-2 py-1"><i class="fas fa-check-circle me-1"></i>Đã kích hoạt</span>
                                             <?php else: ?>
-                                                <span class="badge badge-inactive px-2 py-1"><i class="fas fa-clock me-1"></i>Inactive</span>
+                                                <span class="badge badge-inactive px-2 py-1"><i class="fas fa-clock me-1"></i>Chưa kích hoạt</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($is_online): ?>
-                                                <span class="badge badge-online px-2 py-1"><i class="fas fa-circle me-1"></i>Online</span>
+                                                <span class="badge badge-online px-2 py-1"><i class="fas fa-circle me-1"></i>Đang trực tuyến</span>
                                             <?php else: ?>
-                                                <span class="badge badge-offline px-2 py-1"><i class="far fa-circle me-1"></i>Offline</span>
+                                                <span class="badge badge-offline px-2 py-1"><i class="far fa-circle me-1"></i>Ngoại tuyến</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end">
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-success user-action-btn me-1"
                                                     onclick="openAdminShareModal(<?= (int)$u['id'] ?>, <?= json_encode($u['username'], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>)"
-                                                    title="Share Note"
+                                                    title="Chia sẻ ghi chú"
                                                     <?= $is_self ? 'disabled' : '' ?>>
                                                 <i class="fas fa-share-alt"></i>
                                             </button>
-                                            <a href="chat.php?user_id=<?= (int)$u['id'] ?>" class="btn btn-sm btn-outline-info user-action-btn me-1" title="Chat">
+                                            <a href="chat.php?user_id=<?= (int)$u['id'] ?>" class="btn btn-sm btn-outline-info user-action-btn me-1" title="Trò chuyện">
                                                 <i class="fas fa-comment-dots"></i>
                                             </a>
                                             <a href="admin_users.php?action=edit&id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-primary me-1" title="Chỉnh sửa">
-                                                <i class="fas fa-edit me-1"></i>Edit
+                                                <i class="fas fa-edit me-1"></i>Sửa
                                             </a>
-                                            <a href="admin_users.php?action=delete&id=<?= $u['id'] ?>" class="btn btn-sm btn-outline-danger" 
-                                               onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng \'<?= htmlspecialchars(addslashes($u['username'])) ?>\'? Hành động này không thể hoàn tác.')" 
-                                               title="Xóa người dùng">
-                                                <i class="fas fa-trash-alt me-1"></i>Delete
-                                            </a>
+                                            <form method="post" action="admin_users.php?action=delete&id=<?= (int)$u['id'] ?>" class="d-inline" onsubmit="return confirm('Xóa tài khoản này và dữ liệu liên quan? Thao tác không thể hoàn tác.')">
+                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa người dùng" <?= $is_self ? 'disabled' : '' ?>><i class="fas fa-trash-alt me-1"></i>Xóa</button>
+                                            </form>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -627,7 +627,7 @@ $display_name = trim(($u['firstname'] ?? '') . ' ' . ($u['lastname'] ?? ''));
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-light">
-                    <h5 class="modal-title"><i class="fas fa-share-alt text-success me-2"></i>Share Note</h5>
+                    <h5 class="modal-title"><i class="fas fa-share-alt text-success me-2"></i>Chia sẻ ghi chú</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="adminShareNoteForm">
@@ -651,8 +651,8 @@ $display_name = trim(($u['firstname'] ?? '') . ' ' . ($u['lastname'] ?? ''));
                         <div class="mb-0">
                             <label class="form-label fw-semibold">Quyền truy cập</label>
                             <select id="adminSharePermission" name="permission" class="form-select">
-                                <option value="read">Viewer (Chỉ xem)</option>
-                                <option value="write">Editor (Chỉnh sửa)</option>
+                                <option value="read">Chỉ xem</option>
+                                <option value="write">Được chỉnh sửa</option>
                             </select>
                         </div>
                     </div>

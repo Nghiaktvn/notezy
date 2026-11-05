@@ -993,7 +993,7 @@ if ($note_stmt) {
         document.getElementById('schNote').value = item.note;
         document.getElementById('schNoteId').value = item.note_id || '';
 
-        const colorDot = document.querySelector(`.color-dot-radio[data-color="${item.color}"]`) || 
+        const colorDot = document.querySelector(`.color-dot-radio[data-color="${item.color}"]`) ||
                          document.querySelector('.color-dot-radio[data-color="#4f46e5"]');
         if (colorDot) selectColor(colorDot);
 
@@ -1065,7 +1065,7 @@ if ($note_stmt) {
     async function openSharePrompt(item) {
         const result = await Swal.fire({
             title: 'Chia sẻ lịch học',
-            html: `<p class="text-muted small mb-3">${escapeHtml(item.title)}</p><input id="shareRecipient" class="swal2-input" placeholder="Email hoặc tên đăng nhập"><select id="sharePermission" class="swal2-select"><option value="read">Chỉ xem</option><option value="write">Có thể sửa</option></select>`,
+            html: `<p class="text-muted small mb-3">${escapeHtml(item.title)}</p><input id="shareRecipient" class="swal2-input" placeholder="Thư điện tử hoặc tên đăng nhập"><select id="sharePermission" class="swal2-select"><option value="read">Chỉ xem</option><option value="write">Có thể sửa</option></select>`,
             showCancelButton: true,
             confirmButtonText: 'Chia sẻ',
             cancelButtonText: 'Hủy',

@@ -25,6 +25,7 @@ if ($user_id <= 0) {
 }
 
 notezy_ensure_user_last_seen_column($conn);
+notezy_ensure_user_role_column($conn);
 $seen_stmt = $conn->prepare("UPDATE users SET last_seen_at = NOW() WHERE id = ?");
 if ($seen_stmt) {
     $seen_stmt->bind_param('i', $user_id);
@@ -33,7 +34,7 @@ if ($seen_stmt) {
 }
 
 // Kiểm tra tài khoản đã kích hoạt và lấy preferences
-$sql = "SELECT activated, theme, language, email FROM users WHERE id = ?";
+$sql = "SELECT activated, theme, language, email, role FROM users WHERE id = ?";
 $stm = $conn->prepare($sql);
 if (!$stm) {
     die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
@@ -54,7 +55,7 @@ if ($user_info['activated'] === 0) {
 $_SESSION['theme'] = $user_info['theme'] ?? 'light';
 $_SESSION['language'] = $user_info['language'] ?? 'vi';
 
-$lang = $_SESSION['language'];
+$lang = 'vi';
 $t = [
     'vi' => [
         'note_list' => 'Danh Sách Ghi Chú',
@@ -160,6 +161,10 @@ try {
         // Bảo vệ nội dung chống rò rỉ khi chưa xác thực mật khẩu
         if ($row['is_pin_locked'] || $row['is_password_locked']) {
             $row['masked_content'] = '[Ghi chú này được bảo vệ. Vui lòng xác thực để xem hoặc chỉnh sửa.]';
+            // Hidden HTML is still readable in the browser's DOM/source.
+            // Keep protected bytes out of every grid/list template below.
+            $row['content'] = '';
+            $row['image_path'] = null;
         } else {
             $row['masked_content'] = $row['content'];
         }
@@ -583,7 +588,7 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             color: #000000;
             border-color: #000000;
         }
-        .btn-outline-primary:hover, 
+        .btn-outline-primary:hover,
         .btn-outline-primary.active {
             background-color: #000000;
             color: #ffffff;
@@ -1146,7 +1151,7 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             background: #8c3fb0 !important; color: #fff !important;
         }
 
-        /* Legacy theme-toggle styles retained only for older cached markup. */
+        /* Legacy theme-toggle styles retained only for older đã lưu tạm markup. */
         .btn-inside-theme-toggle {
             border-radius: 9999px;
             padding: 5px 14px;
@@ -1298,7 +1303,7 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             border-top: 1px solid #27272a !important;
         }
     </style>
-    <link rel="stylesheet" href="CSS/dashboard-refresh.css?v=1">
+    <link rel="stylesheet" href="CSS/dashboard-refresh.css?v=2">
 </head>
 <body>
 
@@ -1319,7 +1324,7 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
                     <li><a class="dropdown-item" href="labels.php"><i class="fas fa-tags"></i>Quản lý nhãn</a></li>
                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i>Tìm kiếm ghi chú</button></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><button type="button" class="dropdown-item" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles"></i>Trợ lý AI</button></li>
+                    <li><button type="button" class="dropdown-item" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles"></i>Trợ lý thông minh</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="account.php"><i class="fas fa-user"></i>Trang cá nhân</a></li>
                     <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt"></i>Đăng xuất</a></li>
@@ -1328,14 +1333,14 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             <a class="navbar-brand logo" href="index_notezy.php">Notezy</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                      <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy</a></li>
-                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact</a></li>
+                      <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>Giới thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Tính năng</a></li>
+                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Bảo mật</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Liên hệ</a></li>
                     <li class="nav-item"><a class="nav-link" href="labels.php"><i class="fas fa-tags me-1"></i>Nhãn</a></li>
-                        
-                        
+
+
                     <li class="nav-item"><a class="nav-link text-primary fw-bold" href="thoikhoabieu.php"><i class="fas fa-calendar-alt me-1"></i>Thời khóa biểu</a></li>
                     <li class="nav-item"><a class="nav-link" href="premium.php"><i class="fas fa-crown me-1"></i>Premium</a></li>
                     <li class="nav-item">
@@ -1372,7 +1377,9 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                     <li><a class="dropdown-item" href="account.php"><i class="fas fa-user me-2"></i>Xem trang cá nhân</a></li>
-                    <li><a class="dropdown-item" href="admin_users.php"><i class="fas fa-users-cog me-2"></i>Quản trị Người Dùng</a></li>
+                    <?php if (($user_info['role'] ?? 'user') === 'admin'): ?>
+                    <li><a class="dropdown-item" href="admin_users.php"><i class="fas fa-users-cog me-2"></i>Quản trị người dùng</a></li>
+                    <?php endif; ?>
                     <li><a class="dropdown-item" href="labels.php"><i class="fas fa-tags me-2"></i>Quản lý Nhãn</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
@@ -1400,7 +1407,7 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             <p>Viết một dòng nhỏ hôm nay. Notezy sẽ giúp bạn giữ nó an toàn, tìm lại dễ dàng và phát triển thành điều lớn hơn.</p>
             <div class="dashboard-welcome__actions">
                 <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalAddNote"><i class="fas fa-plus me-2" aria-hidden="true"></i>Tạo ghi chú</button>
-                <button class="btn dashboard-welcome__ai" type="button" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles me-2" aria-hidden="true"></i>Hỏi trợ lý AI</button>
+                <button class="btn dashboard-welcome__ai" type="button" onclick="document.getElementById('notezyAiFab')?.click()"><i class="fas fa-wand-magic-sparkles me-2" aria-hidden="true"></i>Hỏi trợ lý thông minh</button>
             </div>
         </div>
         <img class="dashboard-welcome__mascot" src="assets/notezy-mascot-2026.png" alt="Linh vật sổ tay Notezy cầm bút chào đón bạn" width="1302" height="1208">
@@ -1478,7 +1485,7 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             <?php endif; ?>
         </div>
     </section>
-    
+
     <div class="view-controls d-flex justify-content-end flex-wrap gap-2">
         <a href="thoikhoabieu.php" class="btn btn-primary">
             <i class="fas fa-calendar-alt me-1"></i> Thời khóa biểu
@@ -1487,10 +1494,10 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             <i class="fas fa-tags me-1"></i> <?= htmlspecialchars($t['manage_labels']) ?>
         </button>
         <button class="btn btn-outline-primary me-2 active" id="gridViewBtn">
-            <i class="fas fa-th me-1"></i> Grid View
+            <i class="fas fa-th me-1"></i> Dạng lưới
         </button>
         <button class="btn btn-outline-primary" id="listViewBtn">
-            <i class="fas fa-list me-1"></i> List View
+            <i class="fas fa-list me-1"></i> Dạng danh sách
         </button>
     </div>
 
@@ -1543,7 +1550,7 @@ $card_style = '';
                                 <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($note['password_hash']): ?>
-                                <span class="badge bg-secondary" title="Bảo vệ bằng mật khẩu"><i class="fas fa-key me-1"></i>Pass</span>
+                                <span class="badge bg-secondary" title="Bảo vệ bằng mật khẩu"><i class="fas fa-key me-1"></i>Mật khẩu</span>
                             <?php endif; ?>
                             <?php if (!empty($note['has_shares'])): ?>
                                 <span class="badge bg-info text-dark" title="Ghi chú đang được chia sẻ"><i class="fas fa-user-group me-1"></i>Đang chia sẻ</span>
@@ -1581,7 +1588,7 @@ $card_style = '';
                         <div class="unlocked-pwd-content" id="pwdUnlockedContent_grid_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2 text-center">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1602,7 +1609,7 @@ $card_style = '';
                         <div class="unlocked-note-content" id="unlockedContent_grid_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2 text-center">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1611,7 +1618,7 @@ $card_style = '';
                         <!-- Hiển thị nội dung đầy đủ rõ ràng -->
                         <?php if (!empty($note['image_path'])): ?>
                             <div class="mb-2 text-center">
-                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
+                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 100%; max-height: 180px; border-radius: 8px;">
                             </div>
                         <?php endif; ?>
                         <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1721,7 +1728,7 @@ $card_style = '';
                         <div class="unlocked-note-content" id="unlockedContent_grid_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2 text-center">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1729,19 +1736,19 @@ $card_style = '';
                     <?php else: ?>
                         <?php if (!empty($note['image_path'])): ?>
                             <div class="mb-2 text-center">
-                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
                             </div>
                         <?php endif; ?>
                         <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                     <?php endif; ?>
                     <p class="text-muted small">
-                        Chia sẻ bởi: <strong><?= htmlspecialchars($note['shared_by_username']) ?></strong> | 
+                        Chia sẻ bởi: <strong><?= htmlspecialchars($note['shared_by_username']) ?></strong> |
                         Lúc: <?= date('H:i d/m/Y', strtotime($note['shared_at'])) ?> |
-                        Quyền: 
+                        Quyền:
                         <?php if ($note['permission'] == 'write'): ?>
-                            <span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Editor (Chỉnh sửa)</span>
+                            <span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Được chỉnh sửa</span>
                         <?php else: ?>
-                            <span class="badge bg-primary text-white"><i class="fas fa-eye me-1"></i>Viewer (Chỉ xem)</span>
+                            <span class="badge bg-primary text-white"><i class="fas fa-eye me-1"></i>Chỉ xem</span>
                         <?php endif; ?>
                     </p>
                     <?php if (!empty($note['labels'])): ?>
@@ -1820,7 +1827,7 @@ $card_style = '';
                         </div>
                         <div class="unlocked-pwd-content" id="pwdUnlockedContent_list_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
-                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
+                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                             <?php endif; ?>
                             <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
@@ -1834,13 +1841,13 @@ $card_style = '';
                         </div>
                         <div class="unlocked-note-content" id="unlockedContent_list_<?= $note['note_id'] ?>" style="display:none;">
                             <?php if (!empty($note['image_path'])): ?>
-                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
+                                <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                             <?php endif; ?>
                             <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
                     <?php else: ?>
                         <?php if (!empty($note['image_path'])): ?>
-                            <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
+                            <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                         <?php endif; ?>
                         <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                     <?php endif; ?>
@@ -1946,7 +1953,7 @@ $card_style = '';
                             <div class="unlocked-note-content" id="unlockedContent_list_<?= $note['note_id'] ?>" style="display:none;">
                                 <?php if (!empty($note['image_path'])): ?>
                                     <div class="mb-2">
-                                        <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
+                                        <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
                                     </div>
                                 <?php endif; ?>
                                 <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
@@ -1954,19 +1961,19 @@ $card_style = '';
                         <?php else: ?>
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2">
-                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Note Image" onerror="this.style.display='none'" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
+                                    <img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
                                 </div>
                             <?php endif; ?>
                             <p><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         <?php endif; ?>
                         <p class="text-muted small">
-                            Chia sẻ bởi: <strong><?= htmlspecialchars($note['shared_by_username']) ?></strong> | 
+                            Chia sẻ bởi: <strong><?= htmlspecialchars($note['shared_by_username']) ?></strong> |
                             Lúc: <?= date('H:i d/m/Y', strtotime($note['shared_at'])) ?> |
-                            Quyền: 
+                            Quyền:
                             <?php if ($note['permission'] == 'write'): ?>
-                                <span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Editor (Chỉnh sửa)</span>
+                                <span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Được chỉnh sửa</span>
                             <?php else: ?>
-                                <span class="badge bg-primary text-white"><i class="fas fa-eye me-1"></i>Viewer (Chỉ xem)</span>
+                                <span class="badge bg-primary text-white"><i class="fas fa-eye me-1"></i>Chỉ xem</span>
                             <?php endif; ?>
                             | Thời gian: <?= htmlspecialchars($note['shared_at']) ?>
                         </p>
@@ -2222,8 +2229,8 @@ $card_style = '';
                     <form id="shareNoteForm">
                         <input type="hidden" name="note_id" id="shareNoteId">
                         <div class="mb-3">
-                            <label for="sharedWithUsername" class="form-label fw-semibold">Email hoặc Tên người dùng</label>
-                            <input type="text" name="sharedWithUsername" id="sharedWithUsername" class="form-control form-control-lg" placeholder="Nhập email (abc@gmail.com) hoặc username" required>
+                            <label for="sharedWithUsername" class="form-label fw-semibold">Thư điện tử hoặc tên tài khoản</label>
+                            <input type="text" name="sharedWithUsername" id="sharedWithUsername" class="form-control form-control-lg" placeholder="Ví dụ: user2 hoặc user2@example.com" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold d-block">Quyền truy cập</label>
@@ -2231,19 +2238,19 @@ $card_style = '';
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="permission" id="permViewer" value="read" checked>
                                     <label class="form-check-label fw-medium" for="permViewer">
-                                        <i class="fas fa-eye text-primary me-1"></i> Viewer (Chỉ xem)
+                                        <i class="fas fa-eye text-primary me-1"></i> Chỉ xem
                                     </label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="permission" id="permEditor" value="write">
                                     <label class="form-check-label fw-medium" for="permEditor">
-                                        <i class="fas fa-edit text-success me-1"></i> Editor (Chỉnh sửa)
+                                        <i class="fas fa-edit text-success me-1"></i> Được chỉnh sửa
                                     </label>
                                 </div>
                             </div>
                             <div class="form-text text-muted">
-                                <strong>Viewer:</strong> Xem nội dung, xem ảnh, nhãn. Không sửa, không xóa.<br>
-                                <strong>Editor:</strong> Xem, sửa, auto-save. Không được xóa ghi chú của bạn.
+                                <strong>Người xem:</strong> Xem nội dung, xem ảnh, nhãn. Không sửa, không xóa.<br>
+                                <strong>Người chỉnh sửa:</strong> Xem, sửa, tự động lưu. Không được xóa ghi chú của bạn.
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="btnShareSubmit">
@@ -2399,7 +2406,7 @@ $card_style = '';
                 <form id="formAddToTimetable">
                     <div class="modal-body p-4">
                         <input type="hidden" id="tt_note_id" name="note_id">
-                        
+
                         <div class="mb-3">
                             <label for="tt_title" class="form-label small fw-bold">Tên môn học / Nhiệm vụ:</label>
                             <input type="text" id="tt_title" name="title" class="form-control fw-semibold" required placeholder="Ví dụ: Lập trình Web, Họp đồ án...">
@@ -2536,10 +2543,10 @@ $card_style = '';
                             <div class="col-md-4">
                                 <label for="directFontFamily" class="form-label fw-semibold">Phông chữ</label>
                                 <select class="form-select" id="directFontFamily" name="font_family">
-                                    <option value="Poppins">Poppins</option>
-                                    <option value="Roboto">Roboto</option>
-                                    <option value="Open Sans">Open Sans</option>
-                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="Poppins">Chữ tròn</option>
+                                    <option value="Roboto">Chữ hiện đại</option>
+                                    <option value="Open Sans">Chữ dễ đọc</option>
+                                    <option value="Playfair Display">Chữ có chân</option>
                                 </select>
                             </div>
                         </div>
@@ -2583,6 +2590,7 @@ $card_style = '';
         </div>
     </div>
 
+</main>
     <footer class="bg-dark text-white-50 pt-5 pb-3 mt-5">
         <div class="container">
             <div class="row">
@@ -2599,22 +2607,22 @@ $card_style = '';
                 <div class="col-md-4 mb-4">
                     <h5 class="text-white">Liên kết</h5>
                     <ul class="list-unstyled">
-                        <li><a href="#" class="text-white-50">Home</a></li>
-                        <li><a href="#" class="text-white-50">About us</a></li>
-                        <li><a href="#" class="text-white-50">Features</a></li>
-                        <li><a href="#" class="text-white-50">Privacy</a></li>
-                        <li><a href="#" class="text-white-50">Contact</a></li>
+                        <li><a href="#" class="text-white-50">Trang chủ</a></li>
+                        <li><a href="#" class="text-white-50">Giới thiệu</a></li>
+                        <li><a href="#" class="text-white-50">Tính năng</a></li>
+                        <li><a href="#" class="text-white-50">Bảo mật</a></li>
+                        <li><a href="#" class="text-white-50">Liên hệ</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 mb-4">
                     <h5 class="text-white">Liên hệ</h5>
                     <p><i class="fas fa-map-marker-alt me-2"></i> Địa chỉ: 123 Đường ABC, Quận XYZ, Thành phố HCM</p>
                     <p><i class="fas fa-phone me-2"></i> Điện thoại: (028) 1234 5678</p>
-                    <p><i class="fas fa-envelope me-2"></i> Email: info@notezy.com</p>
+                    <p><i class="fas fa-envelope me-2"></i> Thư điện tử: info@notezy.com</p>
                 </div>
             </div>
             <div class="text-center mt-3 border-top pt-3">
-                <p>© 2025 Notezy. All rights reserved.</p>
+                <p>© 2025 Notezy. Bảo lưu mọi quyền.</p>
             </div>
         </div>
     </footer>
@@ -3000,7 +3008,7 @@ $card_style = '';
                     await window.NotezyOffline.deleteNoteOffline(noteId);
                     await window.NotezyOffline.renderOfflineNotes();
                     await Swal.fire({
-                        title: 'Saved locally',
+                        title: 'Đã lưu trên thiết bị',
                         text: 'Ghi chú đã được đánh dấu xóa trên thiết bị và sẽ đồng bộ khi có mạng.',
                         icon: 'info',
                         timer: 1600,
@@ -3034,7 +3042,7 @@ $card_style = '';
                             title: 'Lỗi!',
                             text: `Không thể xóa ghi chú: ${data.message}`,
                             icon: 'error',
-                            confirmButtonText: 'OK',
+                            confirmButtonText: 'Đã hiểu',
                             customClass: {
                                 popup: 'animated shake'
                             }
@@ -3046,7 +3054,7 @@ $card_style = '';
                         title: 'Lỗi!',
                         text: 'Đã có lỗi xảy ra, vui lòng thử lại sau.',
                         icon: 'error',
-                        confirmButtonText: 'OK',
+                        confirmButtonText: 'Đã hiểu',
                         customClass: {
                             popup: 'animated shake'
                         }
@@ -3065,7 +3073,7 @@ $card_style = '';
                     toast: true,
                     position: 'top-end',
                     icon: 'info',
-                    title: 'Saved locally',
+                    title: 'Đã lưu trên thiết bị',
                     text: 'Thao tác ghim sẽ đồng bộ khi có mạng.',
                     timer: 1800,
                     showConfirmButton: false
@@ -3198,7 +3206,7 @@ $card_style = '';
                         title: 'Lỗi!',
                         text: data.message || 'Đã có lỗi xảy ra.',
                         icon: 'error',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'Đã hiểu'
                     });
                 }
             } catch (error) {
@@ -3207,7 +3215,7 @@ $card_style = '';
                     title: 'Lỗi!',
                     text: 'Không thể kết nối tới server.',
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'Đã hiểu'
                 });
             } finally {
                 btn.disabled = false;
@@ -3423,8 +3431,8 @@ $card_style = '';
                     let html = '<ul class="list-group list-group-flush">';
                     data.shares.forEach(s => {
                         const permBadge = s.permission === 'write'
-                            ? '<span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Editor (Chỉnh sửa)</span>'
-                            : '<span class="badge bg-primary text-white"><i class="fas fa-eye me-1"></i>Viewer (Chỉ xem)</span>';
+                            ? '<span class="badge bg-success text-white"><i class="fas fa-edit me-1"></i>Được chỉnh sửa</span>'
+                            : '<span class="badge bg-primary text-white"><i class="fas fa-eye me-1"></i>Chỉ xem</span>';
                         html += `
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
                                 <div>
@@ -3509,7 +3517,7 @@ $card_style = '';
                         title: 'Lỗi!',
                         text: data.message,
                         icon: 'error',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'Đã hiểu'
                     });
                 }
             } catch (error) {
@@ -3518,7 +3526,7 @@ $card_style = '';
                     title: 'Lỗi!',
                     text: 'Đã có lỗi xảy ra, vui lòng thử lại sau.',
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'Đã hiểu'
                 });
             } finally {
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Chia sẻ ngay'; }
@@ -3606,11 +3614,11 @@ $card_style = '';
         document.addEventListener('DOMContentLoaded', function() {
             const floatingBtn = document.getElementById('floatingActionBtn');
             const floatingMenu = document.getElementById('floatingMenu');
-            
+
             floatingBtn.addEventListener('click', function() {
                 floatingMenu.classList.toggle('show');
             });
-            
+
             document.addEventListener('click', function(event) {
                 if (!floatingBtn.contains(event.target) && !floatingMenu.contains(event.target)) {
                     floatingMenu.classList.remove('show');
@@ -3684,7 +3692,7 @@ $card_style = '';
             title: 'Lỗi!',
             text: event.data.message,
             icon: 'error',
-            confirmButtonText: 'OK'
+            confirmButtonText: 'Đã hiểu'
         });
     }
 });
@@ -3982,7 +3990,7 @@ document.getElementById('directAddNoteForm')?.addEventListener('submit', async f
         await window.NotezyOffline.renderOfflineNotes();
         await Swal.fire({
             icon: 'info',
-            title: 'Saved locally',
+            title: 'Đã lưu trên thiết bị',
             text: `"${localNote.title}" đã được lưu trên thiết bị và sẽ tự đồng bộ khi online.`,
             timer: 1800,
             showConfirmButton: false
@@ -4131,7 +4139,7 @@ document.getElementById('formAddToTimetable')?.addEventListener('submit', async 
 </script>
     <script src="js/timetable-alarm.js" defer></script>
     <script src="js/reminders.js" defer></script>
-    <script src="js/offline-store.js"></script>
+    <script src="js/offline-store.js?v=20261105"></script>
     <script>
         // ── Lưu snapshot ghi chú vào IndexedDB để xem khi ngoại tuyến (Offline) ──
         (function() {

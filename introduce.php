@@ -37,7 +37,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notezy-Introduction</title>
+    <title>Notezy - Giới thiệu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="CSS/main.css">
@@ -54,11 +54,11 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Privacy</a></li>
-                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index_notezy.php"><i class="fas fa-home me-1"></i>Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="introduce.php"><i class="fas fa-info-circle me-1"></i>Giới thiệu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="khampha.php"><i class="fas fa-star me-1"></i>Tính năng</a></li>
+                    <li class="nav-item"><a class="nav-link" href="privacy.php"><i class="fas fa-shield-alt me-1"></i>Bảo mật</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.php"><i class="fas fa-envelope me-1"></i>Liên hệ</a></li>
                 </ul>
             </div>
         </div>
@@ -67,7 +67,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
 
     <section class="artist-detail py-5" style="margin-top: 40px;">
         <div class="container">
-            <h1 class="section-title">Introduction</h1>
+            <h1 class="section-title">Giới thiệu</h1>
             <div class="row align-items-center">
                 <div class="col-lg-6 mb-4 mb-lg-0">
                     <div class="artist-video-container">
@@ -78,7 +78,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                 </div>
                 <div class="col-lg-6">
                     <div class="artist-description">
-                        <h3 style="color: black;font-weight: bold;">Introduce:</h3>
+                        <h3 style="color: black;font-weight: bold;">Giới thiệu:</h3>
                         <p style="color: black;"> Notezy là một ứng dụng ghi chú hiện đại được thiết kế để giúp người dùng sắp xếp công việc, học tập và ý tưởng sáng tạo một cách khoa học và hiệu quả. Với giao diện tối giản nhưng tinh tế, Notezy mang lại trải nghiệm ghi chú mượt mà, dễ dùng, phù hợp cho mọi đối tượng từ học sinh, sinh viên đến người đi làm.
                             <br><br>
                             Ứng dụng hỗ trợ đồng bộ hóa dữ liệu trên nhiều thiết bị, cho phép bạn ghi chú mọi lúc mọi nơi. Bên cạnh đó, Notezy còn tích hợp các tính năng mạnh mẽ như nhắc việc, gắn nhãn, chia nhóm, mã hóa ghi chú và hỗ trợ Markdown – tất cả đều nhằm mục tiêu nâng cao năng suất cá nhân.
@@ -91,111 +91,95 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         <main>
             <section class="exhibition" id="features">
                 <div class="container">
-                  <h2 class="section-title">Why Choose Notezy?</h2>
+                  <h2 class="section-title">Vì sao chọn Notezy?</h2>
                   <div class="row exhibition-grid">
-                    
+
                     <section class="post">
                       <img src="assets/notezy-magic-hero-2026.png" alt="Secure Notes" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Secure and Private</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          All your notes are protected with top-level encryption. Notezy respects your privacy and ensures your content is only yours — anytime, anywhere.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Bảo vệ không gian riêng</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Bạn có thể khóa ghi chú bằng mã bảo mật hoặc mật khẩu và quản lý người được chia sẻ. Khóa truy cập không đồng nghĩa với mã hóa đầu cuối.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-journal-3d.webp" alt="Beautiful UI" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Elegant Interface</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          Designed with clarity in mind, Notezy features a clean, minimal interface with light/dark themes to keep you focused — not distracted.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
-                        <a href="register.php" class="fw-bold text-dark">Register now</a>
+                        <h2>Giao diện dễ sử dụng</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Giao diện tập trung vào việc tạo, tìm và sắp xếp ghi chú, với các tùy chọn màu sắc và phông chữ.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
+                        <a href="register.php" class="fw-bold text-dark">Đăng ký ngay</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-planner-3d.webp" alt="Fast sync" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Sync Across Devices</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          Whether on phone, tablet, or PC — your notes sync instantly with your account. Just log in, and you’re ready to go.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Đồng bộ theo tài khoản</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Đăng nhập cùng tài khoản để truy cập dữ liệu được lưu trên máy chủ. Việc đồng bộ cần kết nối và dịch vụ đang hoạt động.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-notebooks-2026.png" alt="Organized notes" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Smart Organization</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          Tag your notes, sort by folder, or search instantly. With Notezy, everything is where you expect it — and easy to find.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Sắp xếp khoa học</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Dùng nhãn, tìm kiếm và ghim ghi chú để tổ chức nội dung theo nhu cầu.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-study-3d.webp" alt="Collaborate" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Collaborate in Real-time</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          Share notes with your team, study group, or family. Real-time collaboration makes group work seamless.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Cộng tác trực tuyến</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Chia sẻ ghi chú cho tài khoản đã kích hoạt, với quyền chỉ xem hoặc được chỉnh sửa. Chủ sở hữu có thể thu hồi quyền.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-mascot-2026.png" alt="Themes and Customization" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Customize Your Style</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          Choose your favorite color scheme, font, and layout. Notezy lets you write the way you love.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Tùy chỉnh cách hiển thị</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Chọn màu nền, màu chữ và kiểu chữ trong trang chỉnh sửa ghi chú.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-planner-3d.webp" alt="Offline Mode" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Work Offline</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          No internet? No problem. Notezy works offline and syncs your data once you’re back online — hassle-free.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Làm việc khi mất mạng</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Các thao tác được hỗ trợ có thể lưu tạm trong trình duyệt khi mất mạng và đồng bộ lại khi có kết nối. Không phải mọi chức năng đều hoạt động ngoại tuyến.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                     <section class="post">
                       <img src="assets/notezy-journal-3d.webp" alt="Productivity Focus" loading="lazy" class="lazy-slide"/>
                       <div class="lazy-fade">
-                        <h2>Focus Mode</h2>
-                        <p class="meta">Updated April 2025</p>
-                        <p class="content">
-                          Turn off distractions with Focus Mode. Clean layout, zero clutter — just you and your thoughts.
-                        </p>
-                        <a href="#" class="read-more">LEARN MORE</a>
+                        <h2>Tập trung vào nội dung</h2>
+                        <p class="meta">Thông tin về ứng dụng</p>
+                        <p class="content">Bố cục ghi chú giúp bạn tập trung vào nội dung cần học hoặc công việc đang thực hiện.</p>
+                        <a href="#" class="read-more">TÌM HIỂU THÊM</a>
                       </div>
                     </section>
-              
+
                   </div>
                 </div>
               </section>
-              
-        
+
+
 
     <footer id="contact" class="text-white-50">
         <div class="container">
@@ -211,17 +195,17 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                     </div>
                 </div>
                 <div class="col-md-4 footer-links">
-                    <h3 class="text-white">Link</h3>
+                    <h3 class="text-white">Liên kết</h3>
                     <ul class="list-unstyled">
-                        <li><a href="index_notezy.php" class="text-white-50">Home</a></li>
-                        <li><a href="introduce.php" class="text-white-50">About Us</a></li>
-                        <li><a href="khampha.php" class="text-white-50">Explore Features</a></li>
-                        <li><a href="privacy.php" class="text-white-50">Privacy Policy</a></li>
-                        <li><a href="contact.php" class="text-white-50">Contact Us</a></li> 
+                        <li><a href="index_notezy.php" class="text-white-50">Trang chủ</a></li>
+                        <li><a href="introduce.php" class="text-white-50">Giới thiệu</a></li>
+                        <li><a href="khampha.php" class="text-white-50">Khám phá tính năng</a></li>
+                        <li><a href="privacy.php" class="text-white-50">Chính sách bảo mật</a></li>
+                        <li><a href="contact.php" class="text-white-50">Liên hệ</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4 footer-contact">
-                    <h3 class="text-white">Contact us</h3>
+                    <h3 class="text-white">Liên hệ</h3>
                     <p><i class="fas fa-map-marker-alt"></i>..........</p>
                     <p><i class="fas fa-phone"></i>..........</p>
                     <p><i class="fas fa-envelope"></i>..........</p>
@@ -229,7 +213,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
                 </div>
             </div>
             <div class="copyright text-center mt-5 pt-3 border-top">
-                <p>© 2024 ART. All rights reserved.</p>
+                <p>© 2024 ART. Bảo lưu mọi quyền.</p>
             </div>
         </div>
     </footer>
@@ -240,11 +224,11 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
         document.addEventListener("DOMContentLoaded", () => {
         const images = document.querySelectorAll(".lazy-slide");
         const contents = document.querySelectorAll(".lazy-fade");
-    
+
         const observerOptions = {
             threshold: 0.3
         };
-    
+
         const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -253,7 +237,7 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             }
             });
         }, observerOptions);
-    
+
         const contentObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -262,14 +246,14 @@ $avatar = $kq && isset($kq['avatar']) ? $kq['avatar'] : 'default.png'; // fallba
             }
             });
         }, observerOptions);
-    
+
         images.forEach(img => observer.observe(img));
         contents.forEach(el => contentObserver.observe(el));
         });
-        
-      
-    
-    
+
+
+
+
     </script>
 </body>
 </html>

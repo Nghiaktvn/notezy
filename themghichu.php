@@ -129,7 +129,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Xử lý mật khẩu
             $password_hash = null;
 
-            // Xử lý mã PIN 6 số bảo mật
+            // Xử lý mã bảo mật 6 số bảo mật
             $pin_hash = null;
             if ($note_pin !== '') {
                 if (!preg_match('/^\d{6}$/', $note_pin)) {
@@ -243,7 +243,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $mime  = finfo_file($finfo, $file['tmp_name']);
                 finfo_close($finfo);
                 if (!in_array($mime, $allowed_mimes, true)) {
-                    throw new Exception('File không phải ảnh hợp lệ.');
+                    throw new Exception('Tệp không phải ảnh hợp lệ.');
                 }
                 $upload_dir = __DIR__ . '/uploads/';
                 if (!is_dir($upload_dir)) mkdir($upload_dir, 0775, true);
@@ -482,6 +482,11 @@ if ($lstmt) {
     </style>
 </head>
 <body>
+    <header class="container" style="padding:18px 24px;margin-bottom:12px">
+        <a href="index_notezy.php" aria-label="Notezy — về trang chủ" style="color:#625a7e;font-size:1.6rem;font-weight:800;text-decoration:none;display:inline-flex;gap:10px;align-items:center">
+            <img src="logo.svg" alt="" width="34" height="34">Notezy
+        </a>
+    </header>
     <div class="container">
         <h2><?= $editing_note ? 'Chỉnh sửa ghi chú' : 'Thêm ghi chú mới' ?></h2>
         <?php if ($successMessage): ?>
@@ -511,16 +516,16 @@ if ($lstmt) {
             </div>
             <div class="mb-3">
                 <label class="form-label d-flex justify-content-between align-items-center">
-                    <span>Nhãn (Select Label)</span>
+                    <span>Nhãn</span>
                     <a href="labels.php" target="_blank" class="small text-decoration-none"><i class="fas fa-tags me-1"></i>Quản lý nhãn</a>
                 </label>
                 <div class="mb-2">
                     <select id="quickSelectLabel" class="form-select" onchange="if(this.value){ const cb = document.querySelector(`input[name='noteLabels[]'][value='${this.value}']`); if(cb) { cb.checked = true; updateLabelText(); } else { const input = document.getElementById('newLabelInput'); input.value = this.value; document.getElementById('addNewLabelBtn').click(); } this.value = ''; }">
-                        <option value="">Select Label [Chọn nhãn: Work, Study, Personal...] ▼</option>
-                        <option value="Work">💼 Work</option>
-                        <option value="Study">📚 Study</option>
-                        <option value="Personal">👤 Personal</option>
-                        <option value="Important">⭐ Important</option>
+                        <option value="">Chọn nhãn: Công việc, Học tập, Cá nhân... ▼</option>
+                        <option value="Công việc">💼 Công việc</option>
+                        <option value="Học tập">📚 Học tập</option>
+                        <option value="Cá nhân">👤 Cá nhân</option>
+                        <option value="Quan trọng">⭐ Quan trọng</option>
                         <?php foreach ($user_labels as $ul): ?>
                             <?php if (!in_array($ul['name'], ['Work', 'Study', 'Personal', 'Important'], true)): ?>
                                 <option value="<?= htmlspecialchars($ul['name']) ?>"><?= htmlspecialchars($ul['name']) ?></option>
@@ -581,7 +586,7 @@ if ($lstmt) {
                 <label for="font_family" class="form-label">Phông chữ</label>
                 <select class="form-select" id="font_family" name="font_family">
                     <?php foreach (['Poppins', 'Roboto', 'Open Sans', 'Playfair Display'] as $font): ?>
-                        <option value="<?= $font ?>" <?= (($editing_note['font_family'] ?? 'Poppins') === $font) ? 'selected' : '' ?>><?= $font ?></option>
+                        <option value="<?= $font ?>" <?= (($editing_note['font_family'] ?? 'Poppins') === $font) ? 'selected' : '' ?>><?= ['Poppins' => 'Chữ tròn', 'Roboto' => 'Chữ hiện đại', 'Open Sans' => 'Chữ dễ đọc', 'Playfair Display' => 'Chữ có chân'][$font] ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -777,7 +782,7 @@ if ($lstmt) {
             }
         }
 
-        // Trigger auto-save on text changes
+        // Trigger tự động lưu on text changes
         document.querySelectorAll('#noteForm input:not([type="file"]):not([type="checkbox"]), #noteForm textarea, #noteForm select').forEach(el => {
             el.addEventListener('input', () => {
                 const noteId = Number(document.getElementById('noteId').value || 0);

@@ -2,7 +2,16 @@
   let socket = null;
   let activeNoteId = 0;
   let reconnectTimer = null;
-  function wsUrl(token) {
+  function wsUrl(token, configuredUrl) {
+    if (configuredUrl) {
+      const url = new URL(configuredUrl, location.href);
+      if (url.protocol === 'https:') url.protocol = 'wss:';
+      if (url.protocol === 'http:') url.protocol = 'ws:';
+      if (url.protocol === 'wss:' || url.protocol === 'ws:') {
+        url.searchParams.set('token', token);
+        return url.toString();
+      }
+    }
     // Codespaces exposes each forwarded port on a separate HTTPS hostname.
     if (location.hostname.endsWith('.app.github.dev')) {
       const host = location.hostname.replace(/-\d+(\.app\.github\.dev)$/, '-8766$1');
@@ -21,7 +30,7 @@
     const payload = await response.json();
     if (!payload.success) return;
     activeNoteId = requestedNoteId;
-    const ws = new WebSocket(wsUrl(payload.token));
+    const ws = new WebSocket(wsUrl(payload.token, payload.ws_url));
     socket = ws;
     ws.onmessage = ({data}) => {
       try { const change = JSON.parse(data); if (change.note_id === activeNoteId) onRemoteChange(change); } catch (_) {}

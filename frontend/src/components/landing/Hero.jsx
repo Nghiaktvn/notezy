@@ -9,7 +9,7 @@ export default function Hero() {
         <div className="notezy-hero-react__copy">
           <span className="notezy-eyebrow"><span className="notezy-eyebrow__dot" /> CUỐN SỔ HỌC TẬP CỦA BẠN</span>
           <h1 id="hero-title">Học có hệ thống.<br /><em>Nhớ theo cách riêng.</em></h1>
-          <p>Biến bài giảng, ý tưởng và kế hoạch học tập thành những trang sổ dễ tìm lại. Notezy giúp bạn viết, sắp xếp, chia sẻ và học cùng trợ lý AI trong một không gian dịu mắt.</p>
+          <p>Biến bài giảng, ý tưởng và kế hoạch học tập thành những trang sổ dễ tìm lại. Notezy giúp bạn viết, sắp xếp, chia sẻ và học cùng trợ lý thông minh trong một không gian dịu mắt.</p>
           <div className="notezy-hero-react__actions">
             <Link to="/login" className="notezy-button notezy-button--primary"><ArrowRightOnRectangleIcon aria-hidden="true" /> Đăng nhập</Link>
             <Link to="/register" className="notezy-button notezy-button--ghost">Đăng ký miễn phí <ArrowRightIcon aria-hidden="true" /></Link>
@@ -20,7 +20,7 @@ export default function Hero() {
           <div className="notezy-hero-react__halo" aria-hidden="true" />
           <img src="/assets/notezy-magic-hero-2026.png" width="1536" height="1024" alt="Linh vật sổ tay 3D màu tím với bút và những ngôi sao bay quanh" fetchPriority="high" />
           <span className="notezy-art-note notezy-art-note--top">✦ Mỗi môn học, một góc riêng</span>
-          <span className="notezy-art-note notezy-art-note--bottom">Bài giảng · Nhãn · Trợ lý AI</span>
+          <span className="notezy-art-note notezy-art-note--bottom">Bài giảng · Nhãn · Trợ lý thông minh</span>
         </div>
       </div>
     </section>

@@ -11,10 +11,24 @@ $data = ai_read_json();
 $message = trim((string) ($data['message'] ?? ''));
 $max_chars = ai_env_int('AI_MAX_MESSAGE_CHARS', 4000);
 if ($message === '') {
-    ai_json(400, ['status' => 'error', 'message' => 'Message is required']);
+    ai_json(400, ['status' => 'error', 'message' => 'Vui lòng nhập tin nhắn']);
 }
 if (mb_strlen($message, 'UTF-8') > $max_chars) {
-    ai_json(400, ['status' => 'error', 'message' => 'Message is too long']);
+    ai_json(400, ['status' => 'error', 'message' => 'Tin nhắn quá dài']);
+}
+
+// Account secrets are entered only in a separate form, never sent to the LLM
+// or persisted as chat content.
+$normalized = mb_strtolower($message, 'UTF-8');
+if (preg_match('/(?:đổi|thay đổi|doi|thay doi|change|update|reset).*(?:mật khẩu|mat khau|password)/u', $normalized)
+    && !preg_match('/(?:ghi chú|note|pin)/u', $normalized)) {
+    $_SESSION['ai_password_form'] = ['token' => bin2hex(random_bytes(32)), 'expires' => time() + 600];
+    ai_json(200, [
+        'status' => 'success',
+        'conversation_id' => null,
+        'response' => ['type' => 'password_change_form', 'content' => 'Nhập mật khẩu trong biểu mẫu riêng để đổi mật khẩu tài khoản.',
+                       'form_token' => $_SESSION['ai_password_form']['token'], 'requires_confirmation' => false],
+    ]);
 }
 
 $client_context = is_array($data['context'] ?? null) ? $data['context'] : [];
@@ -51,63 +65,6 @@ function ai_response_references(?array $toolResults): array {
     return array_values($references);
 }
 
-/**
- * Keep the assistant useful when the optional Python service is restarting or
- * temporarily unavailable.  This fallback only reads the already-authorized
- * context assembled for the current user; it never creates, changes, shares,
- * or deletes a note.
- */
-function ai_local_fallback_response(array $context, string $message): array {
-    $notes = is_array($context['recent_notes'] ?? null) ? $context['recent_notes'] : [];
-    if (!$notes) {
-        return [
-            'type' => 'message',
-            'content' => 'Trợ lý AI đang chuyển sang chế độ nội bộ. Bạn chưa có ghi chú nào để tóm tắt; hãy tạo một ghi chú rồi thử lại.',
-            'requires_confirmation' => false,
-            'references' => [],
-        ];
-    }
-
-    $note = $notes[0];
-    $title = trim((string) ($note['title'] ?? 'Ghi chú gần đây'));
-    $body = trim(preg_replace('/\s+/u', ' ', (string) ($note['content'] ?? '')));
-    $sentences = preg_split('/(?<=[.!?。])\s+/u', $body, 3) ?: [];
-    $points = array_values(array_filter(array_map('trim', $sentences)));
-    if (!$points && $body !== '') {
-        $points = [mb_substr($body, 0, 260, 'UTF-8')];
-    }
-    if (!$points) {
-        $points = ['Ghi chú chưa có nội dung để phân tích.'];
-    }
-
-    $normalizedMessage = mb_strtolower(trim($message), 'UTF-8');
-    $isQuestion = str_contains($message, '?')
-        || str_contains($normalizedMessage, 'cần làm gì')
-        || str_contains($normalizedMessage, 'làm gì')
-        || str_contains($normalizedMessage, 'việc gì')
-        || str_contains($normalizedMessage, 'mục tiêu')
-        || str_contains($normalizedMessage, 'kế hoạch');
-
-    $intro = $isQuestion
-        ? "Theo ghi chú « {$title} », bạn cần:\n"
-        : "Tóm tắt « {$title} »:\n";
-    $content = "Trợ lý AI đang dùng chế độ nội bộ do dịch vụ AI tạm thời chưa sẵn sàng.\n\n"
-        . $intro
-        . implode("\n", array_map(static fn(string $point, int $index): string => '- ' . ($index + 1) . '. ' . $point, $points, array_keys($points)));
-
-    $noteId = (int) ($note['note_id'] ?? 0);
-    return [
-        'type' => 'message',
-        'content' => $content,
-        'requires_confirmation' => false,
-        'references' => $noteId > 0 ? [[
-            'note_id' => $noteId,
-            'title' => $title,
-            'url' => 'notepass.php?id=' . $noteId,
-        ]] : [],
-    ];
-}
-
 for ($i = 0; $i < $max_loops; $i++) {
     $agent = ai_call_agent([
         'messages' => $llm_messages,
@@ -115,8 +72,11 @@ for ($i = 0; $i < $max_loops; $i++) {
         'tool_results' => $tool_results,
     ]);
     if (empty($agent['ok'])) {
-        $final_response = ai_local_fallback_response($context, $message);
-        break;
+        ai_json((int)($agent['status'] ?? 503), [
+            'status' => 'error',
+            'message' => (string)($agent['error'] ?? 'Trợ lý tạm thời không phản hồi. Vui lòng thử lại.'),
+            'conversation_id' => $conversation_id,
+        ]);
     }
     $payload = $agent['data'] ?? [];
     $tool_calls = $payload['tool_calls'] ?? [];
@@ -184,7 +144,7 @@ for ($i = 0; $i < $max_loops; $i++) {
         if ($name === 'create_note') {
             // Auto-create: low risk (fully reversible via delete), so we execute
             // immediately instead of holding a pending confirmation token. This is
-            // what lets the assistant say "đã tạo note" in the same turn the user
+            // what lets the assistant say "đã tạo ghi chú" in the same turn the user
             // asked for it, instead of a manual "xác nhận" click.
             $result = $tools->execute('create_note', $args);
             if (!$result['ok']) {
@@ -195,6 +155,7 @@ for ($i = 0; $i < $max_loops; $i++) {
                 ];
                 break 2;
             }
+            $_SESSION['ai_last_created_note_id'] = (int)$result['note_id'];
             $final_response = [
                 'type' => 'note_created',
                 'action' => 'create_note',
@@ -259,6 +220,22 @@ for ($i = 0; $i < $max_loops; $i++) {
             break 2;
         }
 
+        if ($name === 'share_note') {
+            $noteId = (int)($args['note_id'] ?? 0);
+            $existing = $tools->execute('get_note', ['note_id' => $noteId]);
+            if (empty($existing['ok']) || trim((string)($args['recipient'] ?? '')) === '') {
+                $final_response = ['type' => 'message', 'content' => 'Cần ghi chú thuộc sở hữu đã mở khóa và tên tài khoản hoặc thư điện tử người nhận.', 'requires_confirmation' => false];
+                break 2;
+            }
+            $permission = ($args['permission'] ?? 'read') === 'write' ? 'được chỉnh sửa' : 'chỉ xem';
+            $token = $pending->create($conversation_id, $name, $risk, $args);
+            $final_response = ['type' => 'action_confirmation', 'action' => $name, 'note_id' => $noteId,
+                'title' => $existing['note']['title'],
+                'content' => 'Chia sẻ «' . $existing['note']['title'] . '» cho ' . $args['recipient'] . ' với quyền ' . $permission . '?',
+                'confirmation_token' => $token, 'requires_confirmation' => true];
+            break 2;
+        }
+
         if ($name === 'create_label') {
             $token = $pending->create($conversation_id, $name, $risk, $args);
             $final_response = [
@@ -306,4 +283,6 @@ ai_json(200, [
     'status' => 'success',
     'conversation_id' => $conversation_id,
     'response' => $final_response,
+    'provider' => $payload['provider'] ?? (getenv('LLM_PROVIDER') ?: 'unknown'),
+    'model' => $payload['model'] ?? null,
 ]);

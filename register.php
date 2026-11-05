@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/session.php';
 require_once('account_db.php');
 require_once('sendmail.php');
+require_once __DIR__ . '/includes/activation.php';
 
 session_set_cookie_params([
     'httponly' => true,
@@ -16,9 +17,9 @@ $first_name = '';
 $last_name = '';
 $email = '';
 $user = '';
+
 $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-    || (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-    || isset($_POST['ajax']);
+    || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') || isset($_POST['ajax']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $display_name = trim($_POST['display_name'] ?? '');
@@ -34,25 +35,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!preg_match('/^[a-zA-Z0-9_]{3,40}$/', $user)) {
         $error = 'Tên tài khoản phải có 3–40 ký tự, chỉ gồm chữ, số và dấu gạch dưới.';
     } elseif (empty($email)) {
-        $error = 'Please enter your email';
+        $error = 'Vui lòng nhập thư điện tử';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'This is not a valid email address';
+        $error = 'Thư điện tử không hợp lệ';
     } elseif (empty($pass)) {
-        $error = 'Please enter your password';
+        $error = 'Vui lòng nhập mật khẩu';
     } elseif (strlen($pass) < 6) {
-        $error = 'Password must have at least 6 characters';
+        $error = 'Mật khẩu cần ít nhất 6 ký tự';
     } elseif ($pass !== $pass_confirm) {
-        $error = 'Password does not match';
+        $error = 'Mật khẩu xác nhận không khớp';
     } else {
         $result = register($user, $first_name, $last_name, $email, $pass);
         if (is_array($result) && !empty($result['success'])) {
             // Gửi OTP kích hoạt tài khoản
-            $baseUrl = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
-            $activationLink = $baseUrl . '/verify_activation.php?token=' . urlencode($result['activation_token']);
-            $mailRes = sendActivationEmail($email, $result['otp'], $first_name, $activationLink);
-            if ($mailRes !== true) {
-                $_SESSION['otp_mail_warning'] = ' (Lưu ý hệ thống email: ' . $mailRes . ')';
-            }
+            $mailRes = !empty($result['pending']) ? true : notezy_activation_deliver(create_connect(), $email, $result['otp'], $first_name);
+            if ($mailRes !== true) $_SESSION['otp_mail_warning'] = 'Chưa gửi được thư xác thực. Tài khoản chưa kích hoạt; hãy yêu cầu gửi lại mã.';
             $redirect_url = 'verify_activation.php?email=' . urlencode($email);
 
             if ($is_ajax) {
@@ -65,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
         $error = is_array($result) ? ($result['error'] ?? 'Lỗi không xác định') : $result;
-        
+
     }
     if ($is_ajax && $error !== '') {
         http_response_code(400);
@@ -98,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <section class="register-story" aria-labelledby="registerStoryTitle">
       <span class="register-eyebrow">NOTEZY · GHI CHÚ THÔNG MINH</span>
       <h1 id="registerStoryTitle">Một nơi dịu dàng<br>cho mọi <em>ý tưởng.</em></h1>
-      <p>Sắp xếp những điều quan trọng, chia sẻ với bạn bè và khám phá thêm góc nhìn cùng trợ lý AI.</p>
+      <p>Sắp xếp những điều quan trọng, chia sẻ với bạn bè và khám phá thêm góc nhìn cùng trợ lý thông minh.</p>
       <img src="assets/notezy-notebooks-2026.png" alt="Những cuốn sổ tay Notezy với gam màu dịu" width="1536" height="1024">
     </section>
     <section class="register-form-panel" aria-labelledby="registerTitle">
@@ -119,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input value="<?= htmlspecialchars($display_name, ENT_QUOTES, 'UTF-8') ?>" name="display_name" required class="form-control" type="text" placeholder="Tên bạn muốn hiển thị" id="display_name" autocomplete="name">
         </div>
         <div class="register-field">
-          <label for="email">Email</label>
+          <label for="email">Thư điện tử</label>
           <input value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>" name="email" required class="form-control" type="email" placeholder="ban@example.com" id="email" autocomplete="email">
         </div>
         <div class="register-field">
@@ -132,7 +129,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <button type="submit" class="register-submit" id="register">Tạo tài khoản <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
         <p class="register-signin">Đã có tài khoản? <a href="index.php?auth=login">Đăng nhập</a></p>
-        <p class="register-signin"><a href="forgot.php">Quên mật khẩu?</a></p>
       </form>
     </section>
   </main>

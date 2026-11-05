@@ -1,5 +1,6 @@
 <?php
 require_once('db.php');
+require_once __DIR__ . '/config/demo.php';
 
 function login($username, $password)
 {
@@ -62,13 +63,13 @@ function register($username, $firstname, $lastname, $email, $password)
         return 'Dịch vụ dữ liệu tạm thời không khả dụng. Vui lòng thử lại sau.';
     }
 
-    $sql = "SELECT id, username, email, activated FROM users WHERE username = ? LIMIT 1";
+    $sql = "SELECT id, username, email, activated, activation_otp_expires_at FROM users WHERE username = ? LIMIT 1";
     $byUser = $conn->prepare($sql);
     $byUser->bind_param('s', $username);
     $byUser->execute();
     $userRow = $byUser->get_result()->fetch_assoc();
 
-    $sql = "SELECT id, username, email, activated FROM users WHERE email = ? LIMIT 1";
+    $sql = "SELECT id, username, email, activated, activation_otp_expires_at FROM users WHERE email = ? LIMIT 1";
     $byEmail = $conn->prepare($sql);
     $byEmail->bind_param('s', $email);
     $byEmail->execute();
@@ -84,10 +85,22 @@ function register($username, $firstname, $lastname, $email, $password)
         return "Không thể tạo tài khoản vì tài khoản đã tồn tại";
     }
 
+    if ($userRow && strcasecmp($userRow['email'], $email) !== 0) {
+        return 'Tên tài khoản đã được sử dụng. Vui lòng chọn tên khác.';
+    }
     $existing = $userRow ?: $emailRow;
 
+    // Repeated submissions must not replace credentials or continuously invalidate codes.
+    if ($existing) {
+        $expiresAt = strtotime((string)($existing['activation_otp_expires_at'] ?? ''));
+        $wait = $expiresAt ? max(0, 60 - (time() - ($expiresAt - 300))) : 0;
+        if ($wait > 0) {
+            return ['success' => true, 'pending' => true, 'retry_after' => $wait, 'email' => $existing['email']];
+        }
+    }
+
     $hashed  = password_hash($password, PASSWORD_DEFAULT);
-    $otp     = (string) random_int(100000, 999999);
+    $otp     = notezy_activation_otp();
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
     $expires = date('Y-m-d H:i:s', time() + 300); // 5 phút
     $activationToken = bin2hex(random_bytes(32));

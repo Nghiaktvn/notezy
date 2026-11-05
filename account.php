@@ -525,7 +525,7 @@ if (!$user) {
 <div class="container">
     <h1>Thông tin cá nhân</h1>
     <div class="chat-button" style="margin-top:20px;">
-        <a href="chat.php?user_id=<?php echo $user_id; ?>" class="btn btn-primary">Chat with Others</a>
+        <a href="chat.php?user_id=<?php echo $user_id; ?>" class="btn btn-primary">Trò chuyện với người khác</a>
     </div>
     <div class="avatar-section">
         <img src="<?php echo htmlspecialchars(!empty($user['avatar']) ? $user['avatar'] : 'default.png', ENT_QUOTES, 'UTF-8'); ?>" alt="Ảnh đại diện" class="avatar-img" id="avatarImage" onerror="this.onerror=null;this.src='default.png'">
@@ -543,12 +543,12 @@ if (!$user) {
                 <tbody>
                     <?php
 $fields = [
-                        'username' => 'Username',
+                        'username' => 'Tên tài khoản',
                         'lastname' => 'Họ',
                         'firstname' => 'Tên',
-                        'email' => 'Email',
+                        'email' => 'Thư điện tử',
                     ];
-                    foreach ($fields as $key => $label): 
+                    foreach ($fields as $key => $label):
                     ?>
                     <tr>
                         <th><?= $label ?></th>
@@ -576,7 +576,7 @@ $fields = [
                     </div>
                     <input type="hidden" id="editField" name="edit_field" value="">
                     <button type="submit" class="btn-save" disabled>Lưu thay đổi</button>
-                    <li><a href="index_notezy.php" class="text-white-50">Home</a></li>
+                    <li><a href="index_notezy.php" class="text-white-50">Trang chủ</a></li>
                     <div id="editMessage" class="alert-message"></div>
                     <div id="passwordToggleContainer" style="display:none;">
                         <span class="password-toggle" id="togglePassword">Hiện mật khẩu</span>
@@ -602,7 +602,6 @@ $fields = [
                         <label for="languageSelect" class="form-label">Ngôn ngữ</label>
                         <select class="form-control" id="languageSelect">
                             <option value="vi" <?= $user['language'] == 'vi' ? 'selected' : '' ?>>Tiếng Việt</option>
-                            <option value="en" <?= $user['language'] == 'en' ? 'selected' : '' ?>>English</option>
                         </select>
                     </div>
                     <button type="button" id="savePreferencesBtn" class="btn-save">Lưu tùy chọn</button>
@@ -767,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const language = document.getElementById('languageSelect').value;
         const btn = this;
         const msg = document.getElementById('prefMessage');
-        
+
         btn.classList.add('loading');
         btn.disabled = true;
 
@@ -787,7 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
             msg.style.color = 'green';
             msg.textContent = 'Đã lưu tùy chọn thành công!';
-            
+
             // Apply theme on current page if needed, but not strictly required
             if (theme === 'dark') {
                 document.body.classList.add('dark-mode');

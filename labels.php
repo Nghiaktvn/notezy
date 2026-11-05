@@ -13,8 +13,8 @@ require_once __DIR__ . '/db.php';
 notezy_session_start();
 
 if (!isset($_SESSION['id'])) {
-    $_SESSION['id'] = 1;
-    $_SESSION['username'] = 'Demo User';
+    header('Location: index.php');
+    exit;
 }
 
 $user_id = (int)$_SESSION['id'];
@@ -66,7 +66,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])
         }
     } else {
         unset($_SESSION['mock_labels'][$del_id]);
-        $_SESSION['flash_success'] = "Đã xóa nhãn thành công (Offline Mode)!";
+        $_SESSION['flash_success'] = "Đã xóa nhãn thành công (chế độ ngoại tuyến)!";
     }
     header('Location: labels.php');
     exit();
@@ -109,13 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['label_name'])) {
             'created_at' => date('Y-m-d H:i:s'),
             'note_count' => 0
         ];
-        $_SESSION['flash_success'] = "Đã tạo nhãn '{$name}' thành công (Offline Mode)!";
+        $_SESSION['flash_success'] = "Đã tạo nhãn '{$name}' thành công (chế độ ngoại tuyến)!";
         header('Location: labels.php');
         exit();
     }
 }
 
-// Quick Preset Add via GET (e.g. labels.php?quick=Work)
+// Quick Preset Add via GET (e.g. labels.php?quick=C%C3%B4ng%20vi%E1%BB%87c)
 if (isset($_GET['quick'])) {
     $preset = trim($_GET['quick']);
     if (in_array($preset, ['Work', 'Study', 'Personal', 'Shopping', 'Important', 'Công việc', 'Học tập', 'Cá nhân'], true)) {
@@ -135,7 +135,7 @@ if (isset($_GET['quick'])) {
                 'created_at' => date('Y-m-d H:i:s'),
                 'note_count' => 0
             ];
-            $_SESSION['flash_success'] = "Đã thêm nhanh nhãn '{$preset}' (Offline Mode)!";
+            $_SESSION['flash_success'] = "Đã thêm nhanh nhãn '{$preset}' (chế độ ngoại tuyến)!";
         }
     }
     header('Location: labels.php');
@@ -171,7 +171,7 @@ if ($conn && !$conn->connect_error) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Nhãn (Note Labels) - Notezy</title>
+    <title>Quản lý Nhãn - Notezy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -214,7 +214,7 @@ if ($conn && !$conn->connect_error) {
         <div class="container d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-3">
                 <a href="index_notezy.php" class="text-decoration-none text-dark fw-bold fs-5">
-                    <i class="fas fa-tags text-primary me-2"></i>Notezy Labels
+                    <i class="fas fa-tags text-primary me-2"></i>Nhãn Notezy
                 </a>
                 <span class="badge bg-primary">Quản lý Nhãn Ghi Chú</span>
             </div>
@@ -242,21 +242,21 @@ if ($conn && !$conn->connect_error) {
 
         <!-- Form Add Label & Presets -->
         <div class="card card-custom p-4 mb-4">
-            <h5 class="fw-bold mb-3"><i class="fas fa-plus-circle text-primary me-2"></i>Thêm Nhãn Mới (Add Label)</h5>
-            
+            <h5 class="fw-bold mb-3"><i class="fas fa-plus-circle text-primary me-2"></i>Thêm Nhãn Mới</h5>
+
             <form method="post" action="labels.php" class="d-flex gap-2 mb-3">
                 <input type="text" name="label_name" class="form-control" placeholder="Nhập tên nhãn (VD: Work, Study, Personal...)" required autofocus>
                 <button type="submit" class="btn btn-primary px-4 fw-semibold text-nowrap">
-                    <i class="fas fa-plus me-1"></i> Add Label
+                    <i class="fas fa-plus me-1"></i> Thêm nhãn
                 </button>
             </form>
 
             <div class="d-flex align-items-center gap-2 flex-wrap pt-2 border-top">
                 <span class="text-muted small fw-semibold"><i class="fas fa-magic me-1"></i>Thêm nhanh gợi ý:</span>
-                <a href="labels.php?quick=Work" class="btn btn-preset"><i class="fas fa-briefcase me-1 text-primary"></i>+ Work</a>
-                <a href="labels.php?quick=Study" class="btn btn-preset"><i class="fas fa-graduation-cap me-1 text-success"></i>+ Study</a>
-                <a href="labels.php?quick=Personal" class="btn btn-preset"><i class="fas fa-user me-1 text-warning"></i>+ Personal</a>
-                <a href="labels.php?quick=Important" class="btn btn-preset"><i class="fas fa-star me-1 text-danger"></i>+ Important</a>
+                <a href="labels.php?quick=C%C3%B4ng%20vi%E1%BB%87c" class="btn btn-preset"><i class="fas fa-briefcase me-1 text-primary"></i>+ Công việc</a>
+                <a href="labels.php?quick=H%E1%BB%8Dc%20t%E1%BA%ADp" class="btn btn-preset"><i class="fas fa-graduation-cap me-1 text-success"></i>+ Học tập</a>
+                <a href="labels.php?quick=C%C3%A1%20nh%C3%A2n" class="btn btn-preset"><i class="fas fa-user me-1 text-warning"></i>+ Cá nhân</a>
+                <a href="labels.php?quick=Quan%20tr%E1%BB%8Dng" class="btn btn-preset"><i class="fas fa-star me-1 text-danger"></i>+ Quan trọng</a>
             </div>
         </div>
 
@@ -271,8 +271,8 @@ if ($conn && !$conn->connect_error) {
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 70px;">ID</th>
-                            <th>Tên Nhãn (Label Name)</th>
+                            <th style="width: 70px;">Mã</th>
+                            <th>Tên Nhãn</th>
                             <th style="width: 140px;" class="text-center">Số Ghi Chú</th>
                             <th style="width: 120px;" class="text-end">Hành Động</th>
                         </tr>
@@ -281,7 +281,7 @@ if ($conn && !$conn->connect_error) {
                         <?php if (empty($labels)): ?>
                             <tr>
                                 <td colspan="4" class="text-center py-4 text-muted">
-                                    Chưa có nhãn nào. Hãy bấm vào các nhãn gợi ý phía trên (<strong>Work</strong>, <strong>Study</strong>, <strong>Personal</strong>) hoặc nhập tên để tạo mới!
+                                    Chưa có nhãn nào. Hãy bấm vào các nhãn gợi ý phía trên (<strong>Công việc</strong>, <strong>Học tập</strong>, <strong>Cá nhân</strong>) hoặc nhập tên để tạo mới!
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -299,11 +299,11 @@ if ($conn && !$conn->connect_error) {
                                         </span>
                                     </td>
                                     <td class="text-end">
-                                        <a href="labels.php?action=delete&id=<?= $lbl['label_id'] ?>" 
-                                           class="btn btn-sm btn-outline-danger" 
+                                        <a href="labels.php?action=delete&id=<?= $lbl['label_id'] ?>"
+                                           class="btn btn-sm btn-outline-danger"
                                            onclick="return confirm('Bạn có chắc muốn xóa nhãn \'<?= htmlspecialchars(addslashes($lbl['name'])) ?>\'?')"
                                            title="Xóa nhãn">
-                                            <i class="fas fa-trash-alt me-1"></i>Delete
+                                            <i class="fas fa-trash-alt me-1"></i>Xóa
                                         </a>
                                     </td>
                                 </tr>

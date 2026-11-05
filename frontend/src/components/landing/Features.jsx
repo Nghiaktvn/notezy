@@ -6,7 +6,7 @@ const features = [
   { icon: SparklesIcon, title: 'Một người bạn AI', desc: 'Hỏi đáp, tóm tắt và phát triển ý tưởng ngay khi bạn cần thêm một góc nhìn.', tone: 'lavender', id: 'ai' },
   { icon: MagnifyingGlassIcon, title: 'Tìm lại trong tích tắc', desc: 'Tìm theo từ khóa và chuyển đổi giữa chế độ lưới hoặc danh sách.', tone: 'sage', id: 'search' },
   { icon: TagIcon, title: 'Mọi thứ đúng chỗ', desc: 'Gắn nhãn, lọc theo chủ đề và sắp xếp những cuốn sổ theo cách bạn muốn.', tone: 'peach', id: 'labels' },
-  { icon: LockClosedIcon, title: 'Không gian riêng tư', desc: 'Đặt mật khẩu cho ghi chú hoặc bảo vệ sổ bằng mã PIN 6 số.', tone: 'lavender', id: 'security' },
+  { icon: LockClosedIcon, title: 'Không gian riêng tư', desc: 'Đặt mật khẩu cho ghi chú hoặc bảo vệ sổ bằng mã bảo mật 6 số.', tone: 'lavender', id: 'security' },
   { icon: UsersIcon, title: 'Cùng nhau hoàn thiện', desc: 'Chia sẻ ghi chú và cộng tác với người được bạn cấp quyền.', tone: 'sage', id: 'collaboration' },
   { icon: UserCircleIcon, title: 'Tài khoản của riêng bạn', desc: 'Quản lý hồ sơ, avatar, mật khẩu và những tùy chọn cá nhân trong một nơi.', tone: 'peach', id: 'account' },
   { icon: CloudArrowDownIcon, title: 'Mang theo cả khi ngoại tuyến', desc: 'Giao diện PWA hỗ trợ mở lại nội dung đã lưu và đồng bộ những thay đổi khi có mạng.', tone: 'paper', id: 'offline' },

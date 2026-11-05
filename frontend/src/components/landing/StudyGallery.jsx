@@ -12,7 +12,7 @@ export default function StudyGallery() {
         <Link to="/login" className="notezy-button notezy-button--primary">Đăng nhập vào sổ của bạn <ArrowRightIcon aria-hidden="true" /></Link>
       </div>
       <div className="notezy-gallery__visuals">
-        <div className="notezy-gallery__desk"><img src="/assets/notezy-study-desk-2026.png" width="1792" height="1024" alt="Minh họa bàn học với cuốn sổ mở, thẻ ôn tập và trợ lý AI nhỏ" loading="lazy" /></div>
+        <div className="notezy-gallery__desk"><img src="/assets/notezy-study-desk-2026.png" width="1792" height="1024" alt="Minh họa bàn học với cuốn sổ mở, thẻ ôn tập và trợ lý thông minh nhỏ" loading="lazy" /></div>
         <div className="notezy-gallery__collection"><img src="/assets/notezy-study-collection-2026.png" width="1792" height="1024" alt="Ba cuốn sổ học tập màu tím, xanh sage và kem cho ghi chép, ôn tập và học nhóm" loading="lazy" /><span>Ghi bài · Ôn tập · Học nhóm</span></div>
       </div>
     </div>

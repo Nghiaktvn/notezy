@@ -65,6 +65,11 @@ docker compose -f docker-compose.yml -f docker-compose.services.yml ps
 
 ## Triển khai trên Render
 
+**Bản demo miễn phí có PHP + Python AI + WebSocket trong một dịch vụ:** xem
+[`deploy/FREE_RENDER.md`](deploy/FREE_RENDER.md), `Dockerfile.render` và
+`render.yaml`. MySQL vẫn cần dịch vụ riêng. Cấu hình này có bootstrap schema
+và hỗ trợ TLS cho managed MySQL; AI mặc định là `mock` cho đến khi có key thật.
+
 Render Web Service chỉ chạy container PHP của `Dockerfile`; nó không tự khởi động
 MySQL trong `compose.yaml`. Cần có một MySQL truy cập được từ Render và đặt các
 biến môi trường sau trong **Render → Web Service → Environment**:
@@ -102,7 +107,8 @@ dùng Gmail API qua HTTPS:
 ```text
 APP_URL=https://notezy-jrq0.onrender.com
 MAIL_MAILER=gmail_api
-MAIL_FROM_ADDRESS=trungnghia282006@gmail.com
+NOTEZY_DEMO_OTP=false
+MAIL_FROM_ADDRESS=<Gmail gửi thư đã cấp quyền OAuth>
 MAIL_FROM_NAME=Notezy
 GMAIL_CLIENT_ID=<OAuth client ID>
 GMAIL_CLIENT_SECRET=<OAuth client secret>
@@ -320,3 +326,10 @@ docker compose --profile tools stop
 ```
 
 Không dùng `docker compose down -v` trừ khi chủ động muốn xóa toàn bộ dữ liệu trong Docker volumes. Các mục chưa kiểm tra trực tiếp trên môi trường demo không được xem là đã đạt điểm tối đa.
+
+
+### Luồng OTP thật trên nhánh sửa email
+
+Đặt `NOTEZY_DEMO_OTP=false` để gửi mã ngẫu nhiên; mã demo `123456` không được chấp nhận ở chế độ này. Tài khoản vẫn ở trạng thái chờ cho đến khi nhập đúng mã mới nhất. Không kích hoạt bằng liên kết thay cho OTP. Nhập sai mã thật yêu cầu gửi lại mã; mỗi lần gửi cách nhau ít nhất 60 giây. Mã mới có hiệu lực 5 phút và khác mã trước đó. Gửi thư thất bại không được báo đã gửi và không để lại mã có thể sử dụng.
+
+Không merge nhánh này vào main khi chưa xác minh gửi Gmail thật trên hosting, mã sai bị từ chối và mã đúng kích hoạt/đăng nhập thành công. Các bài test SMTP nội bộ chỉ chứng minh logic, không chứng minh thư đã tới Gmail.

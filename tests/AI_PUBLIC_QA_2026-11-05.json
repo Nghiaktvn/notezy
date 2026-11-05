@@ -1,0 +1,189 @@
+{
+  "base": "https://notezy-jrq0.onrender.com",
+  "results": [
+    {
+      "name": "Register dedicated test account",
+      "pass": true
+    },
+    {
+      "name": "Activate test account",
+      "pass": true
+    },
+    {
+      "name": "Login test account",
+      "pass": true
+    },
+    {
+      "name": "Register dedicated recipient",
+      "pass": true
+    },
+    {
+      "name": "Activate dedicated recipient",
+      "pass": true
+    },
+    {
+      "name": "Login recipient",
+      "pass": true
+    },
+    {
+      "name": "Chat responds successfully: Tạo ghi chú mới có tiêu đề \"Ghi chú kiểm thử ",
+      "pass": true
+    },
+    {
+      "name": "Actual Gemini provider reported",
+      "pass": true
+    },
+    {
+      "name": "AI creates persisted note",
+      "pass": true
+    },
+    {
+      "name": "Created note exists in database",
+      "pass": true
+    },
+    {
+      "name": "Chat responds successfully: Sửa ghi chú đang mở: đổi tiêu đề thành \"Đã sử",
+      "pass": true
+    },
+    {
+      "name": "Actual Gemini provider reported",
+      "pass": true
+    },
+    {
+      "name": "Edit requires confirmation",
+      "pass": true
+    },
+    {
+      "name": "Edit not applied before confirmation",
+      "pass": true
+    },
+    {
+      "name": "Confirm AI edit",
+      "pass": true
+    },
+    {
+      "name": "Edited title persisted",
+      "pass": true
+    },
+    {
+      "name": "Chat responds successfully: Đọc ghi chú đang mở và cho biết nội dung hiện",
+      "pass": true
+    },
+    {
+      "name": "Actual Gemini provider reported",
+      "pass": true
+    },
+    {
+      "name": "AI reads persisted content through authorized tools",
+      "pass": true
+    },
+    {
+      "name": "Chat responds successfully: Chia sẻ ghi chú đang mở cho tài khoản ai_recv",
+      "pass": true
+    },
+    {
+      "name": "Actual Gemini provider reported",
+      "pass": true
+    },
+    {
+      "name": "Share requires confirmation",
+      "pass": true
+    },
+    {
+      "name": "No share before confirmation",
+      "pass": true
+    },
+    {
+      "name": "Confirm AI share",
+      "pass": true
+    },
+    {
+      "name": "Recipient opens shared note",
+      "pass": true
+    },
+    {
+      "name": "Viewer cannot edit",
+      "pass": true
+    },
+    {
+      "name": "Confirmation cannot replay",
+      "pass": true
+    },
+    {
+      "name": "Chat responds successfully: Tôi muốn đổi mật khẩu",
+      "pass": true
+    },
+    {
+      "name": "Password request opens dedicated form",
+      "pass": true
+    },
+    {
+      "name": "Password endpoint rejects missing form token",
+      "pass": true
+    },
+    {
+      "name": "Wrong current password rejected",
+      "pass": true
+    },
+    {
+      "name": "Mismatched confirmation rejected",
+      "pass": true
+    },
+    {
+      "name": "Password saved to database",
+      "pass": true
+    },
+    {
+      "name": "Old password no longer logs in",
+      "pass": true
+    },
+    {
+      "name": "New password logs in with fresh session",
+      "pass": true
+    },
+    {
+      "name": "Recipient password unchanged",
+      "pass": true
+    },
+    {
+      "name": "Password form token consumed",
+      "pass": true
+    },
+    {
+      "name": "Conversation messages actually retrieved",
+      "pass": true
+    },
+    {
+      "name": "Passwords absent from chat history",
+      "pass": true
+    },
+    {
+      "name": "Chat responds successfully: Xóa ghi chú đang mở.",
+      "pass": true
+    },
+    {
+      "name": "Actual Gemini provider reported",
+      "pass": true
+    },
+    {
+      "name": "Delete requires confirmation",
+      "pass": true
+    },
+    {
+      "name": "Note remains before delete confirmation",
+      "pass": true
+    },
+    {
+      "name": "Confirm AI deletion",
+      "pass": true
+    },
+    {
+      "name": "Deleted note not readable",
+      "pass": true
+    }
+  ],
+  "fixture": {
+    "username": "ai_live_de7ef90eba22",
+    "note_id": 25
+  }
+}

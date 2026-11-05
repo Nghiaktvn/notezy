@@ -12,6 +12,7 @@ from .tasks import task_tool_definitions
 from .labels import label_tool_definitions
 from .analytics import analytics_tool_definitions
 from .schedule import schedule_tool_definitions
+from .sharing import sharing_tool_definitions
 
 # ── Risk classification ─────────────────────────────────────────────────────
 READ_TOOLS = {
@@ -36,6 +37,7 @@ WRITE_TOOLS = {
     "update_note",
     "create_label",
     "create_schedule",
+    "share_note",
 }
 DESTRUCTIVE_TOOLS = {"delete_note"}
 
@@ -61,4 +63,5 @@ def tool_definitions() -> list[dict]:
         + label_tool_definitions()
         + analytics_tool_definitions()
         + schedule_tool_definitions()
+        + sharing_tool_definitions()
     )

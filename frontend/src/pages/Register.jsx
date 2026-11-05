@@ -30,7 +30,7 @@ export default function Register() {
         window.location.assign(getAppUrl(`verify_activation.php?email=${email}`));
         return;
       }
-      window.location.assign(getAppUrl(result.redirect || 'index_notezy.php?unverified=1'));
+      window.location.assign(getAppUrl(result.redirect || `verify_activation.php?email=${encodeURIComponent(form.email.trim())}`));
     } catch (requestError) {
       setError(requestError.message);
       setLoading(false);
@@ -60,7 +60,7 @@ export default function Register() {
           required
         />
         <Field
-          label="Email"
+          label="Thư điện tử"
           type="email"
           value={form.email}
           onChange={(v) => setForm((f) => ({ ...f, email: v }))}

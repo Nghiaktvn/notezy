@@ -51,7 +51,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[#f5f3ff] flex">
       <div className="w-64 bg-white shadow-md p-4 flex flex-col">
-        <h1 className="text-2xl font-bold mb-8">Notezy AI</h1>
+        <h1 className="text-2xl font-bold mb-8">Trợ lý Notezy</h1>
         <ul className="space-y-2 flex-1">
           <li className="font-medium p-2 hover:bg-gray-100 rounded-md cursor-pointer">📝 Ghi chú & Wiki</li>
           <li className="font-medium p-2 bg-gray-100 rounded-md cursor-pointer">✅ Kanban Board</li>
