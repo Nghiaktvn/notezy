@@ -14,6 +14,8 @@ from pathlib import Path
 
 BASE = os.environ.get("NOTEZY_TEST_BASE", "http://127.0.0.1:18080")
 SINK = "http://127.0.0.1:18025"
+if urllib.parse.urlparse(BASE).hostname not in ("127.0.0.1", "localhost"):
+    raise SystemExit("Local SMTP-sink test only; do not run against a public mail service.")
 results = []
 def check(name, ok):
     results.append(dict(name=name, passed=bool(ok)))

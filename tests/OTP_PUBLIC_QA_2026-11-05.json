@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-05",
+  "environment": "https://notezy-jrq0.onrender.com",
+  "tested_commit": "b9a488527d6effdca233f93ae7db6ec6d6800f07",
+  "test_order": [
+    "correct OTP",
+    "login",
+    "wrong OTP",
+    "resend",
+    "correct new OTP",
+    "login"
+  ],
+  "checks": [
+    {
+      "name": "Google accepts OAuth refresh with gmail.send scope",
+      "passed": true
+    },
+    {
+      "name": "Tested branch deployed successfully on Render Free",
+      "passed": true
+    },
+    {
+      "name": "Activated duplicate registration rejected without overwriting data",
+      "passed": true
+    },
+    {
+      "name": "First real OTP received in owner Gmail inbox and supplied by user",
+      "passed": true
+    },
+    {
+      "name": "Correct first OTP activates account via HTML form",
+      "passed": true
+    },
+    {
+      "name": "First login after activation succeeds",
+      "passed": true
+    },
+    {
+      "name": "Wrong OTP rejected and resend required",
+      "passed": true
+    },
+    {
+      "name": "Fresh login after wrong OTP denied with HTTP 403",
+      "passed": true
+    },
+    {
+      "name": "Demo 123456 cannot bypass real OTP (HTTP 422)",
+      "passed": true
+    },
+    {
+      "name": "Resend cooldown enforced by API (HTTP 429)",
+      "passed": true
+    },
+    {
+      "name": "Resend after cooldown succeeds and latest email received by user",
+      "passed": true
+    },
+    {
+      "name": "Correct resent OTP activates account",
+      "passed": true
+    },
+    {
+      "name": "Final login succeeds after resend verification",
+      "passed": true
+    },
+    {
+      "name": "Existing account ID preserved and OTP hash/expiry consumed in database",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Not an exhaustive security audit.",
+    "OAuth app in Testing can issue a refresh token valid for seven days.",
+    "Registration OTP tests do not certify the complete password-reset workflow."
+  ]
+}

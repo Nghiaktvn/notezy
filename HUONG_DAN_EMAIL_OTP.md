@@ -44,3 +44,12 @@ Nếu Google OAuth app ở trạng thái Testing, refresh token có thể hết 
 - Kiểm thử hosting phải dùng Gmail đã cấu hình, thử mã sai, gửi lại, mã đúng và đăng nhập. Chỉ sau khi đạt các bước này mới merge.
 
 Nguồn: [Render Free](https://render.com/docs/free), [Gmail API quota](https://developers.google.com/workspace/gmail/api/reference/quota), [OAuth Playground](https://developers.google.com/oauthplayground/).
+
+
+## Kết quả xác minh trên hosting ngày 05/11/2026
+
+Đã kiểm thử đúng mã trước theo yêu cầu người dùng, sau đó mã sai, gửi lại và mã mới đúng. Người dùng xác nhận nhận được cả thư đầu và thư gửi lại bằng việc cung cấp mã thực tế; các mã không được ghi trong báo cáo GitHub.
+
+24/24 kiểm thử localhost đạt; 2 kiểm thử lỗi gửi thư đạt; 14 kiểm tra hosting ghi tại tests/OTP_PUBLIC_QA_2026-11-05.json đạt. Đăng nhập sau mỗi lần xác thực đúng thành công; sau mã sai bị chặn 403; gửi lại quá sớm bị chặn 429; mã demo không vượt qua chế độ thật. Database xác nhận tài khoản cũ được giữ nguyên ID, đã kích hoạt và xóa hash/thời hạn OTP sau sử dụng.
+
+Nhánh chỉ được merge sau khi hoàn tất các bước hosting này. Phần xác minh không thay thế việc kiểm thử toàn bộ luồng quên mật khẩu hoặc đánh giá bảo mật độc lập.
