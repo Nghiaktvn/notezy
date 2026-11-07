@@ -1,5 +1,11 @@
 # Notezy
 
+## Đơn hàng Premium chuyển khoản
+
+Sau khi cập nhật mã, chạy `services/db/premium.sql` trên database đang dùng để tạo bảng `premium_orders` (script này an toàn khi chạy lại). Trong Environment của Web Service, đặt `PAYMENT_BANK_NAME`, `PAYMENT_BANK_ACCOUNT` và `PAYMENT_BANK_OWNER` nếu muốn nhận chuyển khoản. Không đặt số tài khoản trong Git. Khi chưa có đủ ba biến, trang đơn hàng báo chưa thể thanh toán. Giá và ưu đãi 12 tháng được tính lại ở PHP; trạng thái mặc định là `pending`. Quản trị viên đã kích hoạt mở `premium_orders_admin.php`, đối chiếu tiền nhận thực tế rồi mới xác nhận trên trang chi tiết đơn; chỉ lúc đó gói mới được kích hoạt. Trang đơn hàng có thể in hoặc lưu PDF, nhưng đây là biên nhận/phiếu thanh toán, không thay thế hóa đơn VAT do đơn vị kinh doanh hợp lệ phát hành.
+
+Rubric 503073 Final Project yêu cầu không thêm chức năng ngoài 32 mục và quy định luồng đăng ký bằng liên kết kích hoạt. Premium/chuyển khoản cùng luồng OTP hiện tại là yêu cầu mở rộng riêng của chủ dự án; khi nộp học phần phải xác nhận phạm vi với giảng viên. Branch này không tự triển khai hoặc gộp vào `main`.
+
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=1358846417)
 
 Ứng dụng ghi chú (notes) full-stack: PHP + MySQL cho backend/web truyền thống,

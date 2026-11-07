@@ -3767,30 +3767,13 @@ document.getElementById('unlockPinForm')?.addEventListener('submit', async funct
             await Swal.fire({
                 icon: 'success',
                 title: 'Mở khóa thành công!',
-                text: 'Sổ ghi chú đã sẵn sàng để xem và tùy chỉnh.',
+                text: data.requires_password ? 'Nhập tiếp mật khẩu riêng để xem sổ.' : 'Đang mở trang chi tiết sổ ghi chú.',
                 timer: 1000,
                 showConfirmButton: false
             });
-
-            if (redirectUrl) {
-                window.location.href = redirectUrl;
-            } else {
-                // Cập nhật giao diện trực tiếp trên trang chủ
-                const gridCover = document.getElementById(`lockedCover_grid_${noteId}`);
-                const gridContent = document.getElementById(`unlockedContent_grid_${noteId}`);
-                if (gridCover) gridCover.style.display = 'none';
-                if (gridContent) gridContent.style.display = 'block';
-
-                const listCover = document.getElementById(`lockedCover_list_${noteId}`);
-                const listContent = document.getElementById(`unlockedContent_list_${noteId}`);
-                if (listCover) listCover.style.display = 'none';
-                if (listContent) listContent.style.display = 'block';
-
-                document.querySelectorAll(`.pin-badge-${noteId}`).forEach(el => {
-                    el.className = `badge bg-success pin-badge-${noteId}`;
-                    el.innerHTML = '<i class="fas fa-lock-open me-1"></i>Đã mở khóa';
-                });
-            }
+            // Protected content is deliberately absent from the locked card's HTML.
+            // The detail page reloads it from the server after the session unlock.
+            window.location.href = redirectUrl || `notepass.php?id=${encodeURIComponent(noteId)}`;
         } else {
             errBox.textContent = data.message || 'Mã bảo mật 6 số không đúng.';
             errBox.classList.remove('d-none');

@@ -58,3 +58,26 @@ ON DUPLICATE KEY UPDATE limit_value = VALUES(limit_value);
 INSERT INTO entitlements (plan_id, feature_code, limit_value)
 SELECT id, 'SCHEDULE_SHARING', 1 FROM plans WHERE code IN ('STUDENT', 'PERSONAL', 'TEAM')
 ON DUPLICATE KEY UPDATE limit_value = VALUES(limit_value);
+
+CREATE TABLE IF NOT EXISTS premium_orders (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_code VARCHAR(24) NOT NULL UNIQUE,
+  user_id INT NOT NULL,
+  plan_id INT NOT NULL,
+  plan_name VARCHAR(100) NOT NULL,
+  unit_price_vnd INT UNSIGNED NOT NULL,
+  months TINYINT UNSIGNED NOT NULL,
+  subtotal_vnd INT UNSIGNED NOT NULL,
+  discount_vnd INT UNSIGNED NOT NULL DEFAULT 0,
+  total_vnd INT UNSIGNED NOT NULL,
+  status ENUM('pending','paid','cancelled') NOT NULL DEFAULT 'pending',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  paid_at DATETIME NULL,
+  payment_reference VARCHAR(100) NULL,
+  confirmed_by INT NULL,
+  UNIQUE KEY uq_premium_payment_reference (payment_reference),
+  UNIQUE KEY uq_premium_order_user (id, user_id),
+  KEY idx_premium_order_user (user_id, created_at),
+  CONSTRAINT fk_premium_order_user FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT fk_premium_order_plan FOREIGN KEY (plan_id) REFERENCES plans(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -3,6 +3,7 @@ require_once dirname(__DIR__) . '/includes/session.php';
 require_once __DIR__ . '/../config/database.php';
 
 notezy_session_start();
+require_once __DIR__ . '/../includes/csrf.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['id'])) {
@@ -29,12 +30,17 @@ if ($method === 'GET') {
     $trial = $conn->prepare('SELECT started_at, ends_at FROM premium_trials WHERE user_id = ?');
     $trial->bind_param('i', $userId);
     $trial->execute();
-    echo json_encode(['status' => 'success', 'plans' => $plans, 'subscription' => $subscription, 'trial' => $trial->get_result()->fetch_assoc() ?: null]);
+    echo json_encode(['status' => 'success', 'plans' => $plans, 'subscription' => $subscription, 'trial' => $trial->get_result()->fetch_assoc() ?: null, 'csrf_token' => csrf_token()]);
     exit();
 }
 
 $payload = json_decode(file_get_contents('php://input'), true) ?: [];
 $action = $payload['action'] ?? '';
+if ($method === 'POST' && !csrf_check((string) ($payload['csrf_token'] ?? ''))) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Phiên không hợp lệ. Vui lòng tải lại trang.']);
+    exit();
+}
 
 if ($method === 'POST' && $action === 'start_trial') {
     $existing = $conn->prepare('SELECT user_id FROM premium_trials WHERE user_id = ?');

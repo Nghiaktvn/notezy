@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/session.php';
 require_once('db.php');
 notezy_session_start();
+require_once __DIR__ . '/includes/csrf.php';
 
 if (!isset($_SESSION['id'])) {
     header('Location: index.php');
@@ -72,9 +73,9 @@ if (!isset($_SESSION['pin_unlocked_notes'])) {
 $is_pin_unlocked = !empty($_SESSION['pin_unlocked_notes'][$note_id]);
 if (!$is_pin_unlocked && $note && !empty($note['pin_hash'])) {
     $sess_id = session_id();
-    $chk_stm = $conn->prepare("SELECT id FROM note_pin_unlocks WHERE note_id = ? AND session_id = ?");
+    $chk_stm = $conn->prepare("SELECT id FROM note_pin_unlocks WHERE note_id = ? AND user_id = ? AND session_id = ?");
     if ($chk_stm) {
-        $chk_stm->bind_param("is", $note_id, $sess_id);
+        $chk_stm->bind_param("iis", $note_id, $user_id, $sess_id);
         $chk_stm->execute();
         if ($chk_stm->get_result()->num_rows > 0) {
             $is_pin_unlocked = true;
@@ -87,8 +88,19 @@ if (!$is_pin_unlocked && $note && !empty($note['pin_hash'])) {
 if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
     $pin_error = '';
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_pin'])) {
-        $entered_pin = trim($_POST['note_pin']);
-        if (preg_match('/^\d{6}$/', $entered_pin) && password_verify($entered_pin, $note['pin_hash'])) {
+        $entered_pin = trim((string) $_POST['note_pin']);
+        $attempt = $_SESSION['pin_attempts'][$note_id] ?? ['started_at' => time(), 'count' => 0];
+        if (time() - (int) $attempt['started_at'] >= 900) {
+            $attempt = ['started_at' => time(), 'count' => 0];
+        }
+        if (!csrf_check((string) ($_POST['csrf_token'] ?? ''))) {
+            http_response_code(403);
+            $pin_error = 'Phiên biểu mẫu không hợp lệ. Vui lòng tải lại trang.';
+        } elseif ((int) $attempt['count'] >= 8) {
+            http_response_code(429);
+            $pin_error = 'Bạn đã nhập sai quá nhiều lần. Hãy thử lại sau 15 phút.';
+        } elseif (preg_match('/^\d{6}$/', $entered_pin) && password_verify($entered_pin, $note['pin_hash'])) {
+            unset($_SESSION['pin_attempts'][$note_id]);
             $_SESSION['pin_unlocked_notes'][$note_id] = true;
             $ins_pin = $conn->prepare("INSERT INTO note_pin_unlocks (note_id, user_id, session_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = NOW()");
             if ($ins_pin) {
@@ -100,6 +112,8 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
             header("Location: notepass.php?id=" . urlencode($note_id));
             exit;
         } else {
+            $attempt['count']++;
+            $_SESSION['pin_attempts'][$note_id] = $attempt;
             $pin_error = 'Mã bảo mật 6 số không chính xác. Vui lòng thử lại.';
         }
     }
@@ -151,6 +165,7 @@ if ($note && !empty($note['pin_hash']) && !$is_pin_unlocked) {
                 <div class="alert alert-danger py-2 small"><?= htmlspecialchars($pin_error) ?></div>
             <?php endif; ?>
             <form method="post">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                 <div class="mb-3">
                     <input type="password" name="note_pin" class="form-control pin-input shadow-sm" required
                            inputmode="numeric" pattern="\d{6}" maxlength="6" minlength="6"
@@ -173,6 +188,7 @@ exit;
 // A direct detail URL must enforce the same password gate as the dashboard.
 if ($note && !empty($note['password_hash']) && empty($_SESSION['accessed_notes'][$note_id])) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])
+        && csrf_check((string) ($_POST['csrf_token'] ?? ''))
         && password_verify((string) $_POST['password'], $note['password_hash'])) {
         $_SESSION['accessed_notes'][$note_id] = true;
         header('Location: notepass.php?id=' . urlencode((string) $note_id));
@@ -243,6 +259,7 @@ if ($note && !empty($note['password_hash']) && empty($_SESSION['accessed_notes']
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
                 <form method="post">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                     <div class="mb-3">
                         <label for="password" class="form-label">Mật khẩu ghi chú</label>
                         <input type="password" name="password" id="password" class="form-control" required>
