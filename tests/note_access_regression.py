@@ -6,6 +6,7 @@ Uses user1/user2 (Password123!) and creates/deletes only its own random fixtures
 import http.cookiejar
 import json
 import os
+import re
 import unittest
 import urllib.error
 import urllib.parse
@@ -64,6 +65,40 @@ class NoteAccessRegression(unittest.TestCase):
 
     def unlock_password(self, opener):
         return request(opener, '/api/note_password.php', 'POST', {'action':'verify','note_id':self.note,'password':'RegressionPassword'}, True)
+
+    def test_six_digit_pin_opens_full_detail(self):
+        self.pin()
+        fresh, _ = client('user1')
+        locked_status, locked_html = request(fresh, '/notepass.php?id=' + str(self.note))
+        self.assertEqual(locked_status, 200)
+        self.assertNotIn(self.secret, locked_html)
+        wrong_status, wrong = request(fresh, '/api/note_pin.php', 'POST', {'action':'verify','note_id':self.note,'pin':'000000'}, True)
+        self.assertFalse(wrong['success'])
+        self.assertNotIn(self.secret, str(wrong))
+        self.assertTrue(self.unlock_pin(fresh)[1]['unlocked'])
+        detail_status, detail_html = request(fresh, '/notepass.php?id=' + str(self.note))
+        self.assertEqual(detail_status, 200)
+        self.assertIn(self.title, detail_html)
+        self.assertIn(self.secret, detail_html)
+
+    def test_direct_pin_form_limits_wrong_attempts(self):
+        self.pin()
+        fresh, _ = client('user1')
+        _, form_html = request(fresh, '/notepass.php?id=' + str(self.note))
+        token = re.search(r'name="csrf_token" value="([a-f0-9]+)"', form_html)
+        self.assertIsNotNone(token)
+        for _ in range(8):
+            status, html = request(fresh, '/notepass.php?id=' + str(self.note), 'POST', {
+                'note_pin': '000000', 'csrf_token': token.group(1),
+            }, True)
+            self.assertEqual(status, 200)
+            self.assertNotIn(self.secret, html)
+        status, html = request(fresh, '/notepass.php?id=' + str(self.note), 'POST', {
+            'note_pin': '246810', 'csrf_token': token.group(1),
+        }, True)
+        self.assertEqual(status, 429)
+        self.assertIn('15 phút', html)
+        self.assertNotIn(self.secret, html)
 
     def share(self, permission='read'):
         status, body = request(self.owner, '/api/chat_api.php', 'POST', {'action':'share_note_chat','note_id':self.note,'with_user_id':self.recipient_id,'permission':permission}, True)

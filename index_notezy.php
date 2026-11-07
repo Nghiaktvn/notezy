@@ -1514,6 +1514,9 @@ $avatar = !empty($kq['avatar']) ? $kq['avatar'] : 'default.png';
             <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
+    <?php if (isset($_GET['note_saved']) && $_GET['note_saved'] === '1'): ?>
+        <div class="alert alert-success" role="status">Ghi chú đã được lưu. Bấm vào sổ để xem chi tiết.</div>
+    <?php endif; ?>
 
     <!-- Own Notes Grid View -->
     <div id="ownNotesGrid" class="container note-grid">
@@ -1829,7 +1832,7 @@ $card_style = '';
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                             <?php endif; ?>
-                            <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
+                            <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
                     <?php elseif ($note['is_pin_locked']): ?>
                         <div class="locked-note-cover p-3 rounded bg-light border border-warning-subtle text-center my-2" id="lockedCover_list_<?= $note['note_id'] ?>">
@@ -1843,13 +1846,13 @@ $card_style = '';
                             <?php if (!empty($note['image_path'])): ?>
                                 <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                             <?php endif; ?>
-                            <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
+                            <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                         </div>
                     <?php else: ?>
                         <?php if (!empty($note['image_path'])): ?>
                             <div class="mb-2"><img src="<?= htmlspecialchars($note['image_path']) ?>" alt="Ảnh ghi chú" onerror="this.style.display='none'" style="max-width: 150px; border-radius: 6px;"></div>
                         <?php endif; ?>
-                        <p class="mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
+                        <p class="note-body-text mb-2"><?= nl2br(htmlspecialchars($note['content'])) ?></p>
                     <?php endif; ?>
 
                     <?php if (!empty($note['labels'])): ?>
@@ -3767,13 +3770,18 @@ document.getElementById('unlockPinForm')?.addEventListener('submit', async funct
             await Swal.fire({
                 icon: 'success',
                 title: 'Mở khóa thành công!',
-                text: data.requires_password ? 'Nhập tiếp mật khẩu riêng để xem sổ.' : 'Đang mở trang chi tiết sổ ghi chú.',
+                text: data.requires_password ? 'Nhập tiếp mật khẩu riêng để xem sổ.' : 'Bấm vào sổ để xem nội dung chi tiết.',
                 timer: 1000,
                 showConfirmButton: false
             });
-            // Protected content is deliberately absent from the locked card's HTML.
-            // The detail page reloads it from the server after the session unlock.
-            window.location.href = redirectUrl || `notepass.php?id=${encodeURIComponent(noteId)}`;
+            // The locked card was rendered without protected content. Reload it
+            // after verification so clicking the cover opens the full detail
+            // modal instead of reopening the stale PIN prompt.
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
+                window.location.reload();
+            }
         } else {
             errBox.textContent = data.message || 'Mã bảo mật 6 số không đúng.';
             errBox.classList.remove('d-none');

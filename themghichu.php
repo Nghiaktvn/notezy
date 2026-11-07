@@ -112,6 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $text_color = trim($_POST['text_color'] ?? '#000000');
     $font_family = trim($_POST['font_family'] ?? 'Poppins');
     $note_id = isset($_POST['noteId']) && !empty($_POST['noteId']) ? (int) $_POST['noteId'] : 0;
+    $is_new_note = $note_id === 0;
 
     if ($title === '' || $content === '') {
         $errorMessage = "❌ Vui lòng nhập đầy đủ tiêu đề và nội dung.";
@@ -269,6 +270,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     'message' => 'Ghi chú đã được lưu thành công!',
                     'image_path' => $image_path
                 ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            if ($is_new_note) {
+                header('Location: index_notezy.php?note_saved=1');
                 exit;
             }
         } catch (Exception $e) {
